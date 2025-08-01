@@ -12,7 +12,7 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['status'])) {
     $id = (int)$_POST['id'];
     $status = $_POST['status'];
-    $allowed_statuses = ['pending', 'approved', 'rejected'];
+    $allowed_statuses = ['pending', 'reviewing', 'approved', 'rejected'];
     
     if (in_array($status, $allowed_statuses)) {
         $stmt = $pdo->prepare("UPDATE business_applications SET status = ? WHERE id = ?");
@@ -34,15 +34,14 @@ $offset = ($page - 1) * $per_page;
 $where_conditions = [];
 $params = [];
 
-if ($status_filter && in_array($status_filter, ['pending', 'approved', 'rejected'])) {
+if ($status_filter && in_array($status_filter, ['pending', 'reviewing', 'approved', 'rejected'])) {
     $where_conditions[] = "status = ?";
     $params[] = $status_filter;
 }
 
 if ($search) {
-    $where_conditions[] = "(first_name LIKE ? OR last_name LIKE ? OR business_name LIKE ? OR reference_number LIKE ?)";
+    $where_conditions[] = "(owner_name LIKE ? OR business_name LIKE ? OR business_type LIKE ?)";
     $search_term = "%$search%";
-    $params[] = $search_term;
     $params[] = $search_term;
     $params[] = $search_term;
     $params[] = $search_term;
@@ -133,6 +132,7 @@ $applications = $stmt->fetchAll();
         }
         
         .status-pending { background: #fff3cd; color: #856404; }
+        .status-reviewing { background: #cce5ff; color: #004085; }
         .status-approved { background: #d4edda; color: #155724; }
         .status-rejected { background: #f8d7da; color: #721c24; }
         
@@ -213,11 +213,12 @@ $applications = $stmt->fetchAll();
                 <select name="status" onchange="this.form.submit()">
                     <option value="">All Status</option>
                     <option value="pending" <?php echo $status_filter === 'pending' ? 'selected' : ''; ?>>Pending</option>
+                    <option value="reviewing" <?php echo $status_filter === 'reviewing' ? 'selected' : ''; ?>>Reviewing</option>
                     <option value="approved" <?php echo $status_filter === 'approved' ? 'selected' : ''; ?>>Approved</option>
                     <option value="rejected" <?php echo $status_filter === 'rejected' ? 'selected' : ''; ?>>Rejected</option>
                 </select>
                 
-                <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by name, business, or reference...">
+                <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by owner name, business name, or type...">
                 <button type="submit" class="admin-btn">Search</button>
                 <a href="view-business-applications.php" class="admin-btn">Clear</a>
             </form>
@@ -228,10 +229,11 @@ $applications = $stmt->fetchAll();
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Reference Number</th>
-                        <th>Owner Name</th>
-                        <th>Business Details</th>
-                        <th>Tax Info</th>
+                        <th>Business Name</th>
+                        <th>Business Type</th>
+                        <th>Owner Details</th>
+                        <th>Business Address</th>
+                        <th>Investment & Years</th>
                         <th>Status</th>
                         <th>Submitted</th>
                         <th>Actions</th>
@@ -242,29 +244,28 @@ $applications = $stmt->fetchAll();
                     <tr>
                         <td><?php echo $app['id']; ?></td>
                         <td>
+                            <strong><?php echo htmlspecialchars($app['business_name']); ?></strong>
+                        </td>
+                        <td>
                             <span class="ref-number">
-                                <?php echo htmlspecialchars($app['reference_number']); ?>
+                                <?php echo htmlspecialchars($app['business_type']); ?>
                             </span>
                         </td>
                         <td>
-                            <strong><?php echo htmlspecialchars($app['first_name'] . ' ' . $app['last_name']); ?></strong>
-                            <?php if ($app['middle_name']): ?>
-                                <br><small><?php echo htmlspecialchars($app['middle_name']); ?></small>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <strong><?php echo htmlspecialchars($app['business_name']); ?></strong>
+                            <strong><?php echo htmlspecialchars($app['owner_name']); ?></strong>
                             <div class="business-info">
-                                📍 <?php echo htmlspecialchars($app['business_address_1']); ?>
-                                <?php if ($app['business_address_2']): ?>
-                                    <br>&nbsp;&nbsp;&nbsp;&nbsp;<?php echo htmlspecialchars($app['business_address_2']); ?>
-                                <?php endif; ?>
+                                📞 <?php echo htmlspecialchars($app['contact_number']); ?>
                             </div>
                         </td>
                         <td>
                             <div class="business-info">
-                                OR: <?php echo htmlspecialchars($app['or_number']); ?><br>
-                                CTC: <?php echo htmlspecialchars($app['ctc_number']); ?>
+                                📍 <?php echo htmlspecialchars($app['business_address']); ?>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="business-info">
+                                ₱<?php echo number_format($app['investment_capital'], 2); ?>
+                                <br><small><?php echo $app['years_operation']; ?> year(s) operation</small>
                             </div>
                         </td>
                         <td>
@@ -279,6 +280,7 @@ $applications = $stmt->fetchAll();
                                 <input type="hidden" name="id" value="<?php echo $app['id']; ?>">
                                 <select name="status" class="action-select" onchange="this.form.submit()">
                                     <option value="pending" <?php echo $app['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
+                                    <option value="reviewing" <?php echo $app['status'] === 'reviewing' ? 'selected' : ''; ?>>Reviewing</option>
                                     <option value="approved" <?php echo $app['status'] === 'approved' ? 'selected' : ''; ?>>Approved</option>
                                     <option value="rejected" <?php echo $app['status'] === 'rejected' ? 'selected' : ''; ?>>Rejected</option>
                                 </select>

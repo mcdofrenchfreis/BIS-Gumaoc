@@ -124,6 +124,34 @@ $registrations = $stmt->fetchAll();
             color: #2e7d32;
         }
         
+        .admin-table tbody tr {
+            transition: all 0.3s ease;
+        }
+        
+        .admin-table tbody tr:hover {
+            background: rgba(40, 167, 69, 0.05);
+        }
+        
+        .view-form-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .view-form-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+        
         .status-badge {
             padding: 0.3rem 0.8rem;
             border-radius: 20px;
@@ -161,6 +189,18 @@ $registrations = $stmt->fetchAll();
             background: #4caf50;
             color: white;
             border-color: #4caf50;
+        }
+        
+        .admin-btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(45deg, #4CAF50, #2196F3);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -203,10 +243,9 @@ $registrations = $stmt->fetchAll();
                         <th>Name</th>
                         <th>Age</th>
                         <th>Gender</th>
-                        <th>Civil Status</th>
-                        <th>Contact</th>
                         <th>Status</th>
                         <th>Submitted</th>
+                        <th>View Form</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -222,21 +261,17 @@ $registrations = $stmt->fetchAll();
                         </td>
                         <td><?php echo $reg['age']; ?></td>
                         <td><?php echo htmlspecialchars($reg['gender']); ?></td>
-                        <td><?php echo htmlspecialchars($reg['civil_status']); ?></td>
-                        <td>
-                            <?php if ($reg['contact_number']): ?>
-                                📞 <?php echo htmlspecialchars($reg['contact_number']); ?><br>
-                            <?php endif; ?>
-                            <?php if ($reg['house_number']): ?>
-                                🏠 <?php echo htmlspecialchars($reg['house_number']); ?>
-                            <?php endif; ?>
-                        </td>
                         <td>
                             <span class="status-badge status-<?php echo $reg['status']; ?>">
                                 <?php echo ucfirst($reg['status']); ?>
                             </span>
                         </td>
                         <td><?php echo date('M j, Y', strtotime($reg['submitted_at'])); ?></td>
+                        <td>
+                            <button onclick="viewRegistrationDetails(<?php echo $reg['id']; ?>)" class="view-form-btn">
+                                👁️ View Form
+                            </button>
+                        </td>
                         <td>
                             <form method="POST" style="display: inline;">
                                 <input type="hidden" name="action" value="update_status">
@@ -252,7 +287,22 @@ $registrations = $stmt->fetchAll();
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            
+            <?php if (empty($registrations)): ?>
+            <div style="text-align: center; padding: 3rem;">
+                <h3>📭 No Resident Registrations Found</h3>
+                <p>No resident registrations match your current filters.</p>
+                <a href="view-resident-registrations.php" class="admin-btn">Clear Filters</a>
+            </div>
+            <?php endif; ?>
         </div>
+        
+        <script>
+        function viewRegistrationDetails(registrationId) {
+            // Open the resident registration form with pre-filled data
+            window.open('../pages/resident-registration.php?admin_view=' + registrationId + '&readonly=1', '_blank');
+        }
+        </script>
         
         <?php if ($total_pages > 1): ?>
         <div class="pagination">
