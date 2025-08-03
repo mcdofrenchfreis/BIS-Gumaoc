@@ -1,69 +1,388 @@
--- Create database if not exists
-CREATE DATABASE IF NOT EXISTS gumaoc_db;
-USE gumaoc_db;
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: Aug 01, 2025 at 12:47 PM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
 
--- Admin users table
-CREATE TABLE IF NOT EXISTS admin_users (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    role ENUM('super_admin', 'admin') NOT NULL DEFAULT 'admin',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
 
--- Resident registrations table (Census data)
-CREATE TABLE IF NOT EXISTS resident_registrations (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    first_name VARCHAR(100) NOT NULL,
-    middle_name VARCHAR(100),
-    last_name VARCHAR(100) NOT NULL,
-    birth_date DATE NOT NULL,
-    age INT NOT NULL,
-    civil_status VARCHAR(50) NOT NULL,
-    gender VARCHAR(20) NOT NULL,
-    contact_number VARCHAR(20),
-    house_number VARCHAR(20),
-    pangkabuhayan VARCHAR(100),
-    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending'
-);
 
--- Certificate requests table
-CREATE TABLE IF NOT EXISTS certificate_requests (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    full_name VARCHAR(255) NOT NULL,
-    address VARCHAR(500) NOT NULL,
-    mobile_number VARCHAR(20),
-    civil_status VARCHAR(50),
-    gender VARCHAR(20),
-    birth_date DATE NOT NULL,
-    birth_place VARCHAR(255) NOT NULL,
-    citizenship VARCHAR(100),
-    years_of_residence INT,
-    certificate_type VARCHAR(100) NOT NULL,
-    purpose TEXT NOT NULL,
-    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status ENUM('pending', 'processing', 'ready', 'released') DEFAULT 'pending'
-);
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
 
--- Business applications table
-CREATE TABLE IF NOT EXISTS business_applications (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    business_name VARCHAR(255) NOT NULL,
-    business_type VARCHAR(100) NOT NULL,
-    business_address VARCHAR(500) NOT NULL,
-    owner_name VARCHAR(255) NOT NULL,
-    owner_address VARCHAR(500) NOT NULL,
-    contact_number VARCHAR(20) NOT NULL,
-    years_operation INT NOT NULL,
-    investment_capital DECIMAL(15,2) NOT NULL,
-    submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status ENUM('pending', 'reviewing', 'approved', 'rejected') DEFAULT 'pending'
-);
+--
+-- Database: `gumaoc_db`
+--
 
--- Insert default super admin user (password: admin123)
-INSERT IGNORE INTO admin_users (username, password, full_name, email, role)
-VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin@gumaoc.local', 'super_admin'); 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `admin_users`
+--
+
+CREATE TABLE `admin_users` (
+  `id` int(11) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `full_name` varchar(100) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `role` enum('super_admin','admin') NOT NULL DEFAULT 'admin',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `admin_users`
+--
+
+INSERT INTO `admin_users` (`id`, `username`, `password`, `full_name`, `email`, `role`, `created_at`, `updated_at`) VALUES
+(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin@gumaoc.local', 'super_admin', '2025-08-01 07:44:29', '2025-08-01 07:44:29');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `business_applications`
+--
+
+CREATE TABLE `business_applications` (
+  `id` int(11) NOT NULL,
+  `business_name` varchar(255) NOT NULL,
+  `business_type` varchar(100) NOT NULL,
+  `business_address` varchar(500) NOT NULL,
+  `owner_name` varchar(255) NOT NULL,
+  `owner_address` varchar(500) NOT NULL,
+  `contact_number` varchar(20) NOT NULL,
+  `years_operation` int(11) NOT NULL,
+  `investment_capital` decimal(15,2) NOT NULL,
+  `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` enum('pending','reviewing','approved','rejected') DEFAULT 'pending'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `business_applications`
+--
+
+INSERT INTO `business_applications` (`id`, `business_name`, `business_type`, `business_address`, `owner_name`, `owner_address`, `contact_number`, `years_operation`, `investment_capital`, `submitted_at`, `status`) VALUES
+(1, 'Test', 'General Business', 'Test Test', 'Test Test Test', 'Test', '09000000000', 1, 0.00, '2025-08-01 10:21:59', 'pending');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `certificate_requests`
+--
+
+CREATE TABLE `certificate_requests` (
+  `id` int(11) NOT NULL,
+  `full_name` varchar(255) NOT NULL,
+  `address` varchar(500) NOT NULL,
+  `mobile_number` varchar(20) DEFAULT NULL,
+  `civil_status` varchar(50) DEFAULT NULL,
+  `gender` varchar(20) DEFAULT NULL,
+  `birth_date` date NOT NULL,
+  `birth_place` varchar(255) NOT NULL,
+  `citizenship` varchar(100) DEFAULT NULL,
+  `years_of_residence` int(11) DEFAULT NULL,
+  `certificate_type` varchar(100) NOT NULL,
+  `purpose` text NOT NULL,
+  `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` enum('pending','processing','ready','released') DEFAULT 'pending'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `certificate_requests`
+--
+
+INSERT INTO `certificate_requests` (`id`, `full_name`, `address`, `birth_date`, `birth_place`, `certificate_type`, `purpose`, `submitted_at`, `status`) VALUES
+(1, 'zz zzz z', 'zz zz', '2025-08-16', 'zzz', 'CEDULA', 'zz', '2025-08-01 07:53:25', 'pending'),
+(2, 'test test test', 'test test', '2025-08-01', 'test', 'CEDULA', 'test', '2025-08-01 08:28:08', 'pending'),
+(3, 'test test test', 'test test', '2025-08-02', 'test', 'CEDULA', 'test', '2025-08-01 08:31:17', 'pending'),
+(4, 'test test test', 'test test', '2025-08-01', 'test', 'CEDULA', 'test', '2025-08-01 08:33:11', 'pending');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `family_disabilities`
+--
+
+CREATE TABLE `family_disabilities` (
+  `id` int(11) NOT NULL,
+  `registration_id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `disability_type` varchar(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `family_disabilities`
+--
+
+INSERT INTO `family_disabilities` (`id`, `registration_id`, `name`, `disability_type`, `created_at`) VALUES
+(1, 2, 'Lola Rosa Cruz', 'Visual Impairment', '2025-08-01 09:08:43');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `family_members`
+--
+
+CREATE TABLE `family_members` (
+  `id` int(11) NOT NULL,
+  `registration_id` int(11) NOT NULL,
+  `full_name` varchar(255) NOT NULL,
+  `birth_date` date DEFAULT NULL,
+  `age` int(11) DEFAULT NULL,
+  `civil_status` varchar(50) DEFAULT NULL,
+  `education` varchar(100) DEFAULT NULL,
+  `occupation` varchar(100) DEFAULT NULL,
+  `skills` varchar(255) DEFAULT NULL,
+  `monthly_income` decimal(10,2) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `family_members`
+--
+
+INSERT INTO `family_members` (`id`, `registration_id`, `full_name`, `birth_date`, `age`, `civil_status`, `education`, `occupation`, `skills`, `monthly_income`, `created_at`) VALUES
+(1, 2, 'Maria Santos Cruz', '1985-03-20', 38, 'Married', 'College Graduate', 'Teacher', 'Teaching, Computer Skills', 25000.00, '2025-08-01 09:08:43'),
+(2, 2, 'Pedro Juan Cruz', '2010-08-10', 13, 'Single', 'Grade 7', 'Student', 'Sports, Drawing', 0.00, '2025-08-01 09:08:43'),
+(3, 2, 'Ana Maria Cruz', '2015-12-05', 8, 'Single', 'Grade 2', 'Student', 'Reading, Singing', 0.00, '2025-08-01 09:08:43');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `family_organizations`
+--
+
+CREATE TABLE `family_organizations` (
+  `id` int(11) NOT NULL,
+  `registration_id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `organization_type` varchar(255) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `family_organizations`
+--
+
+INSERT INTO `family_organizations` (`id`, `registration_id`, `name`, `organization_type`, `created_at`) VALUES
+(1, 2, 'Juan Santos Cruz', 'Barangay Council', '2025-08-01 09:08:43'),
+(2, 2, 'Maria Santos Cruz', 'Parent-Teacher Association', '2025-08-01 09:08:43');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `resident_registrations`
+--
+
+CREATE TABLE `resident_registrations` (
+  `id` int(11) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `birth_date` date NOT NULL,
+  `age` int(11) NOT NULL,
+  `civil_status` varchar(50) NOT NULL,
+  `gender` varchar(20) NOT NULL,
+  `contact_number` varchar(20) DEFAULT NULL,
+  `house_number` varchar(20) DEFAULT NULL,
+  `pangkabuhayan` varchar(100) DEFAULT NULL,
+  `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `status` enum('pending','approved','rejected') DEFAULT 'pending',
+  `land_ownership` varchar(100) DEFAULT NULL,
+  `land_ownership_other` varchar(255) DEFAULT NULL,
+  `house_ownership` varchar(100) DEFAULT NULL,
+  `house_ownership_other` varchar(255) DEFAULT NULL,
+  `farmland` varchar(100) DEFAULT NULL,
+  `cooking_energy` varchar(100) DEFAULT NULL,
+  `cooking_energy_other` varchar(255) DEFAULT NULL,
+  `toilet_type` varchar(100) DEFAULT NULL,
+  `toilet_type_other` varchar(255) DEFAULT NULL,
+  `electricity_source` varchar(100) DEFAULT NULL,
+  `electricity_source_other` varchar(255) DEFAULT NULL,
+  `water_source` varchar(100) DEFAULT NULL,
+  `water_source_other` varchar(255) DEFAULT NULL,
+  `waste_disposal` varchar(100) DEFAULT NULL,
+  `waste_disposal_other` varchar(255) DEFAULT NULL,
+  `appliances` text DEFAULT NULL,
+  `transportation` text DEFAULT NULL,
+  `transportation_other` varchar(255) DEFAULT NULL,
+  `business` text DEFAULT NULL,
+  `business_other` varchar(255) DEFAULT NULL,
+  `contraceptive` text DEFAULT NULL,
+  `interviewer` varchar(255) DEFAULT NULL,
+  `interviewer_title` varchar(255) DEFAULT NULL,
+  `login_id` varchar(20) DEFAULT NULL,
+  `password` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `resident_registrations`
+--
+
+INSERT INTO `resident_registrations` (`id`, `first_name`, `middle_name`, `last_name`, `birth_date`, `age`, `civil_status`, `gender`, `contact_number`, `house_number`, `pangkabuhayan`, `submitted_at`, `status`, `land_ownership`, `land_ownership_other`, `house_ownership`, `house_ownership_other`, `farmland`, `cooking_energy`, `cooking_energy_other`, `toilet_type`, `toilet_type_other`, `electricity_source`, `electricity_source_other`, `water_source`, `water_source_other`, `waste_disposal`, `waste_disposal_other`, `appliances`, `transportation`, `transportation_other`, `business`, `business_other`, `contraceptive`, `interviewer`, `interviewer_title`, `login_id`, `password`) VALUES
+(1, 'test', '', 'test', '2025-08-01', 25, 'Unknown', 'Not Specified', '09162291763', '3', 'Not Specified', '2025-08-01 08:49:15', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(2, 'Juan', 'Santos', 'Cruz', '1980-05-15', 43, 'Married', 'Male', '09123456789', '123', 'Pag-aari', '2025-08-01 09:08:43', 'pending', 'Pag-aari', NULL, 'Pag-aari', NULL, 'Pag-aari', 'LPG', NULL, 'Flush', NULL, 'Kuryente', NULL, 'Water District', NULL, 'Kinokolekta', NULL, 'Telebisyon,Refrigerator', 'Kotse,Motorsiklo', NULL, 'Sari-Sari Store', NULL, 'Wala', 'Maria Garcia', 'Barangay Health Worker', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `users`
+--
+
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL,
+  `full_name` varchar(100) NOT NULL,
+  `email` varchar(100) UNIQUE NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `phone` varchar(20) NOT NULL,
+  `address` text NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `admin_users`
+--
+ALTER TABLE `admin_users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `username` (`username`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
+-- Indexes for table `business_applications`
+--
+ALTER TABLE `business_applications`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `certificate_requests`
+--
+ALTER TABLE `certificate_requests`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `family_disabilities`
+--
+ALTER TABLE `family_disabilities`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `registration_id` (`registration_id`);
+
+--
+-- Indexes for table `family_members`
+--
+ALTER TABLE `family_members`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `registration_id` (`registration_id`);
+
+--
+-- Indexes for table `family_organizations`
+--
+ALTER TABLE `family_organizations`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `registration_id` (`registration_id`);
+
+--
+-- Indexes for table `resident_registrations`
+--
+ALTER TABLE `resident_registrations`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `login_id` (`login_id`);
+
+--
+-- Indexes for table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `admin_users`
+--
+ALTER TABLE `admin_users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `business_applications`
+--
+ALTER TABLE `business_applications`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `certificate_requests`
+--
+ALTER TABLE `certificate_requests`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `family_disabilities`
+--
+ALTER TABLE `family_disabilities`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `family_members`
+--
+ALTER TABLE `family_members`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `family_organizations`
+--
+ALTER TABLE `family_organizations`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `resident_registrations`
+--
+ALTER TABLE `resident_registrations`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `family_disabilities`
+--
+ALTER TABLE `family_disabilities`
+  ADD CONSTRAINT `family_disabilities_ibfk_1` FOREIGN KEY (`registration_id`) REFERENCES `resident_registrations` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `family_members`
+--
+ALTER TABLE `family_members`
+  ADD CONSTRAINT `family_members_ibfk_1` FOREIGN KEY (`registration_id`) REFERENCES `resident_registrations` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `family_organizations`
+--
+ALTER TABLE `family_organizations`
+  ADD CONSTRAINT `family_organizations_ibfk_1` FOREIGN KEY (`registration_id`) REFERENCES `resident_registrations` (`id`) ON DELETE CASCADE;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
