@@ -19,6 +19,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <span class="nav-icon">🚨</span>Report Incident</a></li>
       <li><a href="<?php echo $base_path; ?>pages/forms.php" <?php echo $current_page === 'forms.php' ? 'class="active"' : ''; ?>>
         <span class="nav-icon">📋</span>Forms</a></li>
+      <li><a href="<?php echo $base_path; ?>pages/rfid-registration.php" <?php echo $current_page === 'forms.php' ? 'class="active"' : ''; ?>>
+        <span class="nav-icon">⚠️</span>RFID (wip)</a></li>
       <li><a href="<?php echo $base_path; ?>pages/about.php" <?php echo $current_page === 'about.php' ? 'class="active"' : ''; ?>>
         <span class="nav-icon">ℹ️</span>About</a></li>
       <li><a href="<?php echo $base_path; ?>pages/contact.php" <?php echo $current_page === 'contact.php' ? 'class="active"' : ''; ?>>

@@ -10,15 +10,82 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 
 // Get form submission counts
 try {
-    $resident_count = $pdo->query("SELECT COUNT(*) FROM resident_registrations")->fetchColumn();
-    $certificate_count = $pdo->query("SELECT COUNT(*) FROM certificate_requests")->fetchColumn();
-    $business_count = $pdo->query("SELECT COUNT(*) FROM business_applications")->fetchColumn();
+    // Check and create tables if they don't exist
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS services (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            title VARCHAR(255) NOT NULL,
+            description TEXT NOT NULL,
+            button_text VARCHAR(100) NOT NULL,
+            button_link VARCHAR(255) NOT NULL,
+            is_featured BOOLEAN DEFAULT FALSE,
+            features TEXT,
+            display_order INT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+    ");
     
-    $pending_resident = $pdo->query("SELECT COUNT(*) FROM resident_registrations WHERE status = 'pending'")->fetchColumn();
-    $pending_certificate = $pdo->query("SELECT COUNT(*) FROM certificate_requests WHERE status = 'pending'")->fetchColumn();
-    $pending_business = $pdo->query("SELECT COUNT(*) FROM business_applications WHERE status = 'pending'")->fetchColumn();
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS updates (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            title VARCHAR(255) NOT NULL,
+            description TEXT NOT NULL,
+            badge_text VARCHAR(50) NOT NULL,
+            badge_type ENUM('important', 'new', 'community', 'info') DEFAULT 'info',
+            date VARCHAR(50) NOT NULL,
+            status VARCHAR(50) NOT NULL,
+            is_priority BOOLEAN DEFAULT FALSE,
+            display_order INT DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )
+    ");
+    
+    // Get form submission counts (with error handling for non-existent tables)
+    $resident_count = 0;
+    $certificate_count = 0;
+    $business_count = 0;
+    $pending_resident = 0;
+    $pending_certificate = 0;
+    $pending_business = 0;
+    
+    try {
+        $resident_count = $pdo->query("SELECT COUNT(*) FROM resident_registrations")->fetchColumn();
+        $pending_resident = $pdo->query("SELECT COUNT(*) FROM resident_registrations WHERE status = 'pending'")->fetchColumn();
+    } catch (Exception $e) {
+        // Table doesn't exist yet
+    }
+    
+    try {
+        $certificate_count = $pdo->query("SELECT COUNT(*) FROM certificate_requests")->fetchColumn();
+        $pending_certificate = $pdo->query("SELECT COUNT(*) FROM certificate_requests WHERE status = 'pending'")->fetchColumn();
+    } catch (Exception $e) {
+        // Table doesn't exist yet
+    }
+    
+    try {
+        $business_count = $pdo->query("SELECT COUNT(*) FROM business_applications")->fetchColumn();
+        $pending_business = $pdo->query("SELECT COUNT(*) FROM business_applications WHERE status = 'pending'")->fetchColumn();
+    } catch (Exception $e) {
+        // Table doesn't exist yet
+    }
+    
+    // Get services and updates counts
+    $services_count = $pdo->query("SELECT COUNT(*) FROM services")->fetchColumn();
+    $updates_count = $pdo->query("SELECT COUNT(*) FROM updates")->fetchColumn();
+    
 } catch (Exception $e) {
     $error_message = "Database error: " . $e->getMessage();
+    // Set default values if there's an error
+    $resident_count = 0;
+    $certificate_count = 0;
+    $business_count = 0;
+    $pending_resident = 0;
+    $pending_certificate = 0;
+    $pending_business = 0;
+    $services_count = 0;
+    $updates_count = 0;
 }
 ?>
 <!DOCTYPE html>
@@ -54,7 +121,7 @@ try {
         
         .dashboard-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
@@ -86,9 +153,22 @@ try {
             font-weight: 500;
         }
         
+        .dashboard-section {
+            margin-bottom: 3rem;
+        }
+        
+        .section-title {
+            color: #2e7d32;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
         .dashboard-actions {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
         }
         
@@ -99,10 +179,12 @@ try {
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             text-align: center;
             transition: transform 0.3s ease;
+            border: 1px solid #e0e0e0;
         }
         
         .action-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
         }
         
         .action-icon {
@@ -113,6 +195,13 @@ try {
         .action-card h3 {
             color: #2e7d32;
             margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        
+        .action-card p {
+            color: #666;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
         }
         
         .admin-btn {
@@ -129,6 +218,8 @@ try {
         .admin-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            text-decoration: none;
+            color: white;
         }
         
         .admin-nav {
@@ -142,13 +233,63 @@ try {
             margin: 0 1rem;
             font-weight: 500;
         }
+        
+        .admin-nav a:hover {
+            color: #1b5e20;
+        }
+        
+        /* Special styling for content management cards */
+        .content-management .action-card {
+            border-left: 4px solid #2196F3;
+        }
+        
+        .form-management .action-card {
+            border-left: 4px solid #4caf50;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-stats {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .admin-nav {
+                font-size: 0.9rem;
+            }
+            
+            .admin-nav a {
+                display: inline-block;
+                margin: 0.5rem;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="admin-dashboard">
         <div class="dashboard-header">
             <h1>📊 Admin Dashboard</h1>
-            <p>Manage form submissions and applications</p>
+            <p>Manage website content and form submissions</p>
         </div>
         
         <div class="admin-nav">
@@ -166,43 +307,79 @@ try {
         <div class="dashboard-stats">
             <div class="stat-card">
                 <h3>Census Registrations</h3>
-                <div class="stat-number"><?php echo $resident_count ?? 0; ?></div>
-                <div class="stat-pending"><?php echo $pending_resident ?? 0; ?> pending</div>
+                <div class="stat-number"><?php echo $resident_count; ?></div>
+                <div class="stat-pending"><?php echo $pending_resident; ?> pending</div>
             </div>
             
             <div class="stat-card">
                 <h3>Certificate Requests</h3>
-                <div class="stat-number"><?php echo $certificate_count ?? 0; ?></div>
-                <div class="stat-pending"><?php echo $pending_certificate ?? 0; ?> pending</div>
+                <div class="stat-number"><?php echo $certificate_count; ?></div>
+                <div class="stat-pending"><?php echo $pending_certificate; ?> pending</div>
             </div>
             
             <div class="stat-card">
                 <h3>Business Applications</h3>
-                <div class="stat-number"><?php echo $business_count ?? 0; ?></div>
-                <div class="stat-pending"><?php echo $pending_business ?? 0; ?> pending</div>
+                <div class="stat-number"><?php echo $business_count; ?></div>
+                <div class="stat-pending"><?php echo $pending_business; ?> pending</div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Digital Services</h3>
+                <div class="stat-number"><?php echo $services_count; ?></div>
+                <div class="stat-pending">Active services</div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Latest Updates</h3>
+                <div class="stat-number"><?php echo $updates_count; ?></div>
+                <div class="stat-pending">Published updates</div>
             </div>
         </div>
         
-        <div class="dashboard-actions">
-            <div class="action-card">
-                <div class="action-icon">👥</div>
-                <h3>Census Registrations</h3>
-                <p>View and manage resident census registrations</p>
-                <a href="view-resident-registrations.php" class="admin-btn">View Submissions</a>
+        <!-- Content Management Section -->
+        <div class="dashboard-section content-management">
+            <h2 class="section-title">🎛️ Content Management</h2>
+            <div class="dashboard-actions">
+                <div class="action-card">
+                    <div class="action-icon">⚙️</div>
+                    <h3>Manage Services</h3>
+                    <p>Configure service cards, descriptions, and links displayed on the homepage</p>
+                    <a href="manage-services.php" class="admin-btn">Manage Services</a>
+                </div>
+                
+                <div class="action-card">
+                    <div class="action-icon">📢</div>
+                    <h3>Manage Updates</h3>
+                    <p>Add, edit, and manage community announcements and latest news updates</p>
+                    <a href="manage-updates.php" class="admin-btn">Manage Updates</a>
+                </div>
             </div>
-            
-            <div class="action-card">
-                <div class="action-icon">📄</div>
-                <h3>Certificate Requests</h3>
-                <p>Process certificate requests and approvals</p>
-                <a href="view-certificate-requests.php" class="admin-btn">View Requests</a>
-            </div>
-            
-            <div class="action-card">
-                <div class="action-icon">🏢</div>
-                <h3>Business Applications</h3>
-                <p>Review business permit applications</p>
-                <a href="view-business-applications.php" class="admin-btn">View Applications</a>
+        </div>
+        
+        <!-- Form Management Section -->
+        <div class="dashboard-section form-management">
+            <h2 class="section-title">📋 Form Management</h2>
+            <div class="dashboard-actions">
+                <div class="action-card">
+                    <div class="action-icon">👥</div>
+                    <h3>Census Registrations</h3>
+                    <p>View and manage resident census registrations</p>
+                    <a href="view-resident-registrations.php" class="admin-btn">View Submissions</a>
+                </div>
+                
+                <div class="action-card">
+                    <div class="action-icon">📄</div>
+                    <h3>Certificate Requests</h3>
+                    <p>Process certificate requests and approvals</p>
+                    <a href="view-certificate-requests.php" class="admin-btn">View Requests</a>
+                </div>
+                
+                <div class="action-card">
+                    <div class="action-icon">🏢</div>
+                    <h3>Business Applications</h3>
+                    <p>Review business permit applications</p>
+                    <a href="view-business-applications.php" class="admin-btn">View Applications</a>
+                </div>
             </div>
         </div>
     </div>
