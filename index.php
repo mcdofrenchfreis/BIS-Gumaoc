@@ -217,14 +217,18 @@ try {
         </div>
       <?php else: ?>
         <?php foreach ($updates as $update): ?>
-          <div class="update-card <?php echo $update['is_priority'] ? 'priority' : ''; ?>">
-            <div class="update-badge <?php echo 'badge-' . $update['badge_type']; ?>"><?php echo htmlspecialchars($update['badge_text']); ?></div>
-            <div class="update-icon"><?php echo $update['icon']; ?></div>
+          <div class="update-card <?php echo (!empty($update['is_priority']) && $update['is_priority']) ? 'priority' : ''; ?>">
+            <div class="update-badge <?php echo 'badge-' . (isset($update['badge_type']) ? $update['badge_type'] : 'info'); ?>">
+              <?php echo htmlspecialchars(isset($update['badge_text']) ? $update['badge_text'] : 'Update'); ?>
+            </div>
+            <div class="update-icon">
+              <?php echo isset($update['icon']) ? $update['icon'] : '📢'; ?>
+            </div>
             <h3><?php echo htmlspecialchars($update['title']); ?></h3>
             <p><?php echo htmlspecialchars($update['description']); ?></p>
             <div class="update-meta">
-              <span class="update-date">📅 <?php echo htmlspecialchars($update['date']); ?></span>
-              <span class="update-status"><?php echo htmlspecialchars($update['status']); ?></span>
+              <span class="update-date">📅 <?php echo htmlspecialchars(isset($update['date']) ? $update['date'] : date('M d, Y')); ?></span>
+              <span class="update-status"><?php echo htmlspecialchars(isset($update['status']) ? $update['status'] : '🟢 Active'); ?></span>
             </div>
           </div>
         <?php endforeach; ?>

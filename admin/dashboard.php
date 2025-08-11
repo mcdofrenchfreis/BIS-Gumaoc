@@ -75,6 +75,22 @@ try {
     $services_count = $pdo->query("SELECT COUNT(*) FROM services")->fetchColumn();
     $updates_count = $pdo->query("SELECT COUNT(*) FROM updates")->fetchColumn();
     
+    // Get recent activity (latest submissions)
+    $recent_activities = [];
+    try {
+        $stmt = $pdo->query("
+            (SELECT 'Certificate Request' as type, id, created_at, 'certificate-request.php' as link FROM certificate_requests ORDER BY created_at DESC LIMIT 3)
+            UNION ALL
+            (SELECT 'Business Application' as type, id, created_at, 'business-application.php' as link FROM business_applications ORDER BY created_at DESC LIMIT 3)
+            UNION ALL
+            (SELECT 'Census Registration' as type, id, created_at, 'resident-registration.php' as link FROM resident_registrations ORDER BY created_at DESC LIMIT 3)
+            ORDER BY created_at DESC LIMIT 5
+        ");
+        $recent_activities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        // Tables don't exist yet
+    }
+    
 } catch (Exception $e) {
     $error_message = "Database error: " . $e->getMessage();
     // Set default values if there's an error
@@ -86,6 +102,7 @@ try {
     $pending_business = 0;
     $services_count = 0;
     $updates_count = 0;
+    $recent_activities = [];
 }
 ?>
 <!DOCTYPE html>
@@ -95,177 +112,492 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Barangay Gumaoc East</title>
     <link rel="stylesheet" href="../css/styles.css">
-    <link rel="stylesheet" href="../assets/css/admin.css">
     <style>
-        .admin-dashboard {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-            background: #f8f9fa;
-            min-height: 100vh;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
-        .dashboard-header {
-            background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
-            color: white;
+        body {
+            background: linear-gradient(135deg, #ffffff 0%, #f0f8f0 20%, #e8f5e8 40%, #c8e6c9 70%, #a5d6a7 100%);
+            background-attachment: fixed;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        /* Add subtle pattern overlay */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(27, 94, 32, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(76, 175, 80, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .admin-dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
             padding: 2rem;
-            border-radius: 16px;
+        }
+        
+        /* Header */
+        .dashboard-header {
+            background: linear-gradient(135deg, rgba(27, 94, 32, 0.95) 0%, rgba(46, 125, 50, 0.95) 50%, rgba(56, 142, 60, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            color: white;
+            padding: 2.5rem;
+            border-radius: 24px;
             margin-bottom: 2rem;
             text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(27, 94, 32, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dashboard-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.1) 50%, transparent 60%);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
         
         .dashboard-header h1 {
             margin: 0 0 0.5rem 0;
-            font-size: 2.5rem;
+            font-size: 3rem;
+            font-weight: 700;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+            z-index: 1;
         }
         
+        .dashboard-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Navigation */
+        .admin-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(27, 94, 32, 0.1);
+            border: 1px solid rgba(27, 94, 32, 0.1);
+        }
+        
+        .admin-nav a {
+            color: #1b5e20;
+            text-decoration: none;
+            margin: 0 1.5rem;
+            font-weight: 600;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            display: inline-block;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .admin-nav a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+        
+        .admin-nav a:hover::before {
+            left: 0;
+        }
+        
+        .admin-nav a:hover {
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(27, 94, 32, 0.3);
+        }
+        
+        /* Stats Grid */
         .dashboard-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-        
-        .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            border-left: 4px solid #4caf50;
-        }
-        
-        .stat-card h3 {
-            color: #2e7d32;
-            margin: 0 0 1rem 0;
-            font-size: 1.1rem;
-        }
-        
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 0.5rem;
-        }
-        
-        .stat-pending {
-            font-size: 0.9rem;
-            color: #ff9800;
-            font-weight: 500;
-        }
-        
-        .dashboard-section {
             margin-bottom: 3rem;
         }
         
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(27, 94, 32, 0.1);
+            border: 1px solid rgba(27, 94, 32, 0.1);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(135deg, #1b5e20 0%, #4caf50 100%);
+        }
+        
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(27, 94, 32, 0.05) 100%);
+            border-radius: 0 20px 0 60px;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(27, 94, 32, 0.15);
+            background: rgba(255, 255, 255, 1);
+        }
+        
+        .stat-card h3 {
+            color: #1b5e20;
+            margin: 0 0 1rem 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #1b5e20;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .stat-pending {
+            font-size: 0.95rem;
+            color: #f57c00;
+            font-weight: 600;
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 193, 7, 0.1) 100%);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            display: inline-block;
+            border: 1px solid rgba(255, 152, 0, 0.2);
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Main Content Grid */
+        .dashboard-main {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .dashboard-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(27, 94, 32, 0.1);
+            border: 1px solid rgba(27, 94, 32, 0.1);
+        }
+        
         .section-title {
-            color: #2e7d32;
+            color: #1b5e20;
             font-size: 1.5rem;
             margin-bottom: 1.5rem;
             font-weight: 700;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 0.8rem;
+            border-bottom: 3px solid rgba(27, 94, 32, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
         }
         
+        .section-icon {
+            background: linear-gradient(135deg, #1b5e20 0%, #4caf50 100%);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(27, 94, 32, 0.2);
+        }
+        
+        /* Action Cards */
         .dashboard-actions {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1.5rem;
         }
         
         .action-card {
-            background: white;
+            background: rgba(255, 255, 255, 0.9);
             padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border-radius: 16px;
             text-align: center;
-            transition: transform 0.3s ease;
-            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(27, 94, 32, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .action-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(27, 94, 32, 0.03) 0%, rgba(76, 175, 80, 0.03) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
         
         .action-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px rgba(27, 94, 32, 0.15);
+            border-color: #4caf50;
+            background: rgba(255, 255, 255, 1);
+        }
+        
+        .action-card:hover::before {
+            opacity: 1;
         }
         
         .action-icon {
             font-size: 3rem;
             margin-bottom: 1rem;
+            background: linear-gradient(135deg, #1b5e20 0%, #4caf50 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            z-index: 1;
         }
         
         .action-card h3 {
-            color: #2e7d32;
+            color: #1b5e20;
             margin-bottom: 1rem;
-            font-size: 1.2rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
         }
         
         .action-card p {
             color: #666;
             margin-bottom: 1.5rem;
-            line-height: 1.5;
+            line-height: 1.6;
+            position: relative;
+            z-index: 1;
         }
         
         .admin-btn {
             display: inline-block;
-            padding: 0.8rem 1.5rem;
-            background: linear-gradient(45deg, #4CAF50, #2196F3);
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #1b5e20 0%, #4caf50 100%);
             color: white;
             text-decoration: none;
-            border-radius: 8px;
-            font-weight: 500;
+            border-radius: 12px;
+            font-weight: 600;
             transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(27, 94, 32, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+        
+        .admin-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2e7d32 0%, #66bb6a 100%);
+            transition: left 0.3s ease;
+            z-index: -1;
+        }
+        
+        .admin-btn:hover::before {
+            left: 0;
         }
         
         .admin-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 8px 25px rgba(27, 94, 32, 0.4);
             text-decoration: none;
             color: white;
         }
         
-        .admin-nav {
-            text-align: center;
-            margin-bottom: 2rem;
+        /* Recent Activity Section */
+        .recent-activity {
+            height: fit-content;
         }
         
-        .admin-nav a {
-            color: #2e7d32;
-            text-decoration: none;
-            margin: 0 1rem;
-            font-weight: 500;
+        .activity-list {
+            list-style: none;
         }
         
-        .admin-nav a:hover {
-            color: #1b5e20;
-        }
-        
-        /* Special styling for content management cards */
-        .content-management .action-card {
-            border-left: 4px solid #2196F3;
-        }
-        
-        .form-management .action-card {
-            border-left: 4px solid #4caf50;
-        }
-        
-        .alert {
+        .activity-item {
+            background: linear-gradient(135deg, rgba(27, 94, 32, 0.05) 0%, rgba(76, 175, 80, 0.03) 100%);
             padding: 1rem;
-            border-radius: 8px;
+            border-radius: 12px;
             margin-bottom: 1rem;
+            border-left: 4px solid #4caf50;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(76, 175, 80, 0.1);
+        }
+        
+        .activity-item:hover {
+            background: linear-gradient(135deg, rgba(27, 94, 32, 0.1) 0%, rgba(76, 175, 80, 0.08) 100%);
+            transform: translateX(5px);
+            box-shadow: 0 4px 15px rgba(27, 94, 32, 0.1);
+        }
+        
+        .activity-type {
+            font-weight: 600;
+            color: #1b5e20;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .activity-time {
+            color: #666;
+            font-size: 0.8rem;
+            margin-top: 0.3rem;
+        }
+        
+        .empty-activity {
+            text-align: center;
+            color: #999;
+            font-style: italic;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            border: 2px dashed rgba(27, 94, 32, 0.2);
+        }
+        
+        /* Alert Styles */
+        .alert {
+            padding: 1.2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            border: none;
+            font-weight: 500;
+            backdrop-filter: blur(10px);
         }
         
         .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: linear-gradient(135deg, rgba(255, 235, 238, 0.95) 0%, rgba(255, 205, 210, 0.9) 100%);
+            color: #c62828;
+            border-left: 4px solid #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.2);
         }
         
         .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: linear-gradient(135deg, rgba(232, 245, 233, 0.95) 0%, rgba(200, 230, 201, 0.9) 100%);
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+            border: 1px solid rgba(76, 175, 80, 0.2);
+        }
+        
+        /* Quick Stats Row */
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .quick-stat {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1.5rem;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(27, 94, 32, 0.08);
+            border: 1px solid rgba(27, 94, 32, 0.1);
+        }
+        
+        .quick-stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1b5e20;
+        }
+        
+        .quick-stat-label {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .dashboard-main {
+                grid-template-columns: 1fr;
+            }
         }
         
         @media (max-width: 768px) {
+            .admin-dashboard {
+                padding: 1rem;
+            }
+            
+            .dashboard-header {
+                padding: 2rem 1.5rem;
+            }
+            
+            .dashboard-header h1 {
+                font-size: 2.5rem;
+            }
+            
             .dashboard-stats {
                 grid-template-columns: 1fr;
             }
@@ -274,114 +606,214 @@ try {
                 grid-template-columns: 1fr;
             }
             
-            .admin-nav {
-                font-size: 0.9rem;
+            .admin-nav a {
+                display: block;
+                margin: 0.5rem 0;
             }
             
-            .admin-nav a {
-                display: inline-block;
-                margin: 0.5rem;
+            .stat-number {
+                font-size: 2.5rem;
             }
         }
+        
+        @media (max-width: 480px) {
+            .dashboard-header h1 {
+                font-size: 2rem;
+            }
+            
+            .action-icon {
+                font-size: 2.5rem;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
+            }
+        }
+        
+        /* Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .stat-card, .action-card {
+            animation: fadeInUp 0.6s ease;
+        }
+        
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+        .stat-card:nth-child(5) { animation-delay: 0.5s; }
     </style>
 </head>
 <body>
     <div class="admin-dashboard">
         <div class="dashboard-header">
-            <h1>📊 Admin Dashboard</h1>
+            <h1>🎛️ Admin Dashboard</h1>
             <p>Manage website content and form submissions</p>
         </div>
         
         <div class="admin-nav">
-            <a href="forms-manager.php">📋 Forms Manager</a> |
-            <a href="../index.php" target="_blank">🌐 View Website</a> |
+            <a href="forms-manager.php">📋 Forms Manager</a>
+            <a href="../index.php" target="_blank">🌐 View Website</a>
             <a href="logout.php">🚪 Logout</a>
         </div>
         
         <?php if (isset($error_message)): ?>
             <div class="alert alert-error">
-                <strong>Error:</strong> <?php echo $error_message; ?>
+                <strong>⚠️ Error:</strong> <?php echo $error_message; ?>
             </div>
         <?php endif; ?>
         
         <div class="dashboard-stats">
             <div class="stat-card">
-                <h3>Census Registrations</h3>
+                <h3>👥 Census Registrations</h3>
                 <div class="stat-number"><?php echo $resident_count; ?></div>
-                <div class="stat-pending"><?php echo $pending_resident; ?> pending</div>
+                <div class="stat-pending"><?php echo $pending_resident; ?> pending review</div>
             </div>
             
             <div class="stat-card">
-                <h3>Certificate Requests</h3>
+                <h3>📄 Certificate Requests</h3>
                 <div class="stat-number"><?php echo $certificate_count; ?></div>
-                <div class="stat-pending"><?php echo $pending_certificate; ?> pending</div>
+                <div class="stat-pending"><?php echo $pending_certificate; ?> pending approval</div>
             </div>
             
             <div class="stat-card">
-                <h3>Business Applications</h3>
+                <h3>🏢 Business Applications</h3>
                 <div class="stat-number"><?php echo $business_count; ?></div>
-                <div class="stat-pending"><?php echo $pending_business; ?> pending</div>
+                <div class="stat-pending"><?php echo $pending_business; ?> pending processing</div>
             </div>
             
             <div class="stat-card">
-                <h3>Digital Services</h3>
+                <h3>⚙️ Digital Services</h3>
                 <div class="stat-number"><?php echo $services_count; ?></div>
                 <div class="stat-pending">Active services</div>
             </div>
             
             <div class="stat-card">
-                <h3>Latest Updates</h3>
+                <h3>📢 Latest Updates</h3>
                 <div class="stat-number"><?php echo $updates_count; ?></div>
                 <div class="stat-pending">Published updates</div>
             </div>
         </div>
         
-        <!-- Content Management Section -->
-        <div class="dashboard-section content-management">
-            <h2 class="section-title">🎛️ Content Management</h2>
-            <div class="dashboard-actions">
-                <div class="action-card">
-                    <div class="action-icon">⚙️</div>
-                    <h3>Manage Services</h3>
-                    <p>Configure service cards, descriptions, and links displayed on the homepage</p>
-                    <a href="manage-services.php" class="admin-btn">Manage Services</a>
-                </div>
+        <div class="dashboard-main">
+            <div class="dashboard-section">
+                <h2 class="section-title">
+                    <div class="section-icon">🎛️</div>
+                    Management Tools
+                </h2>
                 
-                <div class="action-card">
-                    <div class="action-icon">📢</div>
-                    <h3>Manage Updates</h3>
-                    <p>Add, edit, and manage community announcements and latest news updates</p>
-                    <a href="manage-updates.php" class="admin-btn">Manage Updates</a>
+                <div class="dashboard-actions">
+                    <div class="action-card">
+                        <div class="action-icon">⚙️</div>
+                        <h3>Manage Services</h3>
+                        <p>Configure service cards, descriptions, and links displayed on the homepage</p>
+                        <a href="manage-services.php" class="admin-btn">Manage Services</a>
+                    </div>
+                    
+                    <div class="action-card">
+                        <div class="action-icon">📢</div>
+                        <h3>Manage Updates</h3>
+                        <p>Add, edit, and manage community announcements and latest news updates</p>
+                        <a href="manage-updates.php" class="admin-btn">Manage Updates</a>
+                    </div>
+                    
+                    <div class="action-card">
+                        <div class="action-icon">👥</div>
+                        <h3>Census Registrations</h3>
+                        <p>View and manage resident census registrations</p>
+                        <a href="view-resident-registrations.php" class="admin-btn">View Submissions</a>
+                    </div>
+                    
+                    <div class="action-card">
+                        <div class="action-icon">📄</div>
+                        <h3>Certificate Requests</h3>
+                        <p>Process certificate requests and approvals</p>
+                        <a href="view-certificate-requests.php" class="admin-btn">View Requests</a>
+                    </div>
+                    
+                    <div class="action-card">
+                        <div class="action-icon">🏢</div>
+                        <h3>Business Applications</h3>
+                        <p>Review business permit applications</p>
+                        <a href="view-business-applications.php" class="admin-btn">View Applications</a>
+                    </div>
+                    
+                    <div class="action-card">
+                        <div class="action-icon">📊</div>
+                        <h3>Forms Manager</h3>
+                        <p>Comprehensive form management and analytics</p>
+                        <a href="forms-manager.php" class="admin-btn">Open Manager</a>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-        <!-- Form Management Section -->
-        <div class="dashboard-section form-management">
-            <h2 class="section-title">📋 Form Management</h2>
-            <div class="dashboard-actions">
-                <div class="action-card">
-                    <div class="action-icon">👥</div>
-                    <h3>Census Registrations</h3>
-                    <p>View and manage resident census registrations</p>
-                    <a href="view-resident-registrations.php" class="admin-btn">View Submissions</a>
-                </div>
+            
+            <div class="dashboard-section recent-activity">
+                <h2 class="section-title">
+                    <div class="section-icon">⏰</div>
+                    Recent Activity
+                </h2>
                 
-                <div class="action-card">
-                    <div class="action-icon">📄</div>
-                    <h3>Certificate Requests</h3>
-                    <p>Process certificate requests and approvals</p>
-                    <a href="view-certificate-requests.php" class="admin-btn">View Requests</a>
-                </div>
-                
-                <div class="action-card">
-                    <div class="action-icon">🏢</div>
-                    <h3>Business Applications</h3>
-                    <p>Review business permit applications</p>
-                    <a href="view-business-applications.php" class="admin-btn">View Applications</a>
-                </div>
+                <ul class="activity-list">
+                    <?php if (empty($recent_activities)): ?>
+                        <li class="empty-activity">
+                            No recent activity to display
+                        </li>
+                    <?php else: ?>
+                        <?php foreach ($recent_activities as $activity): ?>
+                            <li class="activity-item">
+                                <div class="activity-type"><?php echo htmlspecialchars($activity['type']); ?></div>
+                                <div class="activity-time">
+                                    <?php echo date('M d, Y H:i', strtotime($activity['created_at'])); ?>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </ul>
             </div>
         </div>
     </div>
+    
+    <script>
+        // Add smooth scrolling to dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animate numbers counting up
+            const numbers = document.querySelectorAll('.stat-number');
+            numbers.forEach(number => {
+                const finalNumber = parseInt(number.textContent);
+                let currentNumber = 0;
+                const increment = finalNumber / 50;
+                
+                const timer = setInterval(() => {
+                    currentNumber += increment;
+                    if (currentNumber >= finalNumber) {
+                        currentNumber = finalNumber;
+                        clearInterval(timer);
+                    }
+                    number.textContent = Math.floor(currentNumber);
+                }, 20);
+            });
+            
+            // Add hover effects to stat cards
+            const statCards = document.querySelectorAll('.stat-card');
+            statCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-8px) scale(1.02)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+        });
+    </script>
 </body>
 </html>
