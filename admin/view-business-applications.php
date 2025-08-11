@@ -285,6 +285,10 @@ $applications = $stmt->fetchAll();
                                     <option value="rejected" <?php echo $app['status'] === 'rejected' ? 'selected' : ''; ?>>Rejected</option>
                                 </select>
                             </form>
+                            <?php if ($app['status'] === 'approved'): ?>
+                                <br><br>
+                                <a href="generate-business-clearance.php?id=<?php echo $app['id']; ?>" class="admin-btn" target="_blank">📄 Generate Clearance</a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>

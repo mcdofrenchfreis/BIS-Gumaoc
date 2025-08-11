@@ -315,6 +315,11 @@ $cert_types = $pdo->query("SELECT DISTINCT certificate_type FROM certificate_req
                                     <option value="released" <?php echo $req['status'] === 'released' ? 'selected' : ''; ?>>Released</option>
                                 </select>
                             </form>
+                            <?php if ($req['certificate_type'] === 'BRGY. INDIGENCY'): ?>
+                                <a href="../pages/print-indigency.php?id=<?php echo $req['id']; ?>" target="_blank" class="print-cert-btn" style="display: inline-block; margin-left: 10px; padding: 5px 10px; background: #ff9800; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;">
+                                    🖨️ Print
+                                </a>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
