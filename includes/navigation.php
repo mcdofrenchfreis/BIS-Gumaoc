@@ -42,6 +42,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <span class="nav-icon">ℹ️</span>About</a></li>
       <li><a href="<?php echo $base_path; ?>pages/contact.php" <?php echo $current_page === 'contact.php' ? 'class="active"' : ''; ?>>
         <span class="nav-icon">📞</span>Contact</a></li>
+      <li><a href="login.php">Login</a></li>
     </ul>
     
     <div class="nav-toggle" onclick="toggleMobileMenu()">

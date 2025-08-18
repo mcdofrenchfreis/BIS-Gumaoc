@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 04, 2025 at 11:45 AM
+-- Generation Time: Aug 18, 2025 at 05:40 PM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- PHP Version: 8.0.30
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -176,6 +176,40 @@ CREATE TABLE `family_organizations` (
 INSERT INTO `family_organizations` (`id`, `registration_id`, `name`, `organization_type`, `created_at`) VALUES
 (1, 2, 'Juan Santos Cruz', 'Barangay Council', '2025-08-01 09:08:43'),
 (2, 2, 'Maria Santos Cruz', 'Parent-Teacher Association', '2025-08-01 09:08:43');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `residents`
+--
+
+CREATE TABLE `residents` (
+  `id` int(11) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `phone` varchar(20) NOT NULL,
+  `password` varchar(255) DEFAULT NULL,
+  `address` text NOT NULL,
+  `birthdate` date NOT NULL,
+  `gender` enum('Male','Female','Other') NOT NULL,
+  `civil_status` enum('Single','Married','Widowed','Separated','Divorced') NOT NULL,
+  `rfid_code` varchar(50) DEFAULT NULL,
+  `rfid` varchar(50) DEFAULT NULL,
+  `status` enum('active','inactive','pending') NOT NULL DEFAULT 'active',
+  `reset_otp` varchar(6) DEFAULT NULL,
+  `otp_expiry` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `residents`
+--
+
+INSERT INTO `residents` (`id`, `first_name`, `middle_name`, `last_name`, `email`, `phone`, `password`, `address`, `birthdate`, `gender`, `civil_status`, `rfid_code`, `rfid`, `status`, `reset_otp`, `otp_expiry`, `created_at`, `updated_at`) VALUES
+(1, 'Mar Yvan', 'Sagun', 'Dela Cruz', 'biofrostyv@gmail.com', '09162291763', '$2y$10$T2sgNqcXTphnpenkr7Uy3uVzQVYaj4mlh825BV.CMsMZW1wkOao8W', 'test test test', '2004-07-08', 'Male', 'Single', '', '', 'active', NULL, NULL, '2025-08-18 12:26:08', '2025-08-18 12:26:08');
 
 -- --------------------------------------------------------
 
@@ -399,6 +433,18 @@ ALTER TABLE `family_organizations`
   ADD KEY `registration_id` (`registration_id`);
 
 --
+-- Indexes for table `residents`
+--
+ALTER TABLE `residents`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `residents_email` (`email`),
+  ADD UNIQUE KEY `residents_phone` (`phone`),
+  ADD UNIQUE KEY `residents_rfid_code` (`rfid_code`),
+  ADD UNIQUE KEY `residents_rfid` (`rfid`),
+  ADD KEY `idx_residents_status` (`status`),
+  ADD KEY `idx_residents_rfid_codes` (`rfid_code`,`rfid`);
+
+--
 -- Indexes for table `resident_registrations`
 --
 ALTER TABLE `resident_registrations`
@@ -476,6 +522,12 @@ ALTER TABLE `family_members`
 --
 ALTER TABLE `family_organizations`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `residents`
+--
+ALTER TABLE `residents`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `resident_registrations`

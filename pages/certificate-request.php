@@ -1,4 +1,6 @@
 <?php
+<?php
+include '../includes/auth_check.php';
 session_start();
 $base_path = '../';
 $page_title = 'Certificate Request - Barangay Gumaoc East';

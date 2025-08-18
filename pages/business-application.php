@@ -1,5 +1,5 @@
 <?php
-session_start();
+include '../includes/auth_check.php';
 $base_path = '../';
 $page_title = 'Business Application Form - Barangay Gumaoc East';
 $header_title = 'Business Application Form';

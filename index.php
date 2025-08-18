@@ -5,7 +5,6 @@ $header_title = 'Barangay Gumaoc East';
 $header_subtitle = 'Smart Digital Services for Modern Community Living';
 
 include 'includes/header.php';
-include 'includes/navigation.php';
 include 'includes/db_connect.php';
 
 // Check if admin is logged in
