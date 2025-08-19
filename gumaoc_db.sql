@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 18, 2025 at 05:40 PM
+-- Generation Time: Aug 19, 2025 at 03:28 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -20,6 +20,39 @@ SET time_zone = "+00:00";
 --
 -- Database: `gumaoc_db`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `admin_logs`
+--
+
+CREATE TABLE `admin_logs` (
+  `id` int(11) NOT NULL,
+  `admin_id` varchar(100) DEFAULT 'system',
+  `action_type` varchar(50) NOT NULL,
+  `target_type` varchar(50) NOT NULL,
+  `target_id` int(11) DEFAULT NULL,
+  `description` text NOT NULL,
+  `details` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`details`)),
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `admin_logs`
+--
+
+INSERT INTO `admin_logs` (`id`, `admin_id`, `action_type`, `target_type`, `target_id`, `description`, `details`, `ip_address`, `user_agent`, `created_at`) VALUES
+(1, 'admin', 'form_view', 'resident_registration', 2, 'Viewed resident registration form ID #2', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-19 13:07:55'),
+(2, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-19 13:08:03'),
+(3, 'admin', 'print_action', 'certificate_request', 5, 'Printed residency_certificate for certificate_request ID #5', '{\"print_type\":\"residency_certificate\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-19 13:08:04'),
+(4, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed dashboard page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-19 13:16:36'),
+(5, 'admin', 'status_update', 'certificate_request', 123, 'Updated certificate request status', '{\"old_status\":\"pending\",\"new_status\":\"processing\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-19 13:16:36'),
+(6, 'admin', 'print_action', 'certificate_request', 456, 'Printed residency certificate', '{\"certificate_type\":\"RESIDENCY\",\"applicant_name\":\"Test User\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-19 13:16:36'),
+(7, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-19 13:16:36'),
+(8, 'admin', 'form_view', 'resident_registration', 789, 'Viewed registration form', '{\"view_mode\":\"readonly\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-19 13:16:36');
 
 -- --------------------------------------------------------
 
@@ -53,11 +86,20 @@ INSERT INTO `admin_users` (`id`, `username`, `password`, `full_name`, `email`, `
 
 CREATE TABLE `business_applications` (
   `id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `reference_no` varchar(50) DEFAULT NULL,
+  `application_date` date DEFAULT NULL,
+  `first_name` varchar(100) DEFAULT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) DEFAULT NULL,
+  `business_location` text DEFAULT NULL,
+  `or_number` varchar(100) DEFAULT NULL,
+  `ctc_number` varchar(100) DEFAULT NULL,
   `business_name` varchar(255) NOT NULL,
   `business_type` varchar(100) NOT NULL,
   `business_address` varchar(500) NOT NULL,
   `owner_name` varchar(255) NOT NULL,
-  `owner_address` varchar(500) NOT NULL,
+  `owner_address` text DEFAULT NULL,
   `contact_number` varchar(20) NOT NULL,
   `years_operation` int(11) NOT NULL,
   `investment_capital` decimal(15,2) NOT NULL,
@@ -69,8 +111,9 @@ CREATE TABLE `business_applications` (
 -- Dumping data for table `business_applications`
 --
 
-INSERT INTO `business_applications` (`id`, `business_name`, `business_type`, `business_address`, `owner_name`, `owner_address`, `contact_number`, `years_operation`, `investment_capital`, `submitted_at`, `status`) VALUES
-(1, 'Test', 'General Business', 'Test Test', 'Test Test Test', 'Test', '09000000000', 1, 0.00, '2025-08-01 10:21:59', 'pending');
+INSERT INTO `business_applications` (`id`, `user_id`, `reference_no`, `application_date`, `first_name`, `middle_name`, `last_name`, `business_location`, `or_number`, `ctc_number`, `business_name`, `business_type`, `business_address`, `owner_name`, `owner_address`, `contact_number`, `years_operation`, `investment_capital`, `submitted_at`, `status`) VALUES
+(1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Test', 'General Business', 'Test Test', 'Test Test Test', 'Test', '09000000000', 1, 0.00, '2025-08-01 10:21:59', 'pending'),
+(2, 1, 'BA-2025-6770', '2025-08-19', 'Mar Yvan', 'Sagun', 'Dela Cruz', '\r\nError submitting application. Please try again.', '32213231231', '3212132231', ' Error submitting application. Please try again.', 'General Business', '\r\nError submitting application. Please try again.', 'Mar Yvan Sagun Dela Cruz', '\r\nError submitting application. Please try again.', '09000000000', 1, 0.00, '2025-08-19 11:42:40', 'pending');
 
 -- --------------------------------------------------------
 
@@ -101,9 +144,10 @@ CREATE TABLE `certificate_requests` (
 
 INSERT INTO `certificate_requests` (`id`, `full_name`, `address`, `mobile_number`, `civil_status`, `gender`, `birth_date`, `birth_place`, `citizenship`, `years_of_residence`, `certificate_type`, `purpose`, `submitted_at`, `status`) VALUES
 (1, 'zz zzz z', 'zz zz', NULL, NULL, NULL, '2025-08-16', 'zzz', NULL, NULL, 'CEDULA', 'zz', '2025-08-01 07:53:25', 'pending'),
-(2, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-01', 'test', 'Filipino', 3, 'CEDULA', 'test', '2025-08-01 08:28:08', 'pending'),
-(3, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-02', 'test', 'Filipino', 3, 'CEDULA', 'test', '2025-08-01 08:31:17', 'pending'),
-(4, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-01', 'test', 'Filipino', 1, 'CEDULA', 'test', '2025-08-01 08:33:11', 'pending');
+(2, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-01', 'test', 'Filipino', 3, 'CEDULA', 'test', '2025-08-01 08:28:08', 'processing'),
+(3, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-02', 'test', 'Filipino', 3, 'CEDULA', 'test', '2025-08-01 08:31:17', 'processing'),
+(4, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-01', 'test', 'Filipino', 1, 'CEDULA', 'test', '2025-08-01 08:33:11', 'ready'),
+(5, 'TEST TEST TEST', 'TEST TEST', '09162291763', 'Single', 'Male', '2004-08-07', 'TEST', 'Filipino', 321, 'BRGY. INDIGENCY', 'TEST', '2025-08-19 12:52:46', 'processing');
 
 -- --------------------------------------------------------
 
@@ -261,8 +305,8 @@ CREATE TABLE `resident_registrations` (
 --
 
 INSERT INTO `resident_registrations` (`id`, `first_name`, `middle_name`, `last_name`, `birth_date`, `age`, `civil_status`, `gender`, `contact_number`, `house_number`, `pangkabuhayan`, `submitted_at`, `status`, `land_ownership`, `land_ownership_other`, `house_ownership`, `house_ownership_other`, `farmland`, `cooking_energy`, `cooking_energy_other`, `toilet_type`, `toilet_type_other`, `electricity_source`, `electricity_source_other`, `water_source`, `water_source_other`, `waste_disposal`, `waste_disposal_other`, `appliances`, `transportation`, `transportation_other`, `business`, `business_other`, `contraceptive`, `interviewer`, `interviewer_title`) VALUES
-(1, 'test', '', 'test', '2025-08-01', 25, 'Unknown', 'Not Specified', '09162291763', '3', 'Not Specified', '2025-08-01 08:49:15', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(2, 'Juan', 'Santos', 'Cruz', '1980-05-15', 43, 'Married', 'Male', '09123456789', '123', 'Pag-aari', '2025-08-01 09:08:43', 'pending', 'Pag-aari', NULL, 'Pag-aari', NULL, 'Pag-aari', 'LPG', NULL, 'Flush', NULL, 'Kuryente', NULL, 'Water District', NULL, 'Kinokolekta', NULL, 'Telebisyon,Refrigerator', 'Kotse,Motorsiklo', NULL, 'Sari-Sari Store', NULL, 'Wala', 'Maria Garcia', 'Barangay Health Worker');
+(1, 'test', '', 'test', '2025-08-01', 25, 'Unknown', 'Not Specified', '09162291763', '3', 'Not Specified', '2025-08-01 08:49:15', 'approved', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(2, 'Juan', 'Santos', 'Cruz', '1980-05-15', 43, 'Married', 'Male', '09123456789', '123', 'Pag-aari', '2025-08-01 09:08:43', 'approved', 'Pag-aari', NULL, 'Pag-aari', NULL, 'Pag-aari', 'LPG', NULL, 'Flush', NULL, 'Kuryente', NULL, 'Water District', NULL, 'Kinokolekta', NULL, 'Telebisyon,Refrigerator', 'Kotse,Motorsiklo', NULL, 'Sari-Sari Store', NULL, 'Wala', 'Maria Garcia', 'Barangay Health Worker');
 
 -- --------------------------------------------------------
 
@@ -392,6 +436,16 @@ INSERT INTO `updates` (`id`, `title`, `description`, `badge_text`, `badge_type`,
 --
 
 --
+-- Indexes for table `admin_logs`
+--
+ALTER TABLE `admin_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_admin_id` (`admin_id`),
+  ADD KEY `idx_action_type` (`action_type`),
+  ADD KEY `idx_target_type` (`target_type`),
+  ADD KEY `idx_created_at` (`created_at`);
+
+--
 -- Indexes for table `admin_users`
 --
 ALTER TABLE `admin_users`
@@ -403,7 +457,8 @@ ALTER TABLE `admin_users`
 -- Indexes for table `business_applications`
 --
 ALTER TABLE `business_applications`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `certificate_requests`
@@ -488,6 +543,12 @@ ALTER TABLE `updates`
 --
 
 --
+-- AUTO_INCREMENT for table `admin_logs`
+--
+ALTER TABLE `admin_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
 -- AUTO_INCREMENT for table `admin_users`
 --
 ALTER TABLE `admin_users`
@@ -497,13 +558,13 @@ ALTER TABLE `admin_users`
 -- AUTO_INCREMENT for table `business_applications`
 --
 ALTER TABLE `business_applications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `certificate_requests`
 --
 ALTER TABLE `certificate_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `family_disabilities`
@@ -568,6 +629,12 @@ ALTER TABLE `updates`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `business_applications`
+--
+ALTER TABLE `business_applications`
+  ADD CONSTRAINT `business_applications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `residents` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `family_disabilities`
