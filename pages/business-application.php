@@ -1,735 +1,739 @@
 <?php
-include '../includes/auth_check.php';
+session_start();
 $base_path = '../';
-$page_title = 'Business Application Form - Barangay Gumaoc East';
-$header_title = 'Business Application Form';
-$header_subtitle = 'Apply for business permits and clearances';
+$page_title = 'Business Permit Application - Barangay Gumaoc East';
+$header_title = 'Business Permit Application';
+$header_subtitle = 'Apply for Business Permit in Barangay Gumaoc East';
+
+// Check if this is an admin view
+$admin_view = isset($_GET['admin_view']) ? (int)$_GET['admin_view'] : null;
+$readonly = isset($_GET['readonly']) && $_GET['readonly'] === '1';
+$application_data = null;
+
+if ($admin_view) {
+    // Admin is viewing - fetch the application data
+    require_once '../includes/db_connect.php';
+    $stmt = $pdo->prepare("SELECT * FROM business_applications WHERE id = ?");
+    $stmt->execute([$admin_view]);
+    $application_data = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$application_data) {
+        die("Application not found.");
+    }
+} else {
+    // Regular user access - require authentication
+    include '../includes/auth_check.php';
+}
+
+// Generate reference number if not exists
+$reference_no = $application_data['reference_no'] ?? 'BA-' . date('Y') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
+
+// Only process form submission if not readonly
+if ($_POST && !$readonly) {
+    require_once '../includes/db_connect.php';
+    
+    try {
+        // Get user_id from session
+        $user_id = $_SESSION['user_id'] ?? null;
+        
+        if (!$user_id) {
+            throw new Exception("User session not found. Please log in again.");
+        }
+        
+        // Map the form fields to the database structure
+        $stmt = $pdo->prepare("INSERT INTO business_applications 
+            (user_id, reference_no, application_date, first_name, middle_name, last_name, 
+             business_name, business_type, business_address, business_location, owner_name, 
+             owner_address, contact_number, or_number, ctc_number, years_operation, 
+             investment_capital, status, submitted_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())");
+        
+        // Combine names for owner_name field
+        $owner_name = trim($_POST['first_name'] . ' ' . ($_POST['middle_name'] ? $_POST['middle_name'] . ' ' : '') . $_POST['last_name']);
+        
+        $result = $stmt->execute([
+            $user_id,
+            $_POST['reference_no'],
+            $_POST['application_date'],
+            $_POST['first_name'],
+            $_POST['middle_name'] ?: null,
+            $_POST['last_name'],
+            $_POST['business_name'],
+            'General Business', // Default business type
+            $_POST['business_location'], // business_address
+            $_POST['business_location'], // business_location
+            $owner_name, // owner_name (combined)
+            $_POST['owner_address'],
+            '09000000000', // Default contact number
+            $_POST['or_number'],
+            $_POST['ctc_number'],
+            1, // Default years_operation
+            0.00 // Default investment_capital
+        ]);
+        
+        if ($result) {
+            $_SESSION['success'] = "Business permit application submitted successfully! Reference: " . $_POST['reference_no'];
+            header('Location: ' . $_SERVER['PHP_SELF']);
+            exit;
+        } else {
+            throw new Exception("Failed to insert application data.");
+        }
+        
+    } catch (PDOException $e) {
+        // Log the actual error for debugging
+        error_log("Business Application Error: " . $e->getMessage());
+        $error = "Database error: " . $e->getMessage();
+    } catch (Exception $e) {
+        $error = $e->getMessage();
+    }
+}
 
 include '../includes/header.php';
-include '../includes/navigation.php';
 ?>
 
 <div class="container">
-  <div class="section">
+    <?php if ($admin_view): ?>
+    <div class="admin-view-banner">
+        <div class="status-info">
+            <h2>📋 Business Application Review</h2>
+            <div class="reference-badge">
+                REF: <?php echo htmlspecialchars($application_data['reference_no']); ?>
+            </div>
+            <div class="status-badge status-<?php echo $application_data['status']; ?>">
+                <?php echo ucfirst($application_data['status']); ?>
+            </div>
+        </div>
+        <div class="submission-info">
+            <p><strong>Submitted:</strong> <?php echo date('F j, Y g:i A', strtotime($application_data['submitted_at'])); ?></p>
+            <p><strong>Business:</strong> <?php echo htmlspecialchars($application_data['business_name']); ?></p>
+            <p><strong>Owner:</strong> <?php echo htmlspecialchars($application_data['first_name'] . ' ' . $application_data['last_name']); ?></p>
+        </div>
+        <button onclick="window.close()" class="back-btn">✕ Close</button>
+    </div>
+    <?php endif; ?>
+
     <?php if (isset($_SESSION['success'])): ?>
-      <div id="toastOverlay" class="toast-overlay">
-        <div id="successToast" class="toast toast-success">
-          <div class="toast-content">
-            <span class="toast-icon">✅</span>
-            <span class="toast-message"><?php echo $_SESSION['success']; unset($_SESSION['success']); ?></span>
-            <button class="toast-close" onclick="closeToast('successToast')">&times;</button>
-          </div>
+    <div class="success-alert">
+        <div class="alert-content">
+            <span class="alert-icon">✅</span>
+            <span class="alert-message"><?php echo $_SESSION['success']; unset($_SESSION['success']); ?></span>
         </div>
-      </div>
+    </div>
     <?php endif; ?>
-    
-    <?php if (isset($_SESSION['error'])): ?>
-      <div id="toastOverlay" class="toast-overlay">
-        <div id="errorToast" class="toast toast-error">
-          <div class="toast-content">
-            <span class="toast-icon">❌</span>
-            <span class="toast-message"><?php echo $_SESSION['error']; unset($_SESSION['error']); ?></span>
-            <button class="toast-close" onclick="closeToast('errorToast')">&times;</button>
-          </div>
+
+    <?php if (isset($error)): ?>
+    <div class="error-alert">
+        <div class="alert-content">
+            <span class="alert-icon">❌</span>
+            <span class="alert-message"><?php echo $error; ?></span>
         </div>
-      </div>
+    </div>
     <?php endif; ?>
-    
-    <form id="businessForm" class="business-form" method="POST" action="process_business_application.php">
 
-      <fieldset>
-        <legend>Application Information</legend>
-        
-        <div class="form-grid-two">
-          <div class="form-group">
-            <label for="date">Date of Application <span class="required">*</span></label>
-            <input type="date" id="date" name="date" required value="<?php echo date('Y-m-d'); ?>">
-          </div>
-          <div class="form-group">
-            <label for="reference_number">Reference Number</label>
-            <input type="text" id="reference_number" name="reference_number" placeholder="Auto-generated" readonly>
-          </div>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Business Owner Information</legend>
-        
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="first_name">First Name <span class="required">*</span></label>
-            <input type="text" id="first_name" name="first_name" required placeholder="Enter first name">
-          </div>
-          <div class="form-group">
-            <label for="middle_name">Middle Name</label>
-            <input type="text" id="middle_name" name="middle_name" placeholder="Enter middle name">
-          </div>
-          <div class="form-group">
-            <label for="last_name">Last Name <span class="required">*</span></label>
-            <input type="text" id="last_name" name="last_name" required placeholder="Enter last name">
-          </div>
+    <section class="section">
+        <div class="form-header">
+            <div class="form-title">
+                <h1>🏢 Business Permit Application</h1>
+                <p>Complete all required fields to submit your business permit application</p>
+            </div>
+            <div class="form-ref">
+                <div class="ref-number">
+                    <span class="ref-label">Reference No.</span>
+                    <span class="ref-value"><?php echo htmlspecialchars($reference_no); ?></span>
+                </div>
+            </div>
         </div>
 
-        <div class="form-grid-two">
-          <div class="form-group">
-            <label for="contact_number">Contact Number <span class="required">*</span></label>
-            <input type="tel" id="contact_number" name="contact_number" required placeholder="09XX-XXX-XXXX">
-          </div>
-          <div class="form-group">
-            <label for="email">Email Address</label>
-            <input type="email" id="email" name="email" placeholder="your.email@example.com">
-          </div>
-        </div>
+        <form class="business-form" <?php echo $readonly ? '' : 'method="POST"'; ?>>
+            <input type="hidden" name="reference_no" value="<?php echo htmlspecialchars($reference_no); ?>">
+            
+            <div class="form-grid">
+                <!-- Date -->
+                <div class="form-group">
+                    <label for="application_date">📅 Date <span class="required">*</span></label>
+                    <input type="date" id="application_date" name="application_date" 
+                           value="<?php echo htmlspecialchars($application_data['application_date'] ?? date('Y-m-d')); ?>" 
+                           <?php echo $readonly ? 'readonly' : 'required'; ?>>
+                </div>
 
-        <div class="form-group">
-          <label for="house_address">Owner's Residence Address <span class="required">*</span></label>
-          <textarea id="house_address" name="house_address" required placeholder="Complete residential address of business owner" rows="3"></textarea>
-        </div>
-      </fieldset>
+                <!-- Empty space for alignment -->
+                <div class="form-group"></div>
 
-      <fieldset>
-        <legend>Business Information</legend>
-        
-        <div class="form-group">
-          <label for="business_name">Name of Business <span class="required">*</span></label>
-          <input type="text" id="business_name" name="business_name" required placeholder="Enter business name">
-        </div>
-        
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="business_type">Type of Business <span class="required">*</span></label>
-            <select id="business_type" name="business_type" required>
-              <option value="">Select Business Type</option>
-              <option value="Retail Store">Retail Store</option>
-              <option value="Restaurant/Food Service">Restaurant/Food Service</option>
-              <option value="Sari-sari Store">Sari-sari Store</option>
-              <option value="Auto Repair Shop">Auto Repair Shop</option>
-              <option value="Beauty Salon/Barbershop">Beauty Salon/Barbershop</option>
-              <option value="Internet Cafe">Internet Cafe</option>
-              <option value="Pharmacy">Pharmacy</option>
-              <option value="Hardware Store">Hardware Store</option>
-              <option value="Laundry Shop">Laundry Shop</option>
-              <option value="Agricultural Business">Agricultural Business</option>
-              <option value="Professional Services">Professional Services</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="business_nature">Nature of Business <span class="required">*</span></label>
-            <input type="text" id="business_nature" name="business_nature" required placeholder="Describe business activities">
-          </div>
-        </div>
-        
-        <div class="form-grid-two">
-          <div class="form-group">
-            <label for="business_address_1">Business Location - Address Line 1 <span class="required">*</span></label>
-            <input type="text" id="business_address_1" name="business_address_1" required placeholder="Street number, street name">
-          </div>
-          <div class="form-group">
-            <label for="business_address_2">Business Location - Address Line 2</label>
-            <input type="text" id="business_address_2" name="business_address_2" placeholder="Subdivision, building name, etc.">
-          </div>
-        </div>
+                <!-- Name Row - Full Width -->
+                <div class="form-group full-width">
+                    <div class="name-row">
+                        <div class="name-field">
+                            <label for="first_name">👤 First Name <span class="required">*</span></label>
+                            <input type="text" id="first_name" name="first_name" 
+                                   value="<?php echo htmlspecialchars($application_data['first_name'] ?? ''); ?>" 
+                                   placeholder="Enter first name"
+                                   <?php echo $readonly ? 'readonly' : 'required'; ?>>
+                        </div>
+                        <div class="name-field">
+                            <label for="middle_name">👤 Middle Name <span class="optional">(Optional)</span></label>
+                            <input type="text" id="middle_name" name="middle_name" 
+                                   value="<?php echo htmlspecialchars($application_data['middle_name'] ?? ''); ?>" 
+                                   placeholder="Enter middle name"
+                                   <?php echo $readonly ? 'readonly' : ''; ?>>
+                        </div>
+                        <div class="name-field">
+                            <label for="last_name">👤 Last Name <span class="required">*</span></label>
+                            <input type="text" id="last_name" name="last_name" 
+                                   value="<?php echo htmlspecialchars($application_data['last_name'] ?? ''); ?>" 
+                                   placeholder="Enter last name"
+                                   <?php echo $readonly ? 'readonly' : 'required'; ?>>
+                        </div>
+                    </div>
+                </div>
 
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="capital_investment">Capital Investment <span class="required">*</span></label>
-            <input type="number" id="capital_investment" name="capital_investment" required placeholder="Enter amount in PHP" min="1" step="0.01">
-          </div>
-          <div class="form-group">
-            <label for="number_of_employees">Number of Employees</label>
-            <input type="number" id="number_of_employees" name="number_of_employees" placeholder="Including owner" min="1">
-          </div>
-        </div>
-      </fieldset>
+                <!-- Business Location -->
+                <div class="form-group full-width">
+                    <label for="business_location">🏢 Location of Business <span class="required">*</span></label>
+                    <textarea id="business_location" name="business_location" rows="3" 
+                              placeholder="Enter complete business address..."
+                              <?php echo $readonly ? 'readonly' : 'required'; ?>><?php echo htmlspecialchars($application_data['business_location'] ?? ''); ?></textarea>
+                </div>
 
-      <fieldset>
-        <legend>Tax Information</legend>
-        
-        <div class="form-grid-two">
-          <div class="form-group">
-            <label for="or_number">OR Number <span class="required">*</span></label>
-            <input type="text" id="or_number" name="or_number" required placeholder="Official Receipt Number">
-          </div>
-          <div class="form-group">
-            <label for="ctc_number">CTC Number <span class="required">*</span></label>
-            <input type="text" id="ctc_number" name="ctc_number" required placeholder="Community Tax Certificate Number">
-          </div>
-        </div>
+                <!-- Business Name -->
+                <div class="form-group full-width">
+                    <label for="business_name">🏪 Name of Business <span class="required">*</span></label>
+                    <input type="text" id="business_name" name="business_name" 
+                           value="<?php echo htmlspecialchars($application_data['business_name'] ?? ''); ?>" 
+                           placeholder="Enter business name"
+                           <?php echo $readonly ? 'readonly' : 'required'; ?>>
+                </div>
 
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="tin_number">TIN Number</label>
-            <input type="text" id="tin_number" name="tin_number" placeholder="Tax Identification Number">
-          </div>
-          <div class="form-group">
-            <label for="sss_number">SSS Number</label>
-            <input type="text" id="sss_number" name="sss_number" placeholder="Social Security System Number">
-          </div>
-          <div class="form-group">
-            <label for="philhealth_number">PhilHealth Number</label>
-            <input type="text" id="philhealth_number" name="philhealth_number" placeholder="PhilHealth Number">
-          </div>
-        </div>
-      </fieldset>
+                <!-- Owner Address -->
+                <div class="form-group full-width">
+                    <label for="owner_address">🏠 House Address of Owner <span class="required">*</span></label>
+                    <textarea id="owner_address" name="owner_address" rows="3" 
+                              placeholder="Enter complete home address..."
+                              <?php echo $readonly ? 'readonly' : 'required'; ?>><?php echo htmlspecialchars($application_data['owner_address'] ?? ''); ?></textarea>
+                </div>
 
-      <fieldset>
-        <legend>Additional Information</legend>
-        
-        <div class="form-group">
-          <label for="purpose">Purpose of Application <span class="required">*</span></label>
-          <textarea id="purpose" name="purpose" required placeholder="Specify the purpose for this business application" rows="3"></textarea>
-        </div>
+                <!-- OR Number -->
+                <div class="form-group">
+                    <label for="or_number">🧾 OR No. <span class="required">*</span></label>
+                    <input type="text" id="or_number" name="or_number" 
+                           value="<?php echo htmlspecialchars($application_data['or_number'] ?? ''); ?>" 
+                           placeholder="Enter Official Receipt number"
+                           <?php echo $readonly ? 'readonly' : 'required'; ?>>
+                </div>
 
-        <div class="form-group">
-          <label for="special_requirements">Special Requirements/Notes</label>
-          <textarea id="special_requirements" name="special_requirements" placeholder="Any special requirements or additional information" rows="2"></textarea>
-        </div>
-      </fieldset>
+                <!-- CTC Number -->
+                <div class="form-group">
+                    <label for="ctc_number">📋 CTC No. <span class="required">*</span></label>
+                    <input type="text" id="ctc_number" name="ctc_number" 
+                           value="<?php echo htmlspecialchars($application_data['ctc_number'] ?? ''); ?>" 
+                           placeholder="Enter Community Tax Certificate number"
+                           <?php echo $readonly ? 'readonly' : 'required'; ?>>
+                </div>
+            </div>
 
-      <div class="form-actions">
-        <button type="button" class="btn btn-secondary" onclick="resetForm()">Clear Form</button>
-        <button type="submit" class="btn btn-primary">Submit Application</button>
-      </div>
-
-    </form>
-  </div>
+            <?php if (!$readonly): ?>
+            <div class="form-actions">
+                <button type="submit" name="submit_application" class="submit-btn">
+                    <span class="btn-icon">📝</span>
+                    <span class="btn-text">Submit Application</span>
+                </button>
+                <button type="reset" class="reset-btn">
+                    <span class="btn-icon">🔄</span>
+                    <span class="btn-text">Reset Form</span>
+                </button>
+            </div>
+            <?php endif; ?>
+        </form>
+    </section>
 </div>
 
 <style>
-/* Toast Notifications */
-.toast-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(5px);
-  z-index: 999;
-  opacity: 0;
-  transition: all 0.3s ease;
-  pointer-events: none;
+/* Global Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-.toast-overlay.show {
-  opacity: 1;
-  pointer-events: auto;
+body {
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #2c3e50;
+    background: white;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
 }
 
-.toast {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.8);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(15px);
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  z-index: 1000;
-  opacity: 0;
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  min-width: 400px;
-  max-width: 600px;
-  width: 90%;
-}
-
-.toast.show {
-  transform: translate(-50%, -50%) scale(1);
-  opacity: 1;
-}
-
-.toast-content {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 24px 28px;
-}
-
-.toast-success {
-  border-left: 5px solid #28a745;
-  box-shadow: 0 20px 60px rgba(40, 167, 69, 0.2);
-}
-
-.toast-error {
-  border-left: 5px solid #dc3545;
-  box-shadow: 0 20px 60px rgba(220, 53, 69, 0.2);
-}
-
-.toast-icon {
-  font-size: 24px;
-  flex-shrink: 0;
-}
-
-.toast-message {
-  flex: 1;
-  font-weight: 500;
-  color: #333;
-  line-height: 1.5;
-  font-size: 16px;
-}
-
-.toast-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #999;
-  cursor: pointer;
-  padding: 4px;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-}
-
-.toast-close:hover {
-  background: rgba(0, 0, 0, 0.1);
-  color: #666;
-  transform: scale(1.1);
-}
-
-/* Container and Layout */
+/* Container Styles */
 .container {
-  max-width: 1000px;
-  margin: 20px auto;
-  padding: 20px 15px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+    max-width: 900px;
+    margin: 20px auto;
+    padding: 20px 15px;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 24px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
 }
 
 .section {
-  margin-bottom: 25px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    padding: 2.5rem;
+    box-shadow: 
+        0 20px 60px rgba(0, 0, 0, 0.1),
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
 }
 
-/* Form Styling */
+.section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #4CAF50, #45a049, #2e7d32);
+    z-index: 1;
+}
+
+/* Form Header */
+.form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid rgba(76, 175, 80, 0.1);
+}
+
+.form-title h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #2d5a27;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-title p {
+    color: #666;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.form-ref .ref-number {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+}
+
+.ref-label {
+    display: block;
+    font-size: 0.8rem;
+    opacity: 0.9;
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ref-value {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+}
+
+/* Admin View Banner */
+.admin-view-banner {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 20px;
+    margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 40px rgba(30, 60, 114, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-view-banner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.status-info h2 {
+    margin: 0 0 1rem 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.reference-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-family: 'Courier New', monospace;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+    display: inline-block;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    border-radius: 25px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.status-pending {
+    background: linear-gradient(135deg, #ffc107, #ffb300);
+    color: #333;
+}
+
+.status-processing {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+}
+
+.status-approved {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+    color: white;
+}
+
+.status-rejected {
+    background: linear-gradient(135deg, #dc3545, #bd2130);
+    color: white;
+}
+
+.submission-info p {
+    margin: 0.4rem 0;
+    font-size: 1rem;
+    opacity: 0.95;
+}
+
+.back-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.8rem 1.8rem;
+    border-radius: 30px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Alert Styles */
+.success-alert, .error-alert {
+    margin-bottom: 2rem;
+    padding: 1.2rem 1.5rem;
+    border-radius: 15px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    animation: slideIn 0.5s ease;
+}
+
+.success-alert {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(56, 142, 60, 0.9));
+    color: white;
+}
+
+.error-alert {
+    background: linear-gradient(135deg, rgba(244, 67, 54, 0.9), rgba(211, 47, 47, 0.9));
+    color: white;
+}
+
+.alert-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.alert-icon {
+    font-size: 1.3rem;
+}
+
+.alert-message {
+    font-weight: 500;
+    flex: 1;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Form Styles */
 .business-form {
-  width: 100%;
+    position: relative;
 }
 
-fieldset {
-  border: 2px solid #e9ecef;
-  border-radius: 15px;
-  padding: 30px 25px;
-  margin-bottom: 25px;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(5px);
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
-legend {
-  background: linear-gradient(135deg, #28a745, #20c997);
-  color: white;
-  padding: 10px 20px;
-  border-radius: 25px;
-  font-weight: 600;
-  font-size: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border: none;
-}
-
-/* Form Groups */
 .form-group {
-  margin-bottom: 20px;
+    position: relative;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #495057;
-  font-size: 14px;
+    display: block;
+    margin-bottom: 0.8rem;
+    font-weight: 600;
+    color: #2d5a27;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .required {
-  color: #dc3545;
-  font-weight: bold;
+    color: #e74c3c;
+    font-weight: 700;
 }
 
 .form-group input,
-.form-group select,
 .form-group textarea {
-  width: 100%;
-  padding: 12px 15px;
-  border: 2px solid #e9ecef;
-  border-radius: 10px;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  background: #fff;
-  box-sizing: border-box;
+    width: 100%;
+    padding: 1rem 1.2rem;
+    border: 2px solid #e0e6ed;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.3s ease;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
 }
 
 .form-group input:focus,
-.form-group select:focus,
 .form-group textarea:focus {
-  outline: none;
-  border-color: #28a745;
-  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 
+        0 0 0 3px rgba(76, 175, 80, 0.1),
+        0 4px 12px rgba(76, 175, 80, 0.15);
+    transform: translateY(-1px);
 }
 
-.form-group input[readonly] {
-  background: #f8f9fa;
-  color: #6c757d;
-  cursor: not-allowed;
+.form-group input:hover,
+.form-group textarea:hover {
+    border-color: #4CAF50;
+    background: rgba(255, 255, 255, 1);
 }
 
-.form-group textarea {
-  resize: vertical;
-  min-height: 80px;
+/* Readonly styles */
+input[readonly], textarea[readonly] {
+    background-color: #f8f9fa !important;
+    border-color: #e9ecef !important;
+    color: #6c757d !important;
+    cursor: not-allowed !important;
 }
 
-/* Form Grid */
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-}
-
-.form-grid-two {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-/* Buttons */
+/* Form Actions */
 .form-actions {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  margin-top: 30px;
-  flex-wrap: wrap;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 2px solid rgba(76, 175, 80, 0.1);
 }
 
-.btn {
-  padding: 15px 30px;
-  border: none;
-  border-radius: 50px;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 600;
-  text-decoration: none;
-  display: inline-block;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  min-width: 150px;
+.submit-btn, .reset-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem 2rem;
+    border: none;
+    border-radius: 15px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
 }
 
-.btn-primary {
-  background: linear-gradient(135deg, #28a745, #20c997);
-  color: white;
-  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+.submit-btn {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    color: white;
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+.submit-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+    background: linear-gradient(135deg, #45a049, #4CAF50);
 }
 
-.btn-secondary {
-  background: linear-gradient(135deg, #6c757d, #495057);
-  color: white;
-  box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+.reset-btn {
+    background: linear-gradient(135deg, #6c757d, #5a6268);
+    color: white;
+    box-shadow: 0 6px 20px rgba(108, 117, 125, 0.3);
 }
 
-.btn-secondary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+.reset-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+    background: linear-gradient(135deg, #5a6268, #6c757d);
 }
 
-/* Error styling */
-.form-group input.error,
-.form-group select.error,
-.form-group textarea.error {
-  border-color: #dc3545;
-  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+.btn-icon {
+    font-size: 1.2rem;
 }
 
-/* Print Styles */
-@media print {
-  .form-actions {
-    display: none !important;
-  }
-  
-  .container {
-    box-shadow: none;
-    background: white;
-  }
+.btn-text {
+    font-weight: 600;
+}
+
+/* Name Row Styling */
+.name-row {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+}
+
+.name-field {
+    flex: 1;
+    min-width: 0; /* Allows flex items to shrink below their content size */
+}
+
+.name-field:nth-child(2) {
+    flex: 0.8; /* Make middle name field slightly smaller */
+}
+
+.optional {
+    color: #6c757d;
+    font-weight: 400;
+    font-size: 0.9rem;
+}
+
+/* Responsive adjustments for name row */
+@media (max-width: 768px) {
+    .name-row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .name-field:nth-child(2) {
+        flex: 1; /* Reset flex on mobile */
+    }
+}
+
+@media (max-width: 480px) {
+    .name-row {
+        gap: 0.8rem;
+    }
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .toast {
-    min-width: 320px;
-    max-width: 90%;
-    margin: 0 20px;
-  }
-  
-  .toast-content {
-    padding: 20px 24px;
-  }
-  
-  .toast-message {
-    font-size: 14px;
-  }
-  
-  .toast-icon {
-    font-size: 20px;
-  }
-  
-  .container {
-    margin: 10px;
-    padding: 20px 15px;
-    border-radius: 16px;
-  }
-  
-  fieldset {
-    padding: 20px 15px;
-  }
-  
-  legend {
-    font-size: 0.9rem;
-    padding: 8px 16px;
-  }
-  
-  .form-grid,
-  .form-grid-two {
-    grid-template-columns: 1fr;
-  }
-  
-  .form-actions {
-    flex-direction: column;
-  }
-  
-  .btn {
-    width: 100%;
-  }
+    .container {
+        margin: 1rem auto;
+        padding: 0 0.5rem;
+    }
+    
+    .section {
+        padding: 1.5rem;
+        border-radius: 16px;
+    }
+    
+    .form-header {
+        flex-direction: column;
+        gap: 1.5rem;
+        text-align: center;
+    }
+    
+    .form-title h1 {
+        font-size: 1.8rem;
+    }
+    
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .submit-btn, .reset-btn {
+        width: 100%;
+        max-width: 300px;
+        justify-content: center;
+    }
+    
+    .admin-view-banner {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+        padding: 1.5rem;
+    }
+    
+    .submission-info {
+        text-align: center;
+    }
 }
 
 @media (max-width: 480px) {
-  .toast {
-    min-width: 280px;
-  }
-  
-  .toast-content {
-    padding: 18px 20px;
-    gap: 12px;
-  }
-  
-  .form-group input,
-  .form-group select,
-  .form-group textarea {
-    padding: 10px 12px;
-    font-size: 13px;
-  }
+    .form-title h1 {
+        font-size: 1.5rem;
+    }
+    
+    .form-group input,
+    .form-group textarea {
+        padding: 0.8rem 1rem;
+        font-size: 0.9rem;
+    }
 }
 </style>
-
-<script>
-// Toast notification functions
-function showToast(toastId) {
-  const toast = document.getElementById(toastId);
-  const overlay = document.getElementById('toastOverlay');
-  
-  if (toast && overlay) {
-    overlay.classList.add('show');
-    setTimeout(() => {
-      toast.classList.add('show');
-    }, 100);
-    
-    // Auto-hide after 5 seconds
-    setTimeout(() => {
-      closeToast(toastId);
-    }, 5000);
-  }
-}
-
-function closeToast(toastId) {
-  const toast = document.getElementById(toastId);
-  const overlay = document.getElementById('toastOverlay');
-  
-  if (toast) {
-    toast.classList.remove('show');
-    
-    setTimeout(() => {
-      if (overlay) {
-        overlay.classList.remove('show');
-      }
-      
-      // Remove from DOM after animation
-      setTimeout(() => {
-        if (overlay && overlay.parentNode) {
-          overlay.parentNode.removeChild(overlay);
-        }
-      }, 300);
-    }, 200);
-  }
-}
-
-// Close toast when clicking on overlay
-document.addEventListener('click', function(e) {
-  if (e.target.classList.contains('toast-overlay')) {
-    const toast = e.target.querySelector('.toast');
-    if (toast) {
-      const toastId = toast.id;
-      closeToast(toastId);
-    }
-  }
-});
-
-// Generate reference number on page load
-document.addEventListener('DOMContentLoaded', function() {
-  const refNumber = 'BA-' + new Date().getFullYear() + '-' + String(Date.now()).slice(-6);
-  document.getElementById('reference_number').value = refNumber;
-  
-  // Show toast notifications
-  const successToast = document.getElementById('successToast');
-  const errorToast = document.getElementById('errorToast');
-  
-  if (successToast) {
-    showToast('successToast');
-  }
-  
-  if (errorToast) {
-    showToast('errorToast');
-  }
-});
-
-// Form validation
-document.getElementById('businessForm').addEventListener('submit', function(e) {
-  const requiredFields = this.querySelectorAll('[required]');
-  let isValid = true;
-  
-  requiredFields.forEach(field => {
-    if (!field.value.trim()) {
-      isValid = false;
-      field.classList.add('error');
-      
-      // Remove error class when user starts typing
-      field.addEventListener('input', function() {
-        this.classList.remove('error');
-      });
-    }
-  });
-  
-  if (!isValid) {
-    e.preventDefault();
-    // Create and show error toast
-    if (!document.getElementById('validationErrorToast')) {
-      const overlay = document.createElement('div');
-      overlay.id = 'toastOverlay';
-      overlay.className = 'toast-overlay';
-      overlay.innerHTML = `
-        <div id="validationErrorToast" class="toast toast-error">
-          <div class="toast-content">
-            <span class="toast-icon">❌</span>
-            <span class="toast-message">Please fill in all required fields.</span>
-            <button class="toast-close" onclick="closeToast('validationErrorToast')">&times;</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(overlay);
-      showToast('validationErrorToast');
-    }
-  }
-});
-
-// Reset form function
-function resetForm() {
-  document.getElementById('businessForm').reset();
-  // Regenerate reference number
-  const refNumber = 'BA-' + new Date().getFullYear() + '-' + String(Date.now()).slice(-6);
-  document.getElementById('reference_number').value = refNumber;
-  // Reset date to today
-  document.getElementById('date').value = new Date().toISOString().split('T')[0];
-  // Remove error classes
-  document.querySelectorAll('.error').forEach(field => {
-    field.classList.remove('error');
-  });
-}
-
-// Auto-capitalize names
-['first_name', 'middle_name', 'last_name', 'business_name'].forEach(fieldId => {
-  const field = document.getElementById(fieldId);
-  if (field) {
-    field.addEventListener('input', function() {
-      this.value = this.value.replace(/\b\w/g, l => l.toUpperCase());
-    });
-  }
-});
-
-// Format contact number
-document.getElementById('contact_number').addEventListener('input', function() {
-  let value = this.value.replace(/\D/g, '');
-  if (value.length > 0 && !value.startsWith('09')) {
-    if (value.startsWith('9')) {
-      value = '0' + value;
-    }
-  }
-  if (value.length > 11) {
-    value = value.slice(0, 11);
-  }
-  this.value = value;
-});
-
-// Format OR and CTC numbers
-document.getElementById('or_number').addEventListener('input', function() {
-  this.value = this.value.replace(/[^0-9-]/g, '');
-});
-
-document.getElementById('ctc_number').addEventListener('input', function() {
-  this.value = this.value.replace(/[^0-9-]/g, '');
-});
-
-// Format TIN number
-document.getElementById('tin_number').addEventListener('input', function() {
-  this.value = this.value.replace(/[^0-9-]/g, '');
-});
-
-// Format SSS number
-document.getElementById('sss_number').addEventListener('input', function() {
-  this.value = this.value.replace(/[^0-9-]/g, '');
-});
-
-// Format PhilHealth number
-document.getElementById('philhealth_number').addEventListener('input', function() {
-  this.value = this.value.replace(/[^0-9-]/g, '');
-});
-
-// Format capital investment
-document.getElementById('capital_investment').addEventListener('input', function() {
-  let value = parseFloat(this.value);
-  if (!isNaN(value)) {
-    this.setAttribute('title', 'PHP ' + value.toLocaleString('en-PH', {minimumFractionDigits: 2}));
-  }
-});
-
-// Show/hide other business type input
-document.getElementById('business_type').addEventListener('change', function() {
-  const otherInput = document.getElementById('other_business_type');
-  if (this.value === 'Other') {
-    if (!otherInput) {
-      const div = document.createElement('div');
-      div.className = 'form-group';
-      div.innerHTML = `
-        <label for="other_business_type">Specify Other Business Type <span class="required">*</span></label>
-        <input type="text" id="other_business_type" name="other_business_type" required placeholder="Please specify">
-      `;
-      this.closest('.form-group').after(div);
-    }
-  } else {
-    if (otherInput) {
-      otherInput.closest('.form-group').remove();
-    }
-  }
-});
-</script>
 
 <?php include '../includes/footer.php'; ?>

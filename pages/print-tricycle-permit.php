@@ -10,7 +10,7 @@ if (!$request_id) {
 }
 
 // Fetch the certificate request data
-$stmt = $pdo->prepare("SELECT * FROM certificate_requests WHERE id = ? AND certificate_type = 'TRICYCLE PERMIT'");
+$stmt = $pdo->prepare("SELECT * FROM certificate_requests WHERE id = ? AND certificate_type = 'CEDULA'");
 $stmt->execute([$request_id]);
 $certificate_data = $stmt->fetch();
 
@@ -30,6 +30,26 @@ $valid_until = date('F j, Y', strtotime('+6 months'));
 
 // Generate certificate number
 $certificate_number = 'TP-' . str_pad($request_id, 5, '0', STR_PAD_LEFT) . '-' . date('Y');
+
+// Add logging for print actions
+if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
+    include '../includes/AdminLogger.php';
+    $logger = new AdminLogger($pdo);
+    
+    if ($certificate_data) {
+        $logger->logPrintAction(
+            'certificate_request',
+            $request_id,
+            'tricycle_permit',
+            [
+                'certificate_type' => 'TRICYCLE PERMIT',
+                'applicant_name' => $certificate_data['full_name'],
+                'print_timestamp' => date('Y-m-d H:i:s'),
+                'certificate_number' => $certificate_number ?? 'auto-generated'
+            ]
+        );
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

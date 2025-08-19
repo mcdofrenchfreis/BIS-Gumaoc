@@ -82,37 +82,13 @@ include '../includes/header.php';
 
                 <div class="info-section">
                     <div class="emergency-contacts">
-                        <h3>Emergency Contacts</h3>
+                        <h3>Emergency Contact</h3>
                         <div class="contact-list">
                             <div class="contact-item">
                                 <div class="contact-icon">🚨</div>
                                 <div class="contact-info">
                                     <h4>Barangay Emergency</h4>
                                     <p class="contact-number">(XXX) XXX-XXXX</p>
-                                </div>
-                            </div>
-                            
-                            <div class="contact-item">
-                                <div class="contact-icon">🚒</div>
-                                <div class="contact-info">
-                                    <h4>Fire Department</h4>
-                                    <p class="contact-number">116</p>
-                                </div>
-                            </div>
-                            
-                            <div class="contact-item">
-                                <div class="contact-icon">👮</div>
-                                <div class="contact-info">
-                                    <h4>Police</h4>
-                                    <p class="contact-number">117</p>
-                                </div>
-                            </div>
-                            
-                            <div class="contact-item">
-                                <div class="contact-icon">🏥</div>
-                                <div class="contact-info">
-                                    <h4>Medical Emergency</h4>
-                                    <p class="contact-number">911</p>
                                 </div>
                             </div>
                         </div>

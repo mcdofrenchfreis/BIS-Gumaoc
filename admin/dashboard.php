@@ -243,24 +243,27 @@ try {
             box-shadow: 0 4px 15px rgba(27, 94, 32, 0.3);
         }
         
-        /* Stats Grid */
+        /* Stats Grid - Modified for single row */
         .dashboard-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1rem;
             margin-bottom: 3rem;
+            overflow-x: auto;
         }
         
         .stat-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(15px);
-            padding: 2rem;
+            padding: 1.5rem;
             border-radius: 20px;
             box-shadow: 0 8px 32px rgba(27, 94, 32, 0.1);
             border: 1px solid rgba(27, 94, 32, 0.1);
             position: relative;
             overflow: hidden;
             transition: all 0.3s ease;
+            min-width: 200px;
+            text-align: center;
         }
         
         .stat-card::before {
@@ -278,10 +281,10 @@ try {
             position: absolute;
             top: 0;
             right: 0;
-            width: 60px;
-            height: 60px;
+            width: 40px;
+            height: 40px;
             background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(27, 94, 32, 0.05) 100%);
-            border-radius: 0 20px 0 60px;
+            border-radius: 0 20px 0 40px;
         }
         
         .stat-card:hover {
@@ -293,16 +296,17 @@ try {
         .stat-card h3 {
             color: #1b5e20;
             margin: 0 0 1rem 0;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             position: relative;
             z-index: 1;
+            line-height: 1.2;
         }
         
         .stat-number {
-            font-size: 3rem;
+            font-size: 2.5rem;
             font-weight: 800;
             color: #1b5e20;
             margin-bottom: 0.5rem;
@@ -312,18 +316,19 @@ try {
         }
         
         .stat-pending {
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             color: #f57c00;
             font-weight: 600;
             background: linear-gradient(135deg, rgba(255, 152, 0, 0.1) 0%, rgba(255, 193, 7, 0.1) 100%);
-            padding: 0.3rem 0.8rem;
-            border-radius: 20px;
+            padding: 0.3rem 0.6rem;
+            border-radius: 15px;
             display: inline-block;
             border: 1px solid rgba(255, 152, 0, 0.2);
             position: relative;
             z-index: 1;
+            line-height: 1.2;
         }
-        
+
         /* Main Content Grid */
         .dashboard-main {
             display: grid;
@@ -578,10 +583,49 @@ try {
             margin-top: 0.5rem;
         }
         
-        /* Responsive Design */
+        /* Responsive Design - Updated for single row */
+        @media (max-width: 1400px) {
+            .dashboard-stats {
+                gap: 0.8rem;
+            }
+            
+            .stat-card {
+                padding: 1.2rem;
+                min-width: 180px;
+            }
+            
+            .stat-card h3 {
+                font-size: 0.9rem;
+            }
+            
+            .stat-number {
+                font-size: 2.2rem;
+            }
+            
+            .stat-pending {
+                font-size: 0.8rem;
+                padding: 0.25rem 0.5rem;
+            }
+        }
+        
         @media (max-width: 1200px) {
-            .dashboard-main {
-                grid-template-columns: 1fr;
+            .dashboard-stats {
+                grid-template-columns: repeat(5, minmax(160px, 1fr));
+                gap: 0.6rem;
+            }
+            
+            .stat-card {
+                padding: 1rem;
+                min-width: 160px;
+            }
+            
+            .stat-card h3 {
+                font-size: 0.85rem;
+                margin-bottom: 0.8rem;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
             }
         }
         
@@ -599,7 +643,29 @@ try {
             }
             
             .dashboard-stats {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(5, minmax(140px, 1fr));
+                gap: 0.5rem;
+                overflow-x: auto;
+                padding-bottom: 0.5rem;
+            }
+            
+            .stat-card {
+                padding: 0.8rem;
+                min-width: 140px;
+            }
+            
+            .stat-card h3 {
+                font-size: 0.75rem;
+                margin-bottom: 0.6rem;
+            }
+            
+            .stat-number {
+                font-size: 1.8rem;
+            }
+            
+            .stat-pending {
+                font-size: 0.7rem;
+                padding: 0.2rem 0.4rem;
             }
             
             .dashboard-actions {
@@ -610,10 +676,6 @@ try {
                 display: block;
                 margin: 0.5rem 0;
             }
-            
-            .stat-number {
-                font-size: 2.5rem;
-            }
         }
         
         @media (max-width: 480px) {
@@ -621,15 +683,33 @@ try {
                 font-size: 2rem;
             }
             
-            .action-icon {
-                font-size: 2.5rem;
+            .dashboard-stats {
+                grid-template-columns: repeat(5, minmax(120px, 1fr));
+                gap: 0.4rem;
+            }
+            
+            .stat-card {
+                padding: 0.6rem;
+                min-width: 120px;
+            }
+            
+            .stat-card h3 {
+                font-size: 0.7rem;
             }
             
             .stat-number {
-                font-size: 2rem;
+                font-size: 1.5rem;
+            }
+            
+            .stat-pending {
+                font-size: 0.65rem;
+            }
+            
+            .action-icon {
+                font-size: 2.5rem;
             }
         }
-        
+
         /* Animation */
         @keyframes fadeInUp {
             from {
@@ -752,6 +832,13 @@ try {
                         <h3>Forms Manager</h3>
                         <p>Comprehensive form management and analytics</p>
                         <a href="forms-manager.php" class="admin-btn">Open Manager</a>
+                    </div>
+                    
+                    <div class="action-card">
+                        <div class="action-icon">📊</div>
+                        <h3>System Logs</h3>
+                        <p>View activity logs and system events</p>
+                        <a href="view-logs.php" class="admin-btn">View Logs</a>
                     </div>
                 </div>
             </div>

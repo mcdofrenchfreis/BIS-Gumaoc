@@ -116,6 +116,7 @@ $applications = $stmt->fetchAll();
             padding: 1rem;
             text-align: left;
             border-bottom: 1px solid #eee;
+            vertical-align: top;
         }
         
         .admin-table th {
@@ -124,11 +125,41 @@ $applications = $stmt->fetchAll();
             color: #2e7d32;
         }
         
+        .admin-table tbody tr:hover {
+            background: rgba(76, 175, 80, 0.05);
+        }
+        
+        .view-form-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+        
+        .view-form-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+            background: linear-gradient(135deg, #45a049, #4CAF50);
+        }
+        
         .status-badge {
-            padding: 0.3rem 0.8rem;
+            padding: 0.4rem 0.8rem;
             border-radius: 20px;
             font-size: 0.8rem;
-            font-weight: 500;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
         }
         
         .status-pending { background: #fff3cd; color: #856404; }
@@ -139,18 +170,30 @@ $applications = $stmt->fetchAll();
         .ref-number {
             background: #e8f5e8;
             color: #2e7d32;
-            padding: 0.2rem 0.6rem;
+            padding: 0.3rem 0.6rem;
             border-radius: 12px;
             font-size: 0.8rem;
-            font-weight: 500;
-            font-family: monospace;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            display: inline-block;
         }
         
         .action-select {
-            padding: 0.3rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.9rem;
+            padding: 0.4rem 0.6rem;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            background: white;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+        
+        .action-select:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
         }
         
         .pagination {
@@ -174,21 +217,156 @@ $applications = $stmt->fetchAll();
             border-color: #4caf50;
         }
         
+        .pagination a:hover {
+            background: #e8f5e8;
+            border-color: #4CAF50;
+        }
+        
         .admin-btn {
             display: inline-block;
-            padding: 0.5rem 1rem;
-            background: linear-gradient(45deg, #4CAF50, #2196F3);
+            padding: 0.6rem 1.2rem;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
             text-decoration: none;
-            border-radius: 6px;
-            font-weight: 500;
+            border-radius: 8px;
+            font-weight: 600;
             border: none;
             cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .admin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
         }
         
         .business-info {
             font-size: 0.9rem;
             color: #666;
+            margin-top: 0.3rem;
+        }
+        
+        .owner-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        
+        .owner-name {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.95rem;
+        }
+        
+        .contact-info {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .business-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        
+        .business-name {
+            font-weight: 600;
+            color: #2e7d32;
+            font-size: 1rem;
+            margin-bottom: 0.3rem;
+        }
+        
+        .reference-info {
+            background: #f8f9fa;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: #666;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .action-column {
+            min-width: 150px;
+        }
+        
+        .view-column {
+            text-align: center;
+            min-width: 120px;
+        }
+        
+        .search-form {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+        
+        .search-form select,
+        .search-form input {
+            padding: 0.5rem;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .search-form input[type="text"] {
+            flex: 1;
+            min-width: 250px;
+        }
+        
+        .alert {
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .admin-table {
+                overflow-x: auto;
+            }
+            
+            .admin-table table {
+                min-width: 800px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 1rem;
+            }
+            
+            .admin-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .search-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-form input[type="text"] {
+                min-width: 100%;
+            }
+            
+            .admin-table th,
+            .admin-table td {
+                padding: 0.8rem 0.5rem;
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
@@ -204,12 +382,12 @@ $applications = $stmt->fetchAll();
         
         <?php if (isset($_SESSION['success'])): ?>
             <div class="alert alert-success">
-                <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
+                ✅ <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
             </div>
         <?php endif; ?>
         
         <div class="admin-controls">
-            <form method="GET" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <form method="GET" class="search-form">
                 <select name="status" onchange="this.form.submit()">
                     <option value="">All Status</option>
                     <option value="pending" <?php echo $status_filter === 'pending' ? 'selected' : ''; ?>>Pending</option>
@@ -219,8 +397,8 @@ $applications = $stmt->fetchAll();
                 </select>
                 
                 <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by owner name, business name, or type...">
-                <button type="submit" class="admin-btn">Search</button>
-                <a href="view-business-applications.php" class="admin-btn">Clear</a>
+                <button type="submit" class="admin-btn">🔍 Search</button>
+                <a href="view-business-applications.php" class="admin-btn">🔄 Clear</a>
             </form>
         </div>
         
@@ -229,43 +407,76 @@ $applications = $stmt->fetchAll();
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Business Name</th>
-                        <th>Business Type</th>
+                        <th>Application Details</th>
+                        <th>Business Information</th>
                         <th>Owner Details</th>
-                        <th>Business Address</th>
-                        <th>Investment & Years</th>
                         <th>Status</th>
                         <th>Submitted</th>
-                        <th>Actions</th>
+                        <th class="view-column">View Form</th>
+                        <th class="action-column">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($applications as $app): ?>
                     <tr>
-                        <td><?php echo $app['id']; ?></td>
                         <td>
-                            <strong><?php echo htmlspecialchars($app['business_name']); ?></strong>
+                            <strong>#<?php echo $app['id']; ?></strong>
                         </td>
                         <td>
-                            <span class="ref-number">
-                                <?php echo htmlspecialchars($app['business_type']); ?>
-                            </span>
+                            <?php if (!empty($app['reference_no'])): ?>
+                                <div class="ref-number">
+                                    REF: <?php echo htmlspecialchars($app['reference_no']); ?>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($app['application_date'])): ?>
+                                <div class="business-info">
+                                    📅 <?php echo date('M j, Y', strtotime($app['application_date'])); ?>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($app['or_number'])): ?>
+                                <div class="reference-info">
+                                    OR: <?php echo htmlspecialchars($app['or_number']); ?>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($app['ctc_number'])): ?>
+                                <div class="reference-info">
+                                    CTC: <?php echo htmlspecialchars($app['ctc_number']); ?>
+                                </div>
+                            <?php endif; ?>
                         </td>
                         <td>
-                            <strong><?php echo htmlspecialchars($app['owner_name']); ?></strong>
-                            <div class="business-info">
-                                📞 <?php echo htmlspecialchars($app['contact_number']); ?>
+                            <div class="business-details">
+                                <div class="business-name">
+                                    <?php echo htmlspecialchars($app['business_name']); ?>
+                                </div>
+                                <?php if (!empty($app['business_location'])): ?>
+                                    <div class="business-info">
+                                        📍 <?php echo htmlspecialchars(substr($app['business_location'], 0, 60)); ?><?php echo strlen($app['business_location']) > 60 ? '...' : ''; ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </td>
                         <td>
-                            <div class="business-info">
-                                📍 <?php echo htmlspecialchars($app['business_address']); ?>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="business-info">
-                                ₱<?php echo number_format($app['investment_capital'], 2); ?>
-                                <br><small><?php echo $app['years_operation']; ?> year(s) operation</small>
+                            <div class="owner-details">
+                                <div class="owner-name">
+                                    <?php 
+                                    if (!empty($app['first_name']) || !empty($app['last_name'])) {
+                                        echo htmlspecialchars(trim($app['first_name'] . ' ' . ($app['middle_name'] ? $app['middle_name'] . ' ' : '') . $app['last_name']));
+                                    } else {
+                                        echo htmlspecialchars($app['owner_name']);
+                                    }
+                                    ?>
+                                </div>
+                                <?php if (!empty($app['contact_number']) && $app['contact_number'] !== '09000000000'): ?>
+                                    <div class="contact-info">
+                                        📞 <?php echo htmlspecialchars($app['contact_number']); ?>
+                                    </div>
+                                <?php endif; ?>
+                                <?php if (!empty($app['owner_address'])): ?>
+                                    <div class="business-info">
+                                        🏠 <?php echo htmlspecialchars(substr($app['owner_address'], 0, 50)); ?><?php echo strlen($app['owner_address']) > 50 ? '...' : ''; ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         </td>
                         <td>
@@ -273,9 +484,21 @@ $applications = $stmt->fetchAll();
                                 <?php echo ucfirst($app['status']); ?>
                             </span>
                         </td>
-                        <td><?php echo date('M j, Y', strtotime($app['submitted_at'])); ?></td>
                         <td>
-                            <form method="POST" style="display: inline;">
+                            <div class="business-info">
+                                <?php echo date('M j, Y', strtotime($app['submitted_at'])); ?>
+                            </div>
+                            <div class="business-info">
+                                <?php echo date('g:i A', strtotime($app['submitted_at'])); ?>
+                            </div>
+                        </td>
+                        <td class="view-column">
+                            <button onclick="viewFormDetails(<?php echo $app['id']; ?>)" class="view-form-btn">
+                                👁️ View Form
+                            </button>
+                        </td>
+                        <td class="action-column">
+                            <form method="POST" style="margin-bottom: 0.5rem;">
                                 <input type="hidden" name="action" value="update_status">
                                 <input type="hidden" name="id" value="<?php echo $app['id']; ?>">
                                 <select name="status" class="action-select" onchange="this.form.submit()">
@@ -286,8 +509,9 @@ $applications = $stmt->fetchAll();
                                 </select>
                             </form>
                             <?php if ($app['status'] === 'approved'): ?>
-                                <br><br>
-                                <a href="generate-business-clearance.php?id=<?php echo $app['id']; ?>" class="admin-btn" target="_blank">📄 Generate Clearance</a>
+                                <a href="generate-business-clearance.php?id=<?php echo $app['id']; ?>" class="admin-btn" target="_blank" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">
+                                    📄 Generate Clearance
+                                </a>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -316,5 +540,12 @@ $applications = $stmt->fetchAll();
         </div>
         <?php endif; ?>
     </div>
+
+    <script>
+    function viewFormDetails(applicationId) {
+        // Open the business application form in a new tab instead of popup window
+        window.open('../pages/business-application.php?admin_view=' + applicationId + '&readonly=1', '_blank');
+    }
+    </script>
 </body>
 </html>

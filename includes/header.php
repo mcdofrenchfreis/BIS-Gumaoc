@@ -383,7 +383,141 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
         }
         
         /* Mobile responsive */
+        /* Toast Notification Styles */
+        .toast-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding-top: 100px;
+        }
+
+        .toast {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            max-width: 500px;
+            min-width: 300px;
+            pointer-events: auto;
+            transform: translateY(-50px);
+            opacity: 0;
+            animation: slideInDown 0.4s ease forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toast::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            z-index: 1;
+        }
+
+        .toast-error::before {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+
+        .toast-success::before {
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+        }
+
+        .toast-warning::before {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .toast-icon {
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+
+        .toast-message {
+            flex: 1;
+            color: #333;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: #666;
+            cursor: pointer;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .toast-close:hover {
+            background: rgba(0, 0, 0, 0.1);
+            color: #333;
+        }
+
+        @keyframes slideInDown {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutUp {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+        }
+
+        .toast.closing {
+            animation: slideOutUp 0.3s ease forwards;
+        }
+
         @media (max-width: 768px) {
+            .toast-overlay {
+                padding: 20px;
+                padding-top: 100px;
+            }
+            
+            .toast {
+                min-width: unset;
+                width: 100%;
+                max-width: 100%;
+            }
+            
             .navbar-container {
                 padding: 0 15px;
             }
@@ -525,7 +659,7 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                             <li><a href="certificate-request.php">
                                 <span class="dropdown-icon">📄</span>Certificate Requests
                             </a></li>
-                            <li><a href="business-application.php">
+                            <li><a href="/GUMAOC/pages/business-application.php">
                                 <span class="dropdown-icon">🏢</span>Business Application
                             </a></li>
                             <li><a href="pages/forms.php">
@@ -546,13 +680,13 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                             📋 Forms <span class="dropdown-arrow">▼</span>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="resident-registration.php">
+                            <li><a href="/GUMAOC/pages/resident-registration.php">
                                 <span class="dropdown-icon">👥</span>Census Registration
                             </a></li>
-                            <li><a href="certificate-request.php">
+                            <li><a href="/GUMAOC/pages/certificate-request.php">
                                 <span class="dropdown-icon">📄</span>Certificate Requests
                             </a></li>
-                            <li><a href="business-application.php">
+                            <li><a href="/GUMAOC/pages/business-application.php">
                                 <span class="dropdown-icon">🏢</span>Business Application
                             </a></li>
                             <li><a href="pages/forms.php">
@@ -586,7 +720,7 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                             <a href="help.php" class="dropdown-item">
                                 ❓ Help & Support
                             </a>
-                            <a href="logout.php" class="dropdown-item logout">
+                            <a href="/GUMAOC/logout.php" class="dropdown-item logout">
                                 🚪 Logout
                             </a>
                         </div>
@@ -686,6 +820,65 @@ document.addEventListener('click', function(event) {
         dropdown.classList.remove('show');
     }
 });
+
+// Global Toast System
+<?php if (isset($_SESSION['auth_error'])): ?>
+document.addEventListener('DOMContentLoaded', function() {
+    showToast('<?php echo addslashes($_SESSION['auth_error']); ?>', 'error');
+});
+<?php unset($_SESSION['auth_error']); ?>
+<?php endif; ?>
+
+function showToast(message, type = 'error', duration = 5000) {
+    // Remove existing toasts
+    const existingToasts = document.querySelectorAll('.toast-overlay');
+    existingToasts.forEach(toast => toast.remove());
+    
+    // Create toast HTML
+    const toastId = 'toast_' + Date.now();
+    const iconMap = {
+        'error': '❌',
+        'success': '✅',
+        'warning': '⚠️',
+        'info': 'ℹ️'
+    };
+    
+    const toastHTML = `
+        <div class="toast-overlay" id="${toastId}_overlay">
+            <div class="toast toast-${type}" id="${toastId}">
+                <div class="toast-content">
+                    <span class="toast-icon">${iconMap[type] || '❌'}</span>
+                    <span class="toast-message">${message}</span>
+                    <button class="toast-close" onclick="closeToast('${toastId}')">&times;</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add to body
+    document.body.insertAdjacentHTML('beforeend', toastHTML);
+    
+    // Auto-close after duration
+    if (duration > 0) {
+        setTimeout(() => {
+            closeToast(toastId);
+        }, duration);
+    }
+}
+
+function closeToast(toastId) {
+    const toast = document.getElementById(toastId);
+    const overlay = document.getElementById(toastId + '_overlay');
+    
+    if (toast) {
+        toast.classList.add('closing');
+        setTimeout(() => {
+            if (overlay) {
+                overlay.remove();
+            }
+        }, 300);
+    }
+}
 
 // Close mobile menu when clicking on regular nav links
 document.querySelectorAll('.navbar-nav > li > a').forEach(link => {

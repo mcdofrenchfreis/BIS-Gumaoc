@@ -1,11 +1,9 @@
 <?php
-<?php
-include '../includes/auth_check.php';
 session_start();
 $base_path = '../';
 $page_title = 'Certificate Request - Barangay Gumaoc East';
 $header_title = 'Certificate Request Form';
-$header_subtitle = 'Request various barangay certificates and documents';
+$header_subtitle = 'Request for Barangay Certificates';
 
 // Check if this is an admin view
 $admin_view = isset($_GET['admin_view']) ? (int)$_GET['admin_view'] : null;
@@ -25,7 +23,6 @@ if ($admin_view) {
 }
 
 include '../includes/header.php';
-include '../includes/navigation.php';
 ?>
 
 <div class="container">
@@ -382,13 +379,28 @@ include '../includes/navigation.php';
   }
 }
 
+/* Global Styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.6;
+  color: #2c3e50;
+  background: white;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
 /* Container and Layout */
 .container {
   max-width: 1000px;
   margin: 20px auto;
   padding: 20px 15px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 24px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -396,6 +408,12 @@ include '../includes/navigation.php';
 
 .section {
   margin-bottom: 25px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Admin View Banner */
@@ -410,6 +428,7 @@ include '../includes/navigation.php';
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
+  box-shadow: 0 8px 25px rgba(46, 125, 50, 0.3);
 }
 
 .status-info {
@@ -426,6 +445,7 @@ include '../includes/navigation.php';
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .status-pending { background: #fff3cd; color: #856404; }

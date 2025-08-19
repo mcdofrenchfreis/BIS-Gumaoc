@@ -24,9 +24,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['admin_id'] = $user['id'];
         $_SESSION['admin_username'] = $user['username'];
         $_SESSION['admin_logged_in'] = true;
+        
+        // Log successful login
+        include '../includes/AdminLogger.php';
+        $logger = new AdminLogger($pdo);
+        $logger->logAdminLogin($username, true);
+        
         header('Location: dashboard.php');
         exit();
     } else {
+        // Log failed login
+        include '../includes/AdminLogger.php';
+        $logger = new AdminLogger($pdo);
+        $logger->logAdminLogin($username, false);
+        
         $error = "Invalid username or password";
     }
 }
@@ -233,4 +244,4 @@ $additional_css = [
         </div>
     </div>
 </body>
-</html> 
+</html>

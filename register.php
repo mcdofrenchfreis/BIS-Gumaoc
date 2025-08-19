@@ -229,6 +229,8 @@ if ($_POST && isset($_POST['register'])) {
         
         .form-group.full-width {
             grid-column: 1 / -1;
+            width: 100%;
+            justify-content: center;
         }
         
         .form-group label {
@@ -421,39 +423,6 @@ if ($_POST && isset($_POST['register'])) {
         .password-strength.weak { color: #dc3545; }
         .password-strength.medium { color: #ffc107; }
         .password-strength.strong { color: #28a745; }
-        
-        .zip-suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 0 0 10px 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .zip-suggestion {
-            padding: 10px 15px;
-            cursor: pointer;
-            border-bottom: 1px solid #f0f0f0;
-            transition: background-color 0.2s;
-        }
-        
-        .zip-suggestion:hover {
-            background-color: #f8f9fa;
-        }
-        
-        .zip-suggestion:last-child {
-            border-bottom: none;
-        }
-        
-        .zip-input-container {
-            position: relative;
-        }
     </style>
 </head>
 <body>
@@ -521,8 +490,16 @@ if ($_POST && isset($_POST['register'])) {
                         
                         <div class="form-group zip-input-container">
                             <label for="zip_code">📮 ZIP Code <span class="required">*</span></label>
-                            <input type="text" id="zip_code" name="zip_code" placeholder="Enter ZIP code" value="<?php echo htmlspecialchars($_POST['zip_code'] ?? ''); ?>" required>
-                            <div class="zip-suggestions" id="zip-suggestions" style="display: none;"></div>
+                            <select id="zip_code" name="zip_code" required>
+                                <option value="">Select ZIP Code</option>
+                                <option value="3023" <?php echo (($_POST['zip_code'] ?? '') === '3023') ? 'selected' : ''; ?>>3023 - San Jose del Monte (Poblacion)</option>
+                                <option value="3024" <?php echo (($_POST['zip_code'] ?? '') === '3024') ? 'selected' : ''; ?>>3024 - San Jose del Monte (Muzon)</option>
+                                <option value="3025" <?php echo (($_POST['zip_code'] ?? '') === '3025') ? 'selected' : ''; ?>>3025 - San Jose del Monte (Tungkong Mangga)</option>
+                                <option value="3026" <?php echo (($_POST['zip_code'] ?? '') === '3026') ? 'selected' : ''; ?>>3026 - San Jose del Monte (Kaybanban)</option>
+                                <option value="3027" <?php echo (($_POST['zip_code'] ?? '') === '3027') ? 'selected' : ''; ?>>3027 - San Jose del Monte (Minuyan)</option>
+                                <option value="3028" <?php echo (($_POST['zip_code'] ?? '') === '3028') ? 'selected' : ''; ?>>3028 - San Jose del Monte (Gaya-gaya)</option>
+                                <option value="3029" <?php echo (($_POST['zip_code'] ?? '') === '3029') ? 'selected' : ''; ?>>3029 - San Jose del Monte (Kaypian)</option>
+                            </select>
                         </div>
                     </div>
                     
@@ -561,32 +538,41 @@ if ($_POST && isset($_POST['register'])) {
                     </select>
                 </div>
                 
-                <!-- Contact Info Row -->
-                <div class="form-group">
-                    <label for="email">📧 Email Address <span class="required">*</span></label>
-                    <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
+                <!-- Email & Phone Number Row - Full Width -->
+                <div class="form-group full-width" style="display: flex; gap: 20px; justify-content: center;">
+                    <div style="flex:1;">
+                        <label for="email">📧 Email <span class="required">*</span></label>
+                        <input type="email" id="email" name="email" required value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
+                    </div>
+                    <div style="flex:1;">
+                        <label for="phone">📱 Phone Number <span class="required">*</span></label>
+                        <input type="tel" id="phone" name="phone" required value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>">
+                    </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="phone">📱 Phone Number <span class="required">*</span></label>
-                    <input type="tel" id="phone" name="phone" value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>" required>
+                <!-- RFID Section -->
+                <div class="form-group full-width" style="background: rgba(116, 185, 255, 0.1); padding: 20px; border-radius: 15px; border: 1px solid rgba(116, 185, 255, 0.3); margin: 20px 0;">
+                    <h3 style="color: #2d5a27; margin-bottom: 15px; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+                        🏷️ RFID Registration (Optional)
+                    </h3>
+                    <label for="rfid_code">🏷️ RFID Code <span class="optional">(Tap your RFID card in the field below)</span></label>
+                    <input type="text" id="rfid_code" name="rfid_code" placeholder="Tap your RFID card here or leave empty" value="<?php echo htmlspecialchars($_POST['rfid_code'] ?? ''); ?>" style="font-family: monospace; letter-spacing: 2px;">
+                    <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                        💡 <strong>Tip:</strong> You can register your RFID card now for faster login, or add it later from your profile.
+                    </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="rfid_code">🏷️ RFID Code <span class="optional">(optional)</span></label>
-                    <input type="text" id="rfid_code" name="rfid_code" placeholder="Tap your RFID card here" value="<?php echo htmlspecialchars($_POST['rfid_code'] ?? ''); ?>">
-                </div>
-                
-                <!-- Password Row -->
-                <div class="form-group">
-                    <label for="password">🔒 Password <span class="required">*</span></label>
-                    <input type="password" id="password" name="password" required>
-                    <div class="password-strength" id="password-strength"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="confirm_password">🔒 Confirm Password <span class="required">*</span></label>
-                    <input type="password" id="confirm_password" name="confirm_password" required>
+                <!-- Password & Confirm Password Row - Full Width -->
+                <div class="form-group full-width" style="display: flex; gap: 20px; justify-content: center;">
+                    <div style="flex:1;">
+                        <label for="password">🔐 Password <span class="required">*</span></label>
+                        <input type="password" id="password" name="password" required>
+                        <div id="password-strength" class="password-strength"></div>
+                    </div>
+                    <div style="flex:1;">
+                        <label for="confirm_password">🔐 Confirm Password <span class="required">*</span></label>
+                        <input type="password" id="confirm_password" name="confirm_password" required>
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -604,56 +590,6 @@ if ($_POST && isset($_POST['register'])) {
     </div>
 
     <script>
-        // Philippines ZIP codes for San Jose del Monte, Bulacan
-        const bulacanZipCodes = [
-            { code: '3023', area: 'San Jose del Monte (Poblacion)' },
-            { code: '3024', area: 'San Jose del Monte (Muzon)' },
-            { code: '3025', area: 'San Jose del Monte (Tungkong Mangga)' },
-            { code: '3026', area: 'San Jose del Monte (Kaybanban)' },
-            { code: '3027', area: 'San Jose del Monte (Minuyan)' },
-            { code: '3028', area: 'San Jose del Monte (Gaya-gaya)' },
-            { code: '3029', area: 'San Jose del Monte (Kaypian)' }
-        ];
-        
-        // ZIP Code suggestions
-        const zipInput = document.getElementById('zip_code');
-        const zipSuggestions = document.getElementById('zip-suggestions');
-        
-        zipInput.addEventListener('input', function() {
-            const value = this.value.toLowerCase();
-            const suggestions = bulacanZipCodes.filter(zip => 
-                zip.code.includes(value) || zip.area.toLowerCase().includes(value)
-            );
-            
-            if (value.length > 0 && suggestions.length > 0) {
-                zipSuggestions.innerHTML = suggestions.map(zip => 
-                    `<div class="zip-suggestion" data-code="${zip.code}">
-                        <strong>${zip.code}</strong> - ${zip.area}
-                    </div>`
-                ).join('');
-                zipSuggestions.style.display = 'block';
-            } else {
-                zipSuggestions.style.display = 'none';
-            }
-        });
-        
-        // Handle ZIP suggestion clicks
-        zipSuggestions.addEventListener('click', function(e) {
-            if (e.target.classList.contains('zip-suggestion') || e.target.parentElement.classList.contains('zip-suggestion')) {
-                const suggestion = e.target.classList.contains('zip-suggestion') ? e.target : e.target.parentElement;
-                const code = suggestion.getAttribute('data-code');
-                zipInput.value = code;
-                zipSuggestions.style.display = 'none';
-            }
-        });
-        
-        // Hide suggestions when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!zipInput.contains(e.target) && !zipSuggestions.contains(e.target)) {
-                zipSuggestions.style.display = 'none';
-            }
-        });
-        
         // Password strength checker
         document.getElementById('password').addEventListener('input', function() {
             const password = this.value;

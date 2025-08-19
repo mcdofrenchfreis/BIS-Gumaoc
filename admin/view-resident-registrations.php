@@ -11,14 +11,70 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 // Handle status updates
 if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['status'])) {
     $id = (int)$_POST['id'];
-    $status = $_POST['status'];
+    $new_status = $_POST['status'];
     $allowed_statuses = ['pending', 'approved', 'rejected'];
     
-    if (in_array($status, $allowed_statuses)) {
-        $stmt = $pdo->prepare("UPDATE resident_registrations SET status = ? WHERE id = ?");
-        $stmt->execute([$status, $id]);
-        $_SESSION['success'] = "Status updated successfully!";
+    if (in_array($new_status, $allowed_statuses)) {
+        // Get current status first
+        $stmt = $pdo->prepare("SELECT status FROM resident_registrations WHERE id = ?");
+        $stmt->execute([$id]);
+        $current_status = $stmt->fetchColumn();
+        
+        // Check status progression rules
+        $status_valid = false;
+        $error_message = '';
+        
+        if ($current_status === 'pending') {
+            // From pending, can go to approved or rejected
+            if (in_array($new_status, ['approved', 'rejected'])) {
+                $status_valid = true;
+            } else {
+                $error_message = "From pending status, you can only approve or reject the registration.";
+            }
+        } elseif ($current_status === 'approved') {
+            // From approved, status is locked
+            $error_message = "Approved registrations cannot be changed. Status is locked.";
+        } elseif ($current_status === 'rejected') {
+            // From rejected, status is locked
+            $error_message = "Rejected registrations cannot be changed. Status is locked.";
+        }
+        
+        if ($status_valid) {
+            $stmt = $pdo->prepare("UPDATE resident_registrations SET status = ? WHERE id = ?");
+            $result = $stmt->execute([$new_status, $id]);
+            
+            if ($result) {
+                // Enhanced logging with more details
+                $logger->logStatusUpdate(
+                    'resident_registration',
+                    $id,
+                    $current_status,
+                    $new_status,
+                    [
+                        'applicant_name' => $current_data['first_name'] . ' ' . $current_data['last_name'],
+                        'registration_type' => 'resident_registration',
+                        'processing_time' => date('Y-m-d H:i:s'),
+                        'admin_action' => true
+                    ]
+                );
+                
+                $_SESSION['toast_message'] = "The status of Registration ID #$id has been successfully updated to " . ucfirst($new_status);
+                $_SESSION['toast_type'] = 'success';
+            } else {
+                $logger->log('error', 'resident_registration', "Failed to update status for Registration ID #$id", $id);
+                $_SESSION['toast_message'] = "Failed to update status for Registration ID #$id";
+                $_SESSION['toast_type'] = 'error';
+            }
+        } else {
+            $logger->log('warning', 'resident_registration', "Invalid status change attempt for Registration ID #$id: {$error_message}", $id);
+            $_SESSION['toast_message'] = $error_message;
+            $_SESSION['toast_type'] = 'error';
+        }
+    } else {
+        $_SESSION['toast_message'] = "Invalid status selected for Registration ID #$id";
+        $_SESSION['toast_type'] = 'error';
     }
+    
     header('Location: view-resident-registrations.php');
     exit;
 }
@@ -61,6 +117,17 @@ $sql = "SELECT * FROM resident_registrations $where_clause ORDER BY submitted_at
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $registrations = $stmt->fetchAll();
+
+// Check if we should show toast
+$show_toast = isset($_SESSION['toast_message']);
+$toast_message = $_SESSION['toast_message'] ?? '';
+$toast_type = $_SESSION['toast_type'] ?? 'success';
+
+// Clear session variables after getting them
+if (isset($_SESSION['toast_message'])) {
+    unset($_SESSION['toast_message']);
+    unset($_SESSION['toast_type']);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -70,6 +137,134 @@ $registrations = $stmt->fetchAll();
     <title>Census Registrations - Admin</title>
     <link rel="stylesheet" href="../css/styles.css">
     <style>
+        /* Toast Notification Styles */
+        .toast-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .toast-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            min-width: 400px;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .toast.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 24px 28px;
+        }
+
+        .toast-success {
+            border-left: 5px solid #28a745;
+            box-shadow: 0 20px 60px rgba(40, 167, 69, 0.2);
+        }
+
+        .toast-error {
+            border-left: 5px solid #dc3545;
+            box-shadow: 0 20px 60px rgba(220, 53, 69, 0.2);
+        }
+
+        .toast-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+
+        .toast-message {
+            flex: 1;
+            font-weight: 500;
+            color: #333;
+            line-height: 1.5;
+            font-size: 16px;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+            padding: 4px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .toast-close:hover {
+            background: rgba(0, 0, 0, 0.1);
+            color: #666;
+            transform: scale(1.1);
+        }
+
+        @media (max-width: 768px) {
+            .toast {
+                min-width: 320px;
+                max-width: 90%;
+                margin: 0 20px;
+            }
+            
+            .toast-content {
+                padding: 20px 24px;
+            }
+            
+            .toast-message {
+                font-size: 14px;
+            }
+            
+            .toast-icon {
+                font-size: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .toast {
+                min-width: 280px;
+            }
+            
+            .toast-content {
+                padding: 18px 20px;
+                gap: 12px;
+            }
+        }
+
+        /* Existing styles */
         .admin-container {
             max-width: 1400px;
             margin: 0 auto;
@@ -133,30 +328,36 @@ $registrations = $stmt->fetchAll();
         }
         
         .view-form-btn {
-            background: linear-gradient(135deg, #28a745, #20c997);
+            background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
             border: none;
-            padding: 0.5rem 1rem;
+            padding: 0.6rem 1.2rem;
             border-radius: 20px;
             cursor: pointer;
             font-size: 0.85rem;
-            font-weight: 500;
+            font-weight: 600;
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
-            gap: 0.3rem;
+            gap: 0.5rem;
+            text-decoration: none;
+            white-space: nowrap;
         }
         
         .view-form-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+            background: linear-gradient(135deg, #45a049, #4CAF50);
         }
         
         .status-badge {
-            padding: 0.3rem 0.8rem;
+            padding: 0.4rem 0.8rem;
             border-radius: 20px;
             font-size: 0.8rem;
-            font-weight: 500;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-block;
         }
         
         .status-pending { background: #fff3cd; color: #856404; }
@@ -164,10 +365,49 @@ $registrations = $stmt->fetchAll();
         .status-rejected { background: #f8d7da; color: #721c24; }
         
         .action-select {
-            padding: 0.3rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.9rem;
+            padding: 0.4rem 0.6rem;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            background: white;
+            color: #495057;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .action-select:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        .action-select:disabled {
+            background: #f8f9fa;
+            color: #6c757d;
+            cursor: not-allowed;
+            border-color: #dee2e6;
+        }
+
+        .action-select option:disabled {
+            color: #6c757d;
+            background: #f8f9fa;
+        }
+
+        .status-locked {
+            background: #e9ecef;
+            color: #6c757d;
+            border: 2px solid #dee2e6;
+            position: relative;
+        }
+
+        .status-locked::after {
+            content: '🔒';
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 12px;
         }
         
         .pagination {
@@ -191,20 +431,97 @@ $registrations = $stmt->fetchAll();
             border-color: #4caf50;
         }
         
+        .pagination a:hover {
+            background: #e8f5e8;
+            border-color: #4CAF50;
+        }
+        
         .admin-btn {
             display: inline-block;
-            padding: 0.5rem 1rem;
-            background: linear-gradient(45deg, #4CAF50, #2196F3);
+            padding: 0.6rem 1.2rem;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
             text-decoration: none;
-            border-radius: 6px;
-            font-weight: 500;
+            border-radius: 8px;
+            font-weight: 600;
             border: none;
             cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .admin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .search-form {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            width: 100%;
+        }
+
+        .search-form select,
+        .search-form input {
+            padding: 0.5rem;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .search-form input[type="text"] {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .admin-container {
+                padding: 1rem;
+            }
+            
+            .admin-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .search-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .search-form input[type="text"] {
+                min-width: 100%;
+            }
+            
+            .admin-table th,
+            .admin-table td {
+                padding: 0.8rem 0.5rem;
+                font-size: 0.85rem;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Toast Notification -->
+    <?php if ($show_toast): ?>
+    <div class="toast-overlay" id="toastOverlay">
+        <div class="toast toast-<?php echo $toast_type; ?>" id="toast">
+            <div class="toast-content">
+                <span class="toast-icon">
+                    <?php echo $toast_type === 'success' ? '✅' : '❌'; ?>
+                </span>
+                <span class="toast-message">
+                    <?php echo htmlspecialchars($toast_message); ?>
+                </span>
+                <button class="toast-close" onclick="hideToast()">×</button>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <div class="admin-container">
         <div class="admin-header">
             <div>
@@ -214,14 +531,8 @@ $registrations = $stmt->fetchAll();
             <a href="dashboard.php" class="admin-btn">← Back to Dashboard</a>
         </div>
         
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success">
-                <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
-            </div>
-        <?php endif; ?>
-        
         <div class="admin-controls">
-            <form method="GET" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <form method="GET" class="search-form">
                 <select name="status" onchange="this.form.submit()">
                     <option value="">All Status</option>
                     <option value="pending" <?php echo $status_filter === 'pending' ? 'selected' : ''; ?>>Pending</option>
@@ -230,8 +541,8 @@ $registrations = $stmt->fetchAll();
                 </select>
                 
                 <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by name...">
-                <button type="submit" class="admin-btn">Search</button>
-                <a href="view-resident-registrations.php" class="admin-btn">Clear</a>
+                <button type="submit" class="admin-btn">🔍 Search</button>
+                <a href="view-resident-registrations.php" class="admin-btn">🔄 Clear</a>
             </form>
         </div>
         
@@ -252,11 +563,11 @@ $registrations = $stmt->fetchAll();
                 <tbody>
                     <?php foreach ($registrations as $reg): ?>
                     <tr>
-                        <td><?php echo $reg['id']; ?></td>
+                        <td><strong>#<?php echo $reg['id']; ?></strong></td>
                         <td>
                             <strong><?php echo htmlspecialchars($reg['first_name'] . ' ' . $reg['last_name']); ?></strong>
                             <?php if ($reg['middle_name']): ?>
-                                <br><small><?php echo htmlspecialchars($reg['middle_name']); ?></small>
+                                <br><small style="color: #666;"><?php echo htmlspecialchars($reg['middle_name']); ?></small>
                             <?php endif; ?>
                         </td>
                         <td><?php echo $reg['age']; ?></td>
@@ -264,24 +575,36 @@ $registrations = $stmt->fetchAll();
                         <td>
                             <span class="status-badge status-<?php echo $reg['status']; ?>">
                                 <?php echo ucfirst($reg['status']); ?>
+                                <?php if ($reg['status'] !== 'pending'): ?>
+                                    🔒
+                                <?php endif; ?>
                             </span>
                         </td>
-                        <td><?php echo date('M j, Y', strtotime($reg['submitted_at'])); ?></td>
+                        <td>
+                            <div><?php echo date('M j, Y', strtotime($reg['submitted_at'])); ?></div>
+                            <small style="color: #666;"><?php echo date('g:i A', strtotime($reg['submitted_at'])); ?></small>
+                        </td>
                         <td>
                             <button onclick="viewRegistrationDetails(<?php echo $reg['id']; ?>)" class="view-form-btn">
                                 👁️ View Form
                             </button>
                         </td>
                         <td>
-                            <form method="POST" style="display: inline;">
+                            <?php if ($reg['status'] === 'pending'): ?>
+                            <form method="POST" style="margin: 0;">
                                 <input type="hidden" name="action" value="update_status">
                                 <input type="hidden" name="id" value="<?php echo $reg['id']; ?>">
                                 <select name="status" class="action-select" onchange="this.form.submit()">
-                                    <option value="pending" <?php echo $reg['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                    <option value="approved" <?php echo $reg['status'] === 'approved' ? 'selected' : ''; ?>>Approved</option>
-                                    <option value="rejected" <?php echo $reg['status'] === 'rejected' ? 'selected' : ''; ?>>Rejected</option>
+                                    <option value="pending" selected>Pending</option>
+                                    <option value="approved">Approve</option>
+                                    <option value="rejected">Reject</option>
                                 </select>
                             </form>
+                            <?php else: ?>
+                            <div class="action-select status-locked">
+                                <?php echo ucfirst($reg['status']); ?> (Locked)
+                            </div>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -290,19 +613,12 @@ $registrations = $stmt->fetchAll();
             
             <?php if (empty($registrations)): ?>
             <div style="text-align: center; padding: 3rem;">
-                <h3>📭 No Resident Registrations Found</h3>
-                <p>No resident registrations match your current filters.</p>
+                <h3 style="color: #666; margin-bottom: 1rem;">📭 No Census Registrations Found</h3>
+                <p style="color: #999; margin-bottom: 1.5rem;">No resident registrations match your current filters.</p>
                 <a href="view-resident-registrations.php" class="admin-btn">Clear Filters</a>
             </div>
             <?php endif; ?>
         </div>
-        
-        <script>
-        function viewRegistrationDetails(registrationId) {
-            // Open the resident registration form with pre-filled data
-            window.open('../pages/resident-registration.php?admin_view=' + registrationId + '&readonly=1', '_blank');
-        }
-        </script>
         
         <?php if ($total_pages > 1): ?>
         <div class="pagination">
@@ -324,5 +640,80 @@ $registrations = $stmt->fetchAll();
         </div>
         <?php endif; ?>
     </div>
+
+    <script>
+        function viewRegistrationDetails(registrationId) {
+            // Log the form view action
+            fetch('../includes/log-action.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'form_view',
+                    target_type: 'resident_registration',
+                    target_id: registrationId,
+                    description: `Viewed resident registration form ID #${registrationId}`
+                })
+            });
+            
+            // Open the resident registration form with pre-filled data in new tab
+            window.open('../pages/resident-registration.php?admin_view=' + registrationId + '&readonly=1', '_blank');
+        }
+
+        // Toast notification functionality
+        function showToast() {
+            const overlay = document.getElementById('toastOverlay');
+            const toast = document.getElementById('toast');
+            
+            if (overlay && toast) {
+                overlay.classList.add('show');
+                toast.classList.add('show');
+                
+                // Auto-hide after 5 seconds
+                setTimeout(function() {
+                    hideToast();
+                }, 5000);
+            }
+        }
+
+        function hideToast() {
+            const overlay = document.getElementById('toastOverlay');
+            const toast = document.getElementById('toast');
+            
+            if (overlay && toast) {
+                toast.classList.remove('show');
+                overlay.classList.remove('show');
+                
+                // Remove from DOM after animation
+                setTimeout(function() {
+                    if (overlay && overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                }, 400);
+            }
+        }
+
+        // Show toast on page load if message exists
+        document.addEventListener('DOMContentLoaded', function() {
+            <?php if ($show_toast): ?>
+            setTimeout(showToast, 100);
+            <?php endif; ?>
+        });
+
+        // Close toast when clicking overlay
+        document.addEventListener('click', function(e) {
+            if (e.target.id === 'toastOverlay') {
+                hideToast();
+            }
+        });
+
+        // Close toast with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                hideToast();
+            }
+        });
+    </script>
 </body>
 </html>

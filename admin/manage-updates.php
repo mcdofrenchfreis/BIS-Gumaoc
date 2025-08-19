@@ -1,12 +1,15 @@
 <?php
 session_start();
 include '../includes/db_connect.php';
+include '../includes/AdminLogger.php';
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header('Location: login.php');
     exit;
 }
+
+$logger = new AdminLogger($pdo);
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -22,11 +25,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $status = htmlspecialchars($_POST['status']);
                 $is_priority = isset($_POST['is_priority']) ? 1 : 0;
                 
+                // Get old data for logging
+                $old_data_stmt = $pdo->prepare("SELECT * FROM updates WHERE id = ?");
+                $old_data_stmt->execute([$update_id]);
+                $old_data = $old_data_stmt->fetch();
+                
                 $stmt = $pdo->prepare("UPDATE updates SET title = ?, description = ?, badge_text = ?, badge_type = ?, date = ?, status = ?, is_priority = ? WHERE id = ?");
                 if ($stmt->execute([$title, $description, $badge_text, $badge_type, $date, $status, $is_priority, $update_id])) {
+                    // Log the update
+                    $logger->log(
+                        'content_update',
+                        'community_update',
+                        "Updated community update ID #{$update_id}: '{$title}'",
+                        $update_id,
+                        [
+                            'old_title' => $old_data['title'],
+                            'new_title' => $title,
+                            'old_status' => $old_data['status'],
+                            'new_status' => $status,
+                            'old_priority' => (bool)$old_data['is_priority'],
+                            'new_priority' => (bool)$is_priority,
+                            'badge_type' => $badge_type
+                        ]
+                    );
+                    
                     $_SESSION['success'] = "Update modified successfully!";
                 } else {
                     $_SESSION['error'] = "Failed to update.";
+                    $logger->log('error', 'community_update', "Failed to update community update ID #{$update_id}", $update_id);
                 }
                 break;
                 
@@ -41,19 +67,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
                 $stmt = $pdo->prepare("INSERT INTO updates (title, description, badge_text, badge_type, date, status, is_priority) VALUES (?, ?, ?, ?, ?, ?, ?)");
                 if ($stmt->execute([$title, $description, $badge_text, $badge_type, $date, $status, $is_priority])) {
+                    $new_id = $pdo->lastInsertId();
+                    
+                    // Log the addition
+                    $logger->log(
+                        'content_create',
+                        'community_update',
+                        "Created new community update: '{$title}'",
+                        $new_id,
+                        [
+                            'title' => $title,
+                            'badge_type' => $badge_type,
+                            'status' => $status,
+                            'is_priority' => (bool)$is_priority,
+                            'date' => $date
+                        ]
+                    );
+                    
                     $_SESSION['success'] = "Update added successfully!";
                 } else {
                     $_SESSION['error'] = "Failed to add update.";
+                    $logger->log('error', 'community_update', "Failed to create new community update: '{$title}'");
                 }
                 break;
                 
             case 'delete_update':
                 $update_id = (int)$_POST['update_id'];
+                
+                // Get data before deletion for logging
+                $delete_data_stmt = $pdo->prepare("SELECT * FROM updates WHERE id = ?");
+                $delete_data_stmt->execute([$update_id]);
+                $delete_data = $delete_data_stmt->fetch();
+                
                 $stmt = $pdo->prepare("DELETE FROM updates WHERE id = ?");
                 if ($stmt->execute([$update_id])) {
+                    // Log the deletion
+                    $logger->log(
+                        'content_delete',
+                        'community_update',
+                        "Deleted community update ID #{$update_id}: '{$delete_data['title']}'",
+                        $update_id,
+                        [
+                            'deleted_title' => $delete_data['title'],
+                            'deleted_status' => $delete_data['status'],
+                            'was_priority' => (bool)$delete_data['is_priority'],
+                            'badge_type' => $delete_data['badge_type']
+                        ]
+                    );
+                    
                     $_SESSION['success'] = "Update deleted successfully!";
                 } else {
                     $_SESSION['error'] = "Failed to delete update.";
+                    $logger->log('error', 'community_update', "Failed to delete community update ID #{$update_id}", $update_id);
                 }
                 break;
         }
@@ -61,6 +126,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 }
+
+// Log page view
+$logger->log('page_view', 'admin_panel', 'Viewed manage updates admin page');
 
 // Create updates table if it doesn't exist
 $pdo->exec("

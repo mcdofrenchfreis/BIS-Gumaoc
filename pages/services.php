@@ -15,42 +15,16 @@ include '../includes/header.php';
 
             <div class="services-grid">
                 <div class="service-card">
-                    <div class="service-icon">📄</div>
-                    <h3>Certificate Requests</h3>
-                    <p>Request various barangay certificates online including Certificate of Residency, Certificate of Indigency, and Business Permits.</p>
+                    <div class="service-icon">�</div>
+                    <h3>Forms & Applications</h3>
+                    <p>Access all barangay forms and applications in one centralized location including certificates, registrations, and business permits.</p>
                     <ul class="service-features">
-                        <li>✅ Online application</li>
-                        <li>✅ Real-time status tracking</li>
-                        <li>✅ Digital copy delivery</li>
-                        <li>✅ Scheduled pickup</li>
+                        <li>✅ Certificate requests</li>
+                        <li>✅ Resident registration</li>
+                        <li>✅ Business applications</li>
+                        <li>✅ All forms centralized</li>
                     </ul>
-                    <a href="../certificate-request.php" class="service-btn">Request Certificate</a>
-                </div>
-
-                <div class="service-card">
-                    <div class="service-icon">👥</div>
-                    <h3>Resident Registration</h3>
-                    <p>Register as a new resident or update your existing information in our digital census system.</p>
-                    <ul class="service-features">
-                        <li>✅ Digital registration form</li>
-                        <li>✅ Document upload</li>
-                        <li>✅ Verification process</li>
-                        <li>✅ Instant confirmation</li>
-                    </ul>
-                    <a href="../resident-registration.php" class="service-btn">Register Now</a>
-                </div>
-
-                <div class="service-card">
-                    <div class="service-icon">🏢</div>
-                    <h3>Business Applications</h3>
-                    <p>Apply for business permits and licenses required to operate within the barangay jurisdiction.</p>
-                    <ul class="service-features">
-                        <li>✅ Online application</li>
-                        <li>✅ Requirements checklist</li>
-                        <li>✅ Processing timeline</li>
-                        <li>✅ Payment integration</li>
-                    </ul>
-                    <a href="../business-application.php" class="service-btn">Apply for Permit</a>
+                    <a href="forms.php" class="service-btn">Access Forms</a>
                 </div>
 
                 <div class="service-card">
@@ -197,8 +171,8 @@ include '../includes/header.php';
 
 .services-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 25px;
     margin-bottom: 60px;
 }
 
@@ -211,6 +185,9 @@ include '../includes/header.php';
     border: 1px solid rgba(27, 94, 32, 0.1);
     transition: all 0.3s ease;
     text-align: center;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .service-card:hover {
@@ -245,6 +222,11 @@ include '../includes/header.php';
     padding: 0;
     margin: 20px 0;
     text-align: left;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    min-height: 120px;
 }
 
 .service-features li {
@@ -252,6 +234,12 @@ include '../includes/header.php';
     margin-bottom: 8px;
     padding-left: 5px;
     font-size: 0.95rem;
+    opacity: 0.85;
+    transition: opacity 0.3s ease;
+}
+
+.service-features li:hover {
+    opacity: 1;
 }
 
 .service-btn {
@@ -263,8 +251,9 @@ include '../includes/header.php';
     border-radius: 25px;
     font-weight: 600;
     transition: all 0.3s ease;
-    margin-top: 15px;
+    margin-top: auto;
     box-shadow: 0 5px 15px rgba(27, 94, 32, 0.2);
+    align-self: center;
 }
 
 .service-btn:hover {
@@ -380,10 +369,8 @@ include '../includes/header.php';
 .service-card:nth-child(2) { animation-delay: 0.3s; }
 .service-card:nth-child(3) { animation-delay: 0.4s; }
 .service-card:nth-child(4) { animation-delay: 0.5s; }
-.service-card:nth-child(5) { animation-delay: 0.6s; }
-.service-card:nth-child(6) { animation-delay: 0.7s; }
 
-.hours-card { animation-delay: 0.8s; }
+.hours-card { animation-delay: 0.6s; }
 
 @media (max-width: 768px) {
     .page-container {
@@ -400,7 +387,7 @@ include '../includes/header.php';
     }
     
     .services-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
         gap: 20px;
     }
     
@@ -430,6 +417,11 @@ include '../includes/header.php';
     
     .services-intro p {
         font-size: 1.1rem;
+    }
+    
+    .services-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
     }
     
     .service-card {
