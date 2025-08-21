@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 19, 2025 at 03:28 PM
+-- Generation Time: Aug 21, 2025 at 01:43 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -52,7 +52,37 @@ INSERT INTO `admin_logs` (`id`, `admin_id`, `action_type`, `target_type`, `targe
 (5, 'admin', 'status_update', 'certificate_request', 123, 'Updated certificate request status', '{\"old_status\":\"pending\",\"new_status\":\"processing\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-19 13:16:36'),
 (6, 'admin', 'print_action', 'certificate_request', 456, 'Printed residency certificate', '{\"certificate_type\":\"RESIDENCY\",\"applicant_name\":\"Test User\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-19 13:16:36'),
 (7, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-19 13:16:36'),
-(8, 'admin', 'form_view', 'resident_registration', 789, 'Viewed registration form', '{\"view_mode\":\"readonly\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-19 13:16:36');
+(8, 'admin', 'form_view', 'resident_registration', 789, 'Viewed registration form', '{\"view_mode\":\"readonly\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-19 13:16:36'),
+(9, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 06:03:24'),
+(10, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 06:03:28'),
+(11, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 06:22:20'),
+(12, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 06:22:21'),
+(13, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 06:53:41'),
+(14, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:05:47'),
+(15, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:19:32'),
+(16, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:24:23'),
+(17, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:24:23'),
+(18, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:24:23'),
+(19, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:24:24'),
+(20, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:24:24'),
+(21, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:32:44'),
+(22, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:33:23'),
+(23, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:36:04'),
+(24, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:40:22'),
+(25, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:40:51'),
+(26, 'admin', 'status_update', 'certificate_request', 6, 'Updated certificate_request ID #6 status from \'pending\' to \'processing\'', '{\"old_status\":\"pending\",\"new_status\":\"processing\",\"timestamp\":\"2025-08-21 09:41:04\",\"certificate_type\":\"TRICYCLE PERMIT\",\"applicant_name\":\"Juan Dela Cruz\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:41:04'),
+(27, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:41:04'),
+(28, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:45:16'),
+(29, 'admin', 'print_action', 'certificate_request', 6, 'Printed tricycle_permit for certificate_request ID #6', '{\"print_type\":\"tricycle_permit\",\"print_timestamp\":\"2025-08-21 09:45:17\",\"certificate_type\":\"TRICYCLE PERMIT\",\"applicant_name\":\"Juan Dela Cruz\",\"certificate_number\":\"TP-00006-2025\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:45:17'),
+(30, 'admin', 'print_action', 'certificate_request', 6, 'Printed tricycle_permit for certificate_request ID #6', '{\"print_type\":\"tricycle_permit\",\"print_timestamp\":\"2025-08-21 09:46:25\",\"certificate_type\":\"TRICYCLE PERMIT\",\"applicant_name\":\"Juan Dela Cruz\",\"certificate_number\":\"TP-00006-2025\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:46:25'),
+(31, 'admin', 'status_update', 'certificate_request', 12, 'Updated certificate_request ID #12 status from \'pending\' to \'processing\'', '{\"old_status\":\"pending\",\"new_status\":\"processing\",\"timestamp\":\"2025-08-21 09:46:38\",\"certificate_type\":\"BRGY. INDIGENCY\",\"applicant_name\":\"TEST TEST TEST\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:46:38'),
+(32, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:46:38'),
+(33, 'admin', 'print_action', 'certificate_request', 12, 'Printed indigency_certificate for certificate_request ID #12', '{\"print_type\":\"indigency_certificate\",\"print_timestamp\":\"2025-08-21 09:46:40\",\"certificate_type\":\"BRGY. INDIGENCY\",\"applicant_name\":\"TEST TEST TEST\",\"certificate_number\":\"IND-00012-2025\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 07:46:40'),
+(34, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 08:39:00'),
+(35, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 09:15:10'),
+(36, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 09:25:03'),
+(37, 'admin', 'form_view', 'resident_registration', 2, 'Viewed resident registration form ID #2', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 09:25:11'),
+(38, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 09:25:21');
 
 -- --------------------------------------------------------
 
@@ -120,11 +150,9 @@ INSERT INTO `business_applications` (`id`, `user_id`, `reference_no`, `applicati
 --
 -- Table structure for table `certificate_requests`
 --
--- FIXED: Removed duplicate PRIMARY KEY definition issue
---
 
 CREATE TABLE `certificate_requests` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `id` int(11) NOT NULL,
   `full_name` varchar(255) NOT NULL,
   `address` varchar(500) NOT NULL,
   `mobile_number` varchar(20) DEFAULT NULL,
@@ -146,20 +174,19 @@ CREATE TABLE `certificate_requests` (
   `operator_license` varchar(100) DEFAULT NULL,
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `status` enum('pending','processing','ready','released') DEFAULT 'pending',
-  PRIMARY KEY (`id`)
+  `queue_ticket_id` int(11) DEFAULT NULL,
+  `queue_ticket_number` varchar(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `certificate_requests`
 --
 
-INSERT INTO `certificate_requests` (`id`, `full_name`, `address`, `mobile_number`, `civil_status`, `gender`, `birth_date`, `birth_place`, `citizenship`, `years_of_residence`, `certificate_type`, `purpose`, `vehicle_make_type`, `motor_no`, `chassis_no`, `plate_no`, `vehicle_color`, `year_model`, `body_no`, `operator_license`, `submitted_at`, `status`) VALUES
-(1, 'zz zzz z', 'zz zz', NULL, NULL, NULL, '2025-08-16', 'zzz', NULL, NULL, 'BRGY. CLEARANCE', 'zz', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-08-01 07:53:25', 'pending'),
-(2, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-01', 'test', 'Filipino', 3, 'BRGY. CLEARANCE', 'test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-08-01 08:28:08', 'processing'),
-(3, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-02', 'test', 'Filipino', 3, 'BRGY. CLEARANCE', 'test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-08-01 08:31:17', 'processing'),
-(4, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-01', 'test', 'Filipino', 1, 'BRGY. CLEARANCE', 'test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-08-01 08:33:11', 'ready'),
-(5, 'TEST TEST TEST', 'TEST TEST', '09162291763', 'Single', 'Male', '2004-08-07', 'TEST', 'Filipino', 321, 'BRGY. INDIGENCY', 'TEST', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-08-19 12:52:46', 'processing'),
-(6, 'Juan Dela Cruz', 'Purok 1, Gumaoc East', '09123456789', 'Married', 'Male', '1985-05-15', 'Baguio City', 'Filipino', 10, 'TRICYCLE PERMIT', 'Business Operation', 'Honda TMX-155', 'TMX155-2020-001234', 'CH-TMX155-5678', 'ABC-1234', 'Blue', 2020, 'BD-2020-001', 'N01-85-012345', '2025-08-19 13:28:00', 'pending');
+INSERT INTO `certificate_requests` (`id`, `full_name`, `address`, `mobile_number`, `civil_status`, `gender`, `birth_date`, `birth_place`, `citizenship`, `years_of_residence`, `certificate_type`, `purpose`, `vehicle_make_type`, `motor_no`, `chassis_no`, `plate_no`, `vehicle_color`, `year_model`, `body_no`, `operator_license`, `submitted_at`, `status`, `queue_ticket_id`, `queue_ticket_number`) VALUES
+(6, 'Juan Dela Cruz', 'Purok 1, Gumaoc East', '09123456789', 'Married', 'Male', '1985-05-15', 'Baguio City', 'Filipino', 10, 'TRICYCLE PERMIT', 'Business Operation', 'Honda TMX-155', 'TMX155-2020-001234', 'CH-TMX155-5678', 'ABC-1234', 'Blue', 2020, 'BD-2020-001', 'N01-85-012345', '2025-08-19 13:28:00', 'processing', NULL, NULL),
+(11, 'TEST TEST TEST', 'Purok 1, Gumaoc East', '+639162291763', 'Single', 'Male', '2004-07-08', 'Caloocan City', 'Filipino', 3, 'BRGY. CLEARANCE', 'TEST', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-08-21 07:35:59', 'pending', NULL, NULL),
+(12, 'TEST TEST TEST', 'Purok 1, Gumaoc East', '+639162291763', 'Single', 'Male', '2004-08-07', 'TEST', 'Filipino', 3, 'BRGY. INDIGENCY', 'TEST', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-08-21 07:40:07', 'processing', NULL, NULL),
+(13, 'TEST TEST TEST', 'Purok 1, Gumaoc East', '+639162291763', 'Single', 'Male', '2004-08-07', 'Caloocan City', 'Filipino', 13, 'BRGY. CLEARANCE', 'TEST', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-08-21 08:23:55', 'pending', 1, 'BC-20250821-001');
 
 -- --------------------------------------------------------
 
@@ -232,6 +259,154 @@ CREATE TABLE `family_organizations` (
 INSERT INTO `family_organizations` (`id`, `registration_id`, `name`, `organization_type`, `created_at`) VALUES
 (1, 2, 'Juan Santos Cruz', 'Barangay Council', '2025-08-01 09:08:43'),
 (2, 2, 'Maria Santos Cruz', 'Parent-Teacher Association', '2025-08-01 09:08:43');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `notifications`
+--
+
+CREATE TABLE `notifications` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `message` text NOT NULL,
+  `type` enum('info','success','warning','error','queue','certificate') DEFAULT 'info',
+  `action_url` varchar(500) DEFAULT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `read_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `notifications`
+--
+
+INSERT INTO `notifications` (`id`, `user_id`, `title`, `message`, `type`, `action_url`, `is_read`, `read_at`, `created_at`, `updated_at`) VALUES
+(1, 1, 'Welcome to GUMAOC East E-Services', 'Your account has been successfully activated. You can now access all available services.', 'success', NULL, 0, NULL, '2025-08-21 10:56:35', '2025-08-21 10:56:35'),
+(2, 1, 'Certificate Request Update', 'Your Barangay Certificate request is now being processed. Expected completion in 2-3 business days.', 'info', 'certificate-request.php', 0, NULL, '2025-08-21 10:56:35', '2025-08-21 10:56:35'),
+(3, 1, 'Queue Ticket Ready', 'Your queue ticket #QT-001 is now being served. Please proceed to window 2.', 'queue', 'queue-status.php', 0, NULL, '2025-08-21 10:56:35', '2025-08-21 10:56:35');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `queue_counters`
+--
+
+CREATE TABLE `queue_counters` (
+  `id` int(11) NOT NULL,
+  `counter_number` varchar(10) NOT NULL,
+  `counter_name` varchar(50) NOT NULL,
+  `service_id` int(11) DEFAULT NULL,
+  `operator_name` varchar(100) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `current_ticket_id` int(11) DEFAULT NULL,
+  `last_called_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `queue_counters`
+--
+
+INSERT INTO `queue_counters` (`id`, `counter_number`, `counter_name`, `service_id`, `operator_name`, `is_active`, `current_ticket_id`, `last_called_at`, `created_at`, `updated_at`) VALUES
+(1, 'C1', 'Counter 1 - Certificates', 1, NULL, 1, NULL, NULL, '2025-08-21 08:17:36', '2025-08-21 08:17:36'),
+(2, 'C2', 'Counter 2 - Permits', 3, NULL, 1, NULL, NULL, '2025-08-21 08:17:36', '2025-08-21 08:17:36'),
+(3, 'C3', 'Counter 3 - General', 5, NULL, 1, NULL, NULL, '2025-08-21 08:17:36', '2025-08-21 08:17:36');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `queue_services`
+--
+
+CREATE TABLE `queue_services` (
+  `id` int(11) NOT NULL,
+  `service_name` varchar(100) NOT NULL,
+  `service_code` varchar(10) NOT NULL,
+  `description` text DEFAULT NULL,
+  `estimated_time` int(11) DEFAULT 15 COMMENT 'Estimated time in minutes',
+  `max_daily_capacity` int(11) DEFAULT 50,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `queue_services`
+--
+
+INSERT INTO `queue_services` (`id`, `service_name`, `service_code`, `description`, `estimated_time`, `max_daily_capacity`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'Barangay Clearance', 'BC', 'Processing of Barangay Clearance certificates', 15, 50, 1, '2025-08-21 08:17:36', '2025-08-21 08:17:36'),
+(2, 'Barangay Indigency', 'BI', 'Processing of Barangay Indigency certificates', 15, 30, 1, '2025-08-21 08:17:36', '2025-08-21 08:17:36'),
+(3, 'Tricycle Permit', 'TP', 'Processing of Tricycle Operator Permits', 25, 20, 1, '2025-08-21 08:17:36', '2025-08-21 08:17:36'),
+(4, 'Proof of Residency', 'PR', 'Processing of Proof of Residency certificates', 10, 40, 1, '2025-08-21 08:17:36', '2025-08-21 08:17:36'),
+(5, 'General Services', 'GS', 'Other barangay services and inquiries', 20, 30, 1, '2025-08-21 08:17:36', '2025-08-21 08:17:36'),
+(6, 'Business Permit', 'BP', 'Business permit applications and renewals', 30, 15, 1, '2025-08-21 08:17:36', '2025-08-21 08:17:36');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `queue_tickets`
+--
+
+CREATE TABLE `queue_tickets` (
+  `id` int(11) NOT NULL,
+  `ticket_number` varchar(20) NOT NULL,
+  `service_id` int(11) NOT NULL,
+  `customer_name` varchar(100) NOT NULL,
+  `mobile_number` varchar(20) DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `purpose` text DEFAULT NULL,
+  `priority_level` enum('normal','priority','urgent') DEFAULT 'normal',
+  `status` enum('waiting','serving','completed','cancelled','no_show') DEFAULT 'waiting',
+  `queue_position` int(11) DEFAULT NULL,
+  `estimated_time` datetime DEFAULT NULL,
+  `called_at` timestamp NULL DEFAULT NULL,
+  `served_at` timestamp NULL DEFAULT NULL,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `served_by` varchar(100) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `queue_tickets`
+--
+
+INSERT INTO `queue_tickets` (`id`, `ticket_number`, `service_id`, `customer_name`, `mobile_number`, `user_id`, `purpose`, `priority_level`, `status`, `queue_position`, `estimated_time`, `called_at`, `served_at`, `completed_at`, `served_by`, `notes`, `created_at`, `updated_at`) VALUES
+(1, 'BC-20250821-001', 1, 'TEST TEST TEST', '+639162291763', NULL, 'Certificate Request: BRGY. CLEARANCE', 'normal', 'waiting', 1, '2025-08-21 10:23:55', NULL, NULL, NULL, NULL, NULL, '2025-08-21 08:23:55', '2025-08-21 08:23:55');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `queue_windows`
+--
+
+CREATE TABLE `queue_windows` (
+  `id` int(11) NOT NULL,
+  `window_number` varchar(10) NOT NULL,
+  `window_name` varchar(50) NOT NULL,
+  `service_id` int(11) DEFAULT NULL,
+  `operator_name` varchar(100) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `current_ticket_id` int(11) DEFAULT NULL,
+  `last_called_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `queue_windows`
+--
+
+INSERT INTO `queue_windows` (`id`, `window_number`, `window_name`, `service_id`, `operator_name`, `is_active`, `current_ticket_id`, `last_called_at`, `created_at`, `updated_at`) VALUES
+(1, 'W1', 'Window 1 - Certificates', 1, NULL, 1, NULL, NULL, '2025-08-21 09:00:41', '2025-08-21 09:00:41'),
+(2, 'W2', 'Window 2 - Permits', 3, NULL, 1, NULL, NULL, '2025-08-21 09:00:41', '2025-08-21 09:00:41'),
+(3, 'W3', 'Window 3 - General Services', 5, NULL, 1, NULL, NULL, '2025-08-21 09:00:41', '2025-08-21 09:00:41');
 
 -- --------------------------------------------------------
 
@@ -473,8 +648,11 @@ ALTER TABLE `business_applications`
   ADD KEY `user_id` (`user_id`);
 
 --
--- REMOVED: Duplicate PRIMARY KEY definition for certificate_requests
--- The PRIMARY KEY is already defined in the CREATE TABLE statement above
+-- Indexes for table `certificate_requests`
+--
+ALTER TABLE `certificate_requests`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_queue_ticket` (`queue_ticket_id`);
 
 --
 -- Indexes for table `family_disabilities`
@@ -496,6 +674,50 @@ ALTER TABLE `family_members`
 ALTER TABLE `family_organizations`
   ADD PRIMARY KEY (`id`),
   ADD KEY `registration_id` (`registration_id`);
+
+--
+-- Indexes for table `notifications`
+--
+ALTER TABLE `notifications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_is_read` (`is_read`),
+  ADD KEY `idx_created_at` (`created_at`);
+
+--
+-- Indexes for table `queue_counters`
+--
+ALTER TABLE `queue_counters`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `counter_number` (`counter_number`),
+  ADD KEY `service_id` (`service_id`),
+  ADD KEY `current_ticket_id` (`current_ticket_id`);
+
+--
+-- Indexes for table `queue_services`
+--
+ALTER TABLE `queue_services`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `service_code` (`service_code`);
+
+--
+-- Indexes for table `queue_tickets`
+--
+ALTER TABLE `queue_tickets`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `ticket_number` (`ticket_number`),
+  ADD KEY `service_id` (`service_id`),
+  ADD KEY `status` (`status`),
+  ADD KEY `created_at` (`created_at`);
+
+--
+-- Indexes for table `queue_windows`
+--
+ALTER TABLE `queue_windows`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `window_number` (`window_number`),
+  ADD KEY `service_id` (`service_id`),
+  ADD KEY `current_ticket_id` (`current_ticket_id`);
 
 --
 -- Indexes for table `residents`
@@ -556,7 +778,7 @@ ALTER TABLE `updates`
 -- AUTO_INCREMENT for table `admin_logs`
 --
 ALTER TABLE `admin_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT for table `admin_users`
@@ -574,7 +796,7 @@ ALTER TABLE `business_applications`
 -- AUTO_INCREMENT for table `certificate_requests`
 --
 ALTER TABLE `certificate_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `family_disabilities`
@@ -593,6 +815,36 @@ ALTER TABLE `family_members`
 --
 ALTER TABLE `family_organizations`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `notifications`
+--
+ALTER TABLE `notifications`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `queue_counters`
+--
+ALTER TABLE `queue_counters`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `queue_services`
+--
+ALTER TABLE `queue_services`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+
+--
+-- AUTO_INCREMENT for table `queue_tickets`
+--
+ALTER TABLE `queue_tickets`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `queue_windows`
+--
+ALTER TABLE `queue_windows`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `residents`
@@ -647,6 +899,12 @@ ALTER TABLE `business_applications`
   ADD CONSTRAINT `business_applications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `residents` (`id`) ON DELETE SET NULL;
 
 --
+-- Constraints for table `certificate_requests`
+--
+ALTER TABLE `certificate_requests`
+  ADD CONSTRAINT `fk_cert_queue_ticket` FOREIGN KEY (`queue_ticket_id`) REFERENCES `queue_tickets` (`id`) ON DELETE SET NULL;
+
+--
 -- Constraints for table `family_disabilities`
 --
 ALTER TABLE `family_disabilities`
@@ -663,6 +921,26 @@ ALTER TABLE `family_members`
 --
 ALTER TABLE `family_organizations`
   ADD CONSTRAINT `family_organizations_ibfk_1` FOREIGN KEY (`registration_id`) REFERENCES `resident_registrations` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `queue_counters`
+--
+ALTER TABLE `queue_counters`
+  ADD CONSTRAINT `queue_counters_ibfk_1` FOREIGN KEY (`service_id`) REFERENCES `queue_services` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `queue_counters_ibfk_2` FOREIGN KEY (`current_ticket_id`) REFERENCES `queue_tickets` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `queue_tickets`
+--
+ALTER TABLE `queue_tickets`
+  ADD CONSTRAINT `queue_tickets_ibfk_1` FOREIGN KEY (`service_id`) REFERENCES `queue_services` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `queue_windows`
+--
+ALTER TABLE `queue_windows`
+  ADD CONSTRAINT `queue_windows_ibfk_1` FOREIGN KEY (`service_id`) REFERENCES `queue_services` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `queue_windows_ibfk_2` FOREIGN KEY (`current_ticket_id`) REFERENCES `queue_tickets` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `rfid_access_logs`
