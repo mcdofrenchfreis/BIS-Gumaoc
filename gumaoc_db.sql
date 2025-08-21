@@ -120,9 +120,11 @@ INSERT INTO `business_applications` (`id`, `user_id`, `reference_no`, `applicati
 --
 -- Table structure for table `certificate_requests`
 --
+-- FIXED: Removed duplicate PRIMARY KEY definition issue
+--
 
 CREATE TABLE `certificate_requests` (
-  `id` int(11) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `full_name` varchar(255) NOT NULL,
   `address` varchar(500) NOT NULL,
   `mobile_number` varchar(20) DEFAULT NULL,
@@ -134,20 +136,30 @@ CREATE TABLE `certificate_requests` (
   `years_of_residence` int(11) DEFAULT NULL,
   `certificate_type` varchar(100) NOT NULL,
   `purpose` text NOT NULL,
+  `vehicle_make_type` varchar(255) DEFAULT NULL,
+  `motor_no` varchar(100) DEFAULT NULL,
+  `chassis_no` varchar(100) DEFAULT NULL,
+  `plate_no` varchar(50) DEFAULT NULL,
+  `vehicle_color` varchar(50) DEFAULT NULL,
+  `year_model` int(4) DEFAULT NULL,
+  `body_no` varchar(100) DEFAULT NULL,
+  `operator_license` varchar(100) DEFAULT NULL,
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `status` enum('pending','processing','ready','released') DEFAULT 'pending'
+  `status` enum('pending','processing','ready','released') DEFAULT 'pending',
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `certificate_requests`
 --
 
-INSERT INTO `certificate_requests` (`id`, `full_name`, `address`, `mobile_number`, `civil_status`, `gender`, `birth_date`, `birth_place`, `citizenship`, `years_of_residence`, `certificate_type`, `purpose`, `submitted_at`, `status`) VALUES
-(1, 'zz zzz z', 'zz zz', NULL, NULL, NULL, '2025-08-16', 'zzz', NULL, NULL, 'CEDULA', 'zz', '2025-08-01 07:53:25', 'pending'),
-(2, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-01', 'test', 'Filipino', 3, 'CEDULA', 'test', '2025-08-01 08:28:08', 'processing'),
-(3, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-02', 'test', 'Filipino', 3, 'CEDULA', 'test', '2025-08-01 08:31:17', 'processing'),
-(4, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-01', 'test', 'Filipino', 1, 'CEDULA', 'test', '2025-08-01 08:33:11', 'ready'),
-(5, 'TEST TEST TEST', 'TEST TEST', '09162291763', 'Single', 'Male', '2004-08-07', 'TEST', 'Filipino', 321, 'BRGY. INDIGENCY', 'TEST', '2025-08-19 12:52:46', 'processing');
+INSERT INTO `certificate_requests` (`id`, `full_name`, `address`, `mobile_number`, `civil_status`, `gender`, `birth_date`, `birth_place`, `citizenship`, `years_of_residence`, `certificate_type`, `purpose`, `vehicle_make_type`, `motor_no`, `chassis_no`, `plate_no`, `vehicle_color`, `year_model`, `body_no`, `operator_license`, `submitted_at`, `status`) VALUES
+(1, 'zz zzz z', 'zz zz', NULL, NULL, NULL, '2025-08-16', 'zzz', NULL, NULL, 'BRGY. CLEARANCE', 'zz', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-08-01 07:53:25', 'pending'),
+(2, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-01', 'test', 'Filipino', 3, 'BRGY. CLEARANCE', 'test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-08-01 08:28:08', 'processing'),
+(3, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-02', 'test', 'Filipino', 3, 'BRGY. CLEARANCE', 'test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-08-01 08:31:17', 'processing'),
+(4, 'test test test', 'test test', '09162291763', 'Single', 'Male', '2025-08-01', 'test', 'Filipino', 1, 'BRGY. CLEARANCE', 'test', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-08-01 08:33:11', 'ready'),
+(5, 'TEST TEST TEST', 'TEST TEST', '09162291763', 'Single', 'Male', '2004-08-07', 'TEST', 'Filipino', 321, 'BRGY. INDIGENCY', 'TEST', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2025-08-19 12:52:46', 'processing'),
+(6, 'Juan Dela Cruz', 'Purok 1, Gumaoc East', '09123456789', 'Married', 'Male', '1985-05-15', 'Baguio City', 'Filipino', 10, 'TRICYCLE PERMIT', 'Business Operation', 'Honda TMX-155', 'TMX155-2020-001234', 'CH-TMX155-5678', 'ABC-1234', 'Blue', 2020, 'BD-2020-001', 'N01-85-012345', '2025-08-19 13:28:00', 'pending');
 
 -- --------------------------------------------------------
 
@@ -461,10 +473,8 @@ ALTER TABLE `business_applications`
   ADD KEY `user_id` (`user_id`);
 
 --
--- Indexes for table `certificate_requests`
---
-ALTER TABLE `certificate_requests`
-  ADD PRIMARY KEY (`id`);
+-- REMOVED: Duplicate PRIMARY KEY definition for certificate_requests
+-- The PRIMARY KEY is already defined in the CREATE TABLE statement above
 
 --
 -- Indexes for table `family_disabilities`
@@ -564,7 +574,7 @@ ALTER TABLE `business_applications`
 -- AUTO_INCREMENT for table `certificate_requests`
 --
 ALTER TABLE `certificate_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `family_disabilities`

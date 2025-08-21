@@ -9,8 +9,8 @@ if (!$request_id) {
     die("Certificate request ID is required.");
 }
 
-// Fetch the certificate request data
-$stmt = $pdo->prepare("SELECT * FROM certificate_requests WHERE id = ? AND certificate_type = 'CEDULA'");
+// Fetch the certificate request data - FIXED: Look for TRICYCLE PERMIT, not CEDULA
+$stmt = $pdo->prepare("SELECT * FROM certificate_requests WHERE id = ? AND certificate_type = 'TRICYCLE PERMIT'");
 $stmt->execute([$request_id]);
 $certificate_data = $stmt->fetch();
 
@@ -440,10 +440,22 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             </div>
 
             <div class="vehicle-details">
-                <p><span class="detail-label-left">Make and Type</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['vehicle_make'] ?? ''); ?></span></p>
-                <p><span class="detail-label-left">Motor No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['motor_number'] ?? ''); ?></span></p>
-                <p><span class="detail-label-left">Chassis No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['chassis_number'] ?? ''); ?></span></p>
-                <p><span class="detail-label-left">Plate No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['plate_number'] ?? ''); ?></span></p>
+                <p><span class="detail-label-left">Make and Type</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['vehicle_make_type'] ?? ''); ?></span></p>
+                <p><span class="detail-label-left">Motor No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['motor_no'] ?? ''); ?></span></p>
+                <p><span class="detail-label-left">Chassis No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['chassis_no'] ?? ''); ?></span></p>
+                <p><span class="detail-label-left">Plate No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['plate_no'] ?? ''); ?></span></p>
+                <?php if (!empty($certificate_data['vehicle_color'])): ?>
+                <p><span class="detail-label-left">Vehicle Color</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['vehicle_color']); ?></span></p>
+                <?php endif; ?>
+                <?php if (!empty($certificate_data['year_model'])): ?>
+                <p><span class="detail-label-left">Year Model</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['year_model']); ?></span></p>
+                <?php endif; ?>
+                <?php if (!empty($certificate_data['body_no'])): ?>
+                <p><span class="detail-label-left">Body No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['body_no']); ?></span></p>
+                <?php endif; ?>
+                <?php if (!empty($certificate_data['operator_license'])): ?>
+                <p><span class="detail-label-left">Operator's License No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['operator_license']); ?></span></p>
+                <?php endif; ?>
             </div>
 
             <div class="issuance-text">

@@ -112,8 +112,9 @@ if ($cert_type) {
 }
 
 if ($search) {
-    $where_conditions[] = "(full_name LIKE ? OR certificate_type LIKE ?)";
+    $where_conditions[] = "(full_name LIKE ? OR certificate_type LIKE ? OR purpose LIKE ?)";
     $search_term = "%$search%";
+    $params[] = $search_term;
     $params[] = $search_term;
     $params[] = $search_term;
 }
@@ -127,8 +128,18 @@ $count_stmt->execute($params);
 $total_records = $count_stmt->fetchColumn();
 $total_pages = ceil($total_records / $per_page);
 
-// Get records
-$sql = "SELECT * FROM certificate_requests $where_clause ORDER BY submitted_at DESC LIMIT $per_page OFFSET $offset";
+// Get records with all tricycle permit data
+$sql = "SELECT cr.*, 
+        CASE 
+            WHEN certificate_type = 'TRICYCLE PERMIT' THEN 
+                CONCAT(vehicle_make_type, ' - ', plate_no)
+            ELSE purpose 
+        END as display_info,
+        qt.ticket_number as queue_ticket,
+        qt.status as queue_status
+        FROM certificate_requests cr
+        LEFT JOIN queue_tickets qt ON cr.queue_ticket_id = qt.id
+        $where_clause ORDER BY submitted_at DESC LIMIT $per_page OFFSET $offset";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $requests = $stmt->fetchAll();
@@ -162,10 +173,43 @@ function getPrintUrl($certificate_type, $id) {
         'RESIDENCY' => '../pages/print-residency.php',
         'PROOF OF RESIDENCY' => '../pages/print-residency.php',
         'TRICYCLE PERMIT' => '../pages/print-tricycle-permit.php',
-        'CEDULA' => '../pages/print-tricycle-permit.php'
+        'CEDULA' => '../pages/print-tricycle-permit.php' // Legacy support
     ];
     
     return isset($print_urls[$certificate_type]) ? $print_urls[$certificate_type] . '?id=' . $id : null;
+}
+
+// Function to get certificate type icon and color
+function getCertificateTypeDisplay($certificate_type) {
+    $certificate_type = strtoupper(trim($certificate_type));
+    
+    $displays = [
+        'BRGY. INDIGENCY' => ['icon' => '🏠', 'class' => 'cert-indigency'],
+        'BRGY. CLEARANCE' => ['icon' => '📋', 'class' => 'cert-clearance'],
+        'PROOF OF RESIDENCY' => ['icon' => '🏡', 'class' => 'cert-residency'],
+        'TRICYCLE PERMIT' => ['icon' => '🛺', 'class' => 'cert-tricycle']
+    ];
+    
+    return $displays[$certificate_type] ?? ['icon' => '📄', 'class' => 'cert-default'];
+}
+
+// Function to display request details based on certificate type
+function getRequestDetails($request) {
+    if ($request['certificate_type'] === 'TRICYCLE PERMIT') {
+        $details = [];
+        if (!empty($request['vehicle_make_type'])) {
+            $details[] = "Make: " . htmlspecialchars($request['vehicle_make_type']);
+        }
+        if (!empty($request['plate_no'])) {
+            $details[] = "Plate: " . htmlspecialchars($request['plate_no']);
+        }
+        if (!empty($request['motor_no'])) {
+            $details[] = "Motor: " . htmlspecialchars($request['motor_no']);
+        }
+        return implode(" | ", $details);
+    }
+    
+    return htmlspecialchars(substr($request['purpose'], 0, 50)) . (strlen($request['purpose']) > 50 ? '...' : '');
 }
 ?>
 <!DOCTYPE html>
@@ -393,14 +437,22 @@ function getPrintUrl($certificate_type, $id) {
         .status-ready { background: #d4edda; color: #155724; }
         .status-released { background: #e2e3e5; color: #383d41; }
         
+        /* Enhanced Certificate Type Badges */
         .cert-type {
-            background: #e3f2fd;
-            color: #1976d2;
-            padding: 0.2rem 0.6rem;
+            padding: 0.3rem 0.8rem;
             border-radius: 12px;
             font-size: 0.8rem;
             font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
         }
+        
+        .cert-indigency { background: #fff3e0; color: #f57c00; border: 1px solid #ffcc02; }
+        .cert-clearance { background: #e3f2fd; color: #1976d2; border: 1px solid #2196f3; }
+        .cert-residency { background: #f3e5f5; color: #7b1fa2; border: 1px solid #9c27b0; }
+        .cert-tricycle { background: #fff8e1; color: #f9a825; border: 1px solid #ffc107; }
+        .cert-default { background: #f5f5f5; color: #616161; border: 1px solid #9e9e9e; }
         
         .action-select {
             padding: 0.4rem 0.6rem;
@@ -524,32 +576,28 @@ function getPrintUrl($certificate_type, $id) {
             white-space: nowrap;
         }
 
-        /* Single button styling when print is not available */
-        .action-buttons:has(.view-form-btn:only-child) .view-form-btn {
-            margin-bottom: 0;
+        /* Enhanced Details Display */
+        .request-details {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.4;
         }
 
-        /* Visual indicator for status requirements */
-        .status-processing .print-available {
-            position: relative;
+        .tricycle-details {
+            background: #fff8e1;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            border-left: 3px solid #ffc107;
+            font-family: monospace;
+            font-size: 0.8rem;
         }
 
-        .status-processing .print-available::after {
-            content: "🖨️";
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            font-size: 12px;
-            animation: pulse 2s infinite;
+        .applicant-name {
+            font-weight: 600;
+            color: #2e7d32;
         }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        /* Responsive Design */
+        /* Mobile responsiveness for tricycle details */
         @media (max-width: 768px) {
             .admin-container {
                 padding: 1rem;
@@ -593,6 +641,11 @@ function getPrintUrl($certificate_type, $id) {
             .toast-icon {
                 font-size: 20px;
             }
+
+            .tricycle-details {
+                font-size: 0.75rem;
+                padding: 0.2rem 0.4rem;
+            }
         }
     </style>
 </head>
@@ -618,7 +671,7 @@ function getPrintUrl($certificate_type, $id) {
         <div class="admin-header">
             <div>
                 <h1>📄 Certificate Requests</h1>
-                <p>Total: <?php echo $total_records; ?> requests</p>
+                <p>Total: <?php echo $total_records; ?> requests | Tricycle Permits: <?php echo count(array_filter($requests, fn($r) => $r['certificate_type'] === 'TRICYCLE PERMIT')); ?></p>
             </div>
             <a href="dashboard.php" class="admin-btn">← Back to Dashboard</a>
         </div>
@@ -642,7 +695,7 @@ function getPrintUrl($certificate_type, $id) {
                     <?php endforeach; ?>
                 </select>
                 
-                <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by name...">
+                <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by name, purpose, or vehicle details...">
                 <button type="submit" class="admin-btn">🔍 Search</button>
                 <a href="view-certificate-requests.php" class="admin-btn">🔄 Clear</a>
             </form>
@@ -655,28 +708,40 @@ function getPrintUrl($certificate_type, $id) {
                         <th>ID</th>
                         <th>Certificate Type</th>
                         <th>Applicant Name</th>
-                        <th>Purpose</th>
+                        <th>Details</th>
                         <th>Status</th>
                         <th>Submitted</th>
                         <th>View Form</th>
                         <th>Actions</th>
+                        <th>Queue Info</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($requests as $req): ?>
+                    <?php $certDisplay = getCertificateTypeDisplay($req['certificate_type']); ?>
                     <tr>
                         <td><strong>#<?php echo $req['id']; ?></strong></td>
                         <td>
-                            <span class="cert-type">
+                            <span class="cert-type <?php echo $certDisplay['class']; ?>">
+                                <?php echo $certDisplay['icon']; ?>
                                 <?php echo htmlspecialchars($req['certificate_type']); ?>
                             </span>
                         </td>
                         <td>
-                            <strong><?php echo htmlspecialchars($req['full_name']); ?></strong>
+                            <div class="applicant-name">
+                                <?php echo htmlspecialchars($req['full_name']); ?>
+                            </div>
                         </td>
                         <td>
-                            <?php echo htmlspecialchars(substr($req['purpose'], 0, 50)); ?>
-                            <?php if (strlen($req['purpose']) > 50): ?>...<?php endif; ?>
+                            <div class="request-details">
+                                <?php if ($req['certificate_type'] === 'TRICYCLE PERMIT'): ?>
+                                    <div class="tricycle-details">
+                                        <?php echo getRequestDetails($req); ?>
+                                    </div>
+                                <?php else: ?>
+                                    <?php echo getRequestDetails($req); ?>
+                                <?php endif; ?>
+                            </div>
                         </td>
                         <td>
                             <span class="status-badge status-<?php echo $req['status']; ?> <?php echo $req['status'] === 'processing' ? 'print-available' : ''; ?>">
@@ -704,7 +769,7 @@ function getPrintUrl($certificate_type, $id) {
                                     if ($print_url): 
                                 ?>
                                 <a href="<?php echo $print_url; ?>" target="_blank" class="print-cert-btn">
-                                    🖨️ Print Certificate
+                                    🖨️ Print <?php echo $req['certificate_type'] === 'TRICYCLE PERMIT' ? 'Permit' : 'Certificate'; ?>
                                 </a>
                                 <?php 
                                     endif;
@@ -728,6 +793,18 @@ function getPrintUrl($certificate_type, $id) {
                             <div class="action-select status-locked">
                                 Released (Locked)
                             </div>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ($request['queue_ticket']): ?>
+                                <div class="queue-info">
+                                    <span class="queue-ticket"><?php echo htmlspecialchars($request['queue_ticket']); ?></span>
+                                    <span class="queue-status status-<?php echo $request['queue_status']; ?>">
+                                        <?php echo ucfirst($request['queue_status']); ?>
+                                    </span>
+                                </div>
+                            <?php else: ?>
+                                <span class="no-queue">No Queue</span>
                             <?php endif; ?>
                         </td>
                     </tr>

@@ -128,6 +128,7 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
             align-items: center;
             gap: 8px;
             font-size: 0.95rem;
+            position: relative; /* Added this to ensure proper positioning context */
         }
         
         .nav-link:hover {
@@ -616,18 +617,51 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
         
         .notification-badge {
             position: absolute;
-            top: -8px;
-            right: -8px;
+            top: -5px;
+            right: -5px;
             background: #dc3545;
             color: white;
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
+            width: 18px;
+            height: 18px;
+            font-size: 11px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
+            z-index: 10;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Ensure parent nav-link has relative positioning */
+        .nav-link {
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            position: relative; /* Added this to ensure proper positioning context */
+        }
+        
+        /* Mobile responsive adjustments for notification badge */
+        @media (max-width: 768px) {
+            .notification-badge {
+                top: -3px;
+                right: -3px;
+                width: 16px;
+                height: 16px;
+                font-size: 10px;
+            }
+            
+            .nav-link {
+                position: relative; /* Ensure relative positioning on mobile too */
+            }
         }
     </style>
 </head>
@@ -653,10 +687,10 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                             📋 Forms <span class="dropdown-arrow">▼</span>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="resident-registration.php">
+                            <li><a href="/GUMAOC/pages/resident-registration.php">
                                 <span class="dropdown-icon">👥</span>Census Registration
                             </a></li>
-                            <li><a href="certificate-request.php">
+                            <li><a href="/GUMAOC/pages/certificate-request.php">
                                 <span class="dropdown-icon">📄</span>Certificate Requests
                             </a></li>
                             <li><a href="/GUMAOC/pages/business-application.php">
@@ -673,8 +707,8 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                     <li><a href="/GUMAOC/register.php" class="nav-link">📝 Register</a></li>
                 <?php else: ?>
                     <!-- Authenticated User Navigation -->
-                    <li><a href="/GUMAOC/dashboard.php" class="nav-link">🏠 Dashboard</a></li>
-                    <li><a href="/GUMAOC/pages/services" class="nav-link">🛠️ Services</a></li>
+                    <li><a href="/GUMAOC/index.php" class="nav-link">🏠 Dashboard</a></li>
+                    <li><a href="/GUMAOC/pages/services.php" class="nav-link">🛠️ Services</a></li>
                     <li class="nav-dropdown">
                         <a href="/GUMAOC/pages/forms.php" class="nav-link">
                             📋 Forms <span class="dropdown-arrow">▼</span>
@@ -695,8 +729,7 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                         </ul>
                     </li>
                     <li><a href="/GUMAOC/pages/report.php" class="nav-link">🚨 Report</a></li>
-                    <li><a href="applications.php" class="nav-link">📋 My Applications</a></li>
-                    <li><a href="notifications.php" class="nav-link">
+                    <li><a href="notifications.php" class="nav-link" style="position: relative;">
                         🔔 Notifications
                         <span class="notification-badge">3</span>
                     </a></li>
@@ -717,6 +750,9 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                             <a href="settings.php" class="dropdown-item">
                                 ⚙️ Account Settings
                             </a>
+                            <a href="/GUMAOC/pages/queue-status.php" class="dropdown-item">
+                                ⏳ Queue Status
+                           </a>
                             <a href="help.php" class="dropdown-item">
                                 ❓ Help & Support
                             </a>
