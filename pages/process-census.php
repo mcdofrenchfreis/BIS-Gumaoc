@@ -95,19 +95,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Insert family members
             if (isset($_POST['familyName']) && is_array($_POST['familyName'])) {
-                $family_stmt = $pdo->prepare("INSERT INTO family_members (registration_id, full_name, birth_date, age, civil_status, education, occupation, skills, monthly_income) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $family_stmt = $pdo->prepare("INSERT INTO family_members (registration_id, full_name, relationship, age, gender, civil_status, email, occupation) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
                 
                 foreach ($_POST['familyName'] as $index => $name) {
                     if (!empty(trim($name))) {
-                        $birth_date = !empty($_POST['familyBirthDate'][$index]) ? $_POST['familyBirthDate'][$index] : null;
+                        $relationship = $_POST['familyRelation'][$index] ?? '';
                         $age = !empty($_POST['familyAge'][$index]) ? (int)$_POST['familyAge'][$index] : null;
+                        $gender = $_POST['familyGender'][$index] ?? '';
                         $civil_status = $_POST['familyCivilStatus'][$index] ?? '';
-                        $education = $_POST['familyEducation'][$index] ?? '';
+                        $email = $_POST['familyEmail'][$index] ?? '';
                         $occupation = $_POST['familyOccupation'][$index] ?? '';
-                        $skills = $_POST['familySkills'][$index] ?? '';
-                        $income = !empty($_POST['familyIncome'][$index]) ? floatval(str_replace(['₱', ','], '', $_POST['familyIncome'][$index])) : null;
                         
-                        $family_stmt->execute([$registration_id, trim($name), $birth_date, $age, $civil_status, $education, $occupation, $skills, $income]);
+                        $family_stmt->execute([$registration_id, trim($name), $relationship, $age, $gender, $civil_status, $email, $occupation]);
                     }
                 }
             }

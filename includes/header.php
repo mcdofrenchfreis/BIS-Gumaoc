@@ -794,7 +794,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!dropdown) return;
     
     const dropdownMenu = dropdown.querySelector('.dropdown-menu');
-    const mainLink = dropdown.querySelector('> a');
+    const mainLink = dropdown.querySelector('a:first-child');
     
     // Mobile dropdown toggle
     if (window.innerWidth <= 768) {

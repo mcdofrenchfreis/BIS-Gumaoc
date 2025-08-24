@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 21, 2025 at 01:43 PM
+-- Generation Time: Aug 24, 2025 at 02:54 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -82,7 +82,23 @@ INSERT INTO `admin_logs` (`id`, `admin_id`, `action_type`, `target_type`, `targe
 (35, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 09:15:10'),
 (36, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 09:25:03'),
 (37, 'admin', 'form_view', 'resident_registration', 2, 'Viewed resident registration form ID #2', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 09:25:11'),
-(38, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 09:25:21');
+(38, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-21 09:25:21'),
+(39, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 08:00:12'),
+(40, 'admin', 'form_view', 'resident_registration', 2, 'Viewed resident registration form ID #2', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 08:00:22'),
+(41, 'admin', 'form_view', 'resident_registration', 3, 'Viewed resident registration form ID #3', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 08:20:12'),
+(42, 'admin', 'form_view', 'resident_registration', 3, 'Viewed resident registration form ID #3', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 08:22:14'),
+(43, 'admin', 'form_view', 'resident_registration', 8, 'Viewed resident registration form ID #8', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 08:41:09'),
+(44, 'admin', 'form_view', 'resident_registration', 28, 'Viewed resident registration form ID #28', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 08:47:41'),
+(45, 'admin', 'form_view', 'resident_registration', 48, 'Viewed resident registration form ID #48', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 09:04:15'),
+(46, 'admin', 'form_view', 'resident_registration', 48, 'Viewed resident registration form ID #48', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 09:46:19'),
+(47, 'admin', 'form_view', 'resident_registration', 57, 'Viewed resident registration form ID #57', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 10:30:13'),
+(48, 'admin', 'form_view', 'resident_registration', 200, 'Viewed resident registration form ID #200', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:24:45'),
+(49, 'admin', 'form_view', 'resident_registration', 58, 'Viewed resident registration form ID #58', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:24:58'),
+(50, 'admin', 'form_view', 'resident_registration', 67, 'Viewed resident registration form ID #67', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:25:12'),
+(51, 'admin', 'form_view', 'resident_registration', 201, 'Viewed resident registration form ID #201', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:26:02'),
+(52, 'admin', 'form_view', 'resident_registration', 210, 'Viewed resident registration form ID #210', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:26:14'),
+(53, 'admin', 'form_view', 'resident_registration', 202, 'Viewed resident registration form ID #202', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:26:27'),
+(54, 'admin', 'form_view', 'resident_registration', 211, 'Viewed resident registration form ID #211', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:41:55');
 
 -- --------------------------------------------------------
 
@@ -207,7 +223,17 @@ CREATE TABLE `family_disabilities` (
 --
 
 INSERT INTO `family_disabilities` (`id`, `registration_id`, `name`, `disability_type`, `created_at`) VALUES
-(1, 2, 'Lola Rosa Cruz', 'Visual Impairment', '2025-08-01 09:08:43');
+(67, 201, 'Elena Santos Rodriguez', 'Diabetes Type 2', '2025-08-24 12:25:56'),
+(68, 202, 'Roberto Dela Rosa Jr.', 'Hypertension', '2025-08-24 12:25:56'),
+(69, 203, 'Isabella Grace Fernandez', 'Mild Asthma', '2025-08-24 12:25:56'),
+(70, 204, 'Luis Cabrera Santos', 'Learning Disability - ADHD', '2025-08-24 12:25:56'),
+(71, 205, 'Sebastian Rodriguez', 'Speech Therapy', '2025-08-24 12:25:56'),
+(72, 207, 'Mayumi Magbanua', 'Partial Hearing Loss', '2025-08-24 12:25:56'),
+(73, 208, 'Olivia Tan Wong', 'Developmental Delay', '2025-08-24 12:25:56'),
+(74, 209, 'Corazon Esperanza Villanueva', 'Mobility Impairment - Uses Walker', '2025-08-24 12:25:56'),
+(75, 209, 'Teodoro Villanueva', 'Vision Impairment - Cataracts', '2025-08-24 12:25:56'),
+(76, 210, 'Lucas Moreno Silva', 'Mild Cerebral Palsy', '2025-08-24 12:25:56'),
+(77, 211, 'TEST', 'TEST', '2025-08-24 12:37:03');
 
 -- --------------------------------------------------------
 
@@ -219,9 +245,12 @@ CREATE TABLE `family_members` (
   `id` int(11) NOT NULL,
   `registration_id` int(11) NOT NULL,
   `full_name` varchar(255) NOT NULL,
+  `relationship` varchar(100) DEFAULT NULL,
   `birth_date` date DEFAULT NULL,
   `age` int(11) DEFAULT NULL,
+  `gender` enum('Lalaki','Babae') DEFAULT NULL,
   `civil_status` varchar(50) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
   `education` varchar(100) DEFAULT NULL,
   `occupation` varchar(100) DEFAULT NULL,
   `skills` varchar(255) DEFAULT NULL,
@@ -233,10 +262,40 @@ CREATE TABLE `family_members` (
 -- Dumping data for table `family_members`
 --
 
-INSERT INTO `family_members` (`id`, `registration_id`, `full_name`, `birth_date`, `age`, `civil_status`, `education`, `occupation`, `skills`, `monthly_income`, `created_at`) VALUES
-(1, 2, 'Maria Santos Cruz', '1985-03-20', 38, 'Married', 'College Graduate', 'Teacher', 'Teaching, Computer Skills', 25000.00, '2025-08-01 09:08:43'),
-(2, 2, 'Pedro Juan Cruz', '2010-08-10', 13, 'Single', 'Grade 7', 'Student', 'Sports, Drawing', 0.00, '2025-08-01 09:08:43'),
-(3, 2, 'Ana Maria Cruz', '2015-12-05', 8, 'Single', 'Grade 2', 'Student', 'Reading, Singing', 0.00, '2025-08-01 09:08:43');
+INSERT INTO `family_members` (`id`, `registration_id`, `full_name`, `relationship`, `birth_date`, `age`, `gender`, `civil_status`, `email`, `education`, `occupation`, `skills`, `monthly_income`, `created_at`) VALUES
+(204, 201, 'Marcus Santos Dela Cruz', 'Spouse', '1992-12-13', 33, 'Lalaki', 'Married', 'marcus.delacruz817@gmail.com', NULL, 'DevOps Engineer', NULL, NULL, '2025-08-24 12:25:56'),
+(205, 201, 'Sophia Santos Dela Cruz', 'Daughter', '2017-01-12', 8, 'Babae', 'Single', '', NULL, 'Student', NULL, NULL, '2025-08-24 12:25:56'),
+(206, 201, 'Ethan Santos Dela Cruz', 'Son', '2020-08-09', 5, 'Lalaki', 'Single', '', NULL, 'Pre-school', NULL, NULL, '2025-08-24 12:25:56'),
+(207, 201, 'Elena Santos Rodriguez', 'Mother', '1960-04-07', 65, 'Babae', 'Widow', 'elena.rodriguez497@yahoo.com', NULL, 'Retired Nurse', NULL, NULL, '2025-08-24 12:25:56'),
+(208, 201, 'Victor Santos', 'Father-in-law', '1958-04-15', 67, 'Lalaki', 'Married', 'victor.santos807@email.com', NULL, 'Retired Engineer', NULL, NULL, '2025-08-24 12:25:56'),
+(209, 202, 'Patricia Dela Rosa Morales', 'Daughter', '1980-01-24', 45, 'Babae', 'Married', 'patricia.morales543@outlook.com', NULL, 'Bank Manager', NULL, NULL, '2025-08-24 12:25:56'),
+(210, 202, 'Roberto Dela Rosa Jr.', 'Son', '1983-07-19', 42, 'Lalaki', 'Married', 'roberto.delarosa597@email.com', NULL, 'Police Officer', NULL, NULL, '2025-08-24 12:25:56'),
+(211, 202, 'Sofia Dela Rosa', 'Granddaughter', '2007-12-08', 18, 'Babae', 'Single', 'sofia.delarosa457@hotmail.com', NULL, 'College Student', NULL, NULL, '2025-08-24 12:25:56'),
+(212, 203, 'Mia Fernandez', 'Daughter', '2021-11-18', 4, 'Babae', 'Single', '', NULL, 'Pre-school', NULL, NULL, '2025-08-24 12:25:56'),
+(213, 203, 'Rosa Fernandez Martinez', 'Mother', '1977-04-22', 48, 'Babae', 'Separated', 'rosa.martinez629@hotmail.com', NULL, 'Factory Worker', NULL, NULL, '2025-08-24 12:25:56'),
+(214, 204, 'Luz Cabrera Santos', 'Spouse', '1983-08-10', 42, 'Babae', 'Married', 'luz.santos491@email.com', NULL, 'Housewife/Farmer', NULL, NULL, '2025-08-24 12:25:56'),
+(215, 204, 'Juan Cabrera Santos', 'Son', '2006-01-12', 19, 'Lalaki', 'Single', 'juan.cabrera745@outlook.com', NULL, 'Agricultural Student', NULL, NULL, '2025-08-24 12:25:56'),
+(216, 204, 'Maria Cabrera Santos', 'Daughter', '2009-05-20', 16, 'Babae', 'Single', '', NULL, 'High School Student', NULL, NULL, '2025-08-24 12:25:56'),
+(217, 204, 'Luis Cabrera Santos', 'Son', '2013-08-04', 12, 'Lalaki', 'Single', '', NULL, 'Elementary Student', NULL, NULL, '2025-08-24 12:25:56'),
+(218, 205, 'Dr. Paulo Rodriguez', 'Spouse', '1985-09-27', 40, 'Lalaki', 'Married', 'paulo.rodriguez657@mail.com', NULL, 'Pediatrician', NULL, NULL, '2025-08-24 12:25:56'),
+(219, 205, 'Camila Rodriguez', 'Daughter', '2013-06-12', 12, 'Babae', 'Single', '', NULL, 'Student', NULL, NULL, '2025-08-24 12:25:56'),
+(220, 205, 'Sebastian Rodriguez', 'Son', '2016-06-06', 9, 'Lalaki', 'Single', '', NULL, 'Student', NULL, NULL, '2025-08-24 12:25:56'),
+(221, 206, 'Jennifer Cruz Reyes', 'Spouse', '1993-12-17', 32, 'Babae', 'Married', 'jennifer.reyes797@mail.com', NULL, 'Teacher', NULL, NULL, '2025-08-24 12:25:56'),
+(222, 206, 'Matthew Cruz Reyes', 'Son', '2015-05-15', 10, 'Lalaki', 'Single', '', NULL, 'Student', NULL, NULL, '2025-08-24 12:25:56'),
+(223, 206, 'Samantha Cruz Reyes', 'Daughter', '2018-04-07', 7, 'Babae', 'Single', '', NULL, 'Student', NULL, NULL, '2025-08-24 12:25:56'),
+(224, 206, 'Antonio Cruz', 'Father', '1957-07-28', 68, 'Lalaki', 'Married', 'antonio.cruz142@mail.com', NULL, 'Retired Government Employee', NULL, NULL, '2025-08-24 12:25:56'),
+(225, 207, 'Mayumi Magbanua', 'Spouse', '1977-07-17', 48, 'Babae', 'Married', '', NULL, 'Traditional Weaver', NULL, NULL, '2025-08-24 12:25:56'),
+(226, 207, 'Kalaw Magbanua', 'Son', '2003-03-24', 22, 'Lalaki', 'Single', 'kalaw.magbanua145@email.com', NULL, 'Cultural Preservation Officer', NULL, NULL, '2025-08-24 12:25:56'),
+(227, 207, 'Tala Magbanua', 'Daughter', '2006-02-16', 19, 'Babae', 'Single', '', NULL, 'Traditional Arts Student', NULL, NULL, '2025-08-24 12:25:56'),
+(228, 208, 'David Tan Wong', 'Spouse', '1994-03-13', 31, 'Lalaki', 'Married', 'david.wong881@outlook.com', NULL, 'Financial Analyst', NULL, NULL, '2025-08-24 12:25:56'),
+(229, 208, 'Olivia Tan Wong', 'Daughter', '2022-08-11', 3, 'Babae', 'Single', '', NULL, 'Toddler', NULL, NULL, '2025-08-24 12:25:56'),
+(230, 209, 'Teodoro Villanueva', 'Spouse', '1944-02-02', 81, 'Lalaki', 'Married', 'teodoro.villanueva581@outlook.com', NULL, 'Retired Principal', NULL, NULL, '2025-08-24 12:25:56'),
+(231, 209, 'Grace Villanueva Santos', 'Daughter', '1973-04-12', 52, 'Babae', 'Married', 'grace.santos317@email.com', NULL, 'Social Worker', NULL, NULL, '2025-08-24 12:25:56'),
+(232, 209, 'Paul Villanueva', 'Son', '1977-07-12', 48, 'Lalaki', 'Married', 'paul.villanueva232@mail.com', NULL, 'Government Employee', NULL, NULL, '2025-08-24 12:25:56'),
+(233, 210, 'Bianca Moreno Silva', 'Spouse', '2000-03-20', 25, 'Babae', 'Married', 'bianca.silva922@mail.com', NULL, 'Marketing Coordinator', NULL, NULL, '2025-08-24 12:25:56'),
+(234, 210, 'Lucas Moreno Silva', 'Son', '2023-05-25', 2, 'Lalaki', 'Single', '', NULL, 'Toddler', NULL, NULL, '2025-08-24 12:25:56'),
+(235, 211, 'TESTTEST', 'TEST', NULL, 10, '', 'Single', 'TEST@gmail.com', NULL, 'TEST', NULL, NULL, '2025-08-24 12:37:03'),
+(236, 211, 'TESTTEST', 'TEST', NULL, 10, '', 'Married', 'TEST@gmail.com', NULL, 'TEST', NULL, NULL, '2025-08-24 12:37:03');
 
 -- --------------------------------------------------------
 
@@ -257,8 +316,36 @@ CREATE TABLE `family_organizations` (
 --
 
 INSERT INTO `family_organizations` (`id`, `registration_id`, `name`, `organization_type`, `created_at`) VALUES
-(1, 2, 'Juan Santos Cruz', 'Barangay Council', '2025-08-01 09:08:43'),
-(2, 2, 'Maria Santos Cruz', 'Parent-Teacher Association', '2025-08-01 09:08:43');
+(187, 201, 'Angela Marie Santos', 'Women in Technology Philippines', '2025-08-24 12:25:56'),
+(188, 201, 'Marcus Santos Dela Cruz', 'Philippine Software Industry Association', '2025-08-24 12:25:56'),
+(189, 201, 'Elena Santos Rodriguez', 'Retired Nurses Association', '2025-08-24 12:25:56'),
+(190, 202, 'Ricardo Pablo Dela Rosa', 'Senior Citizens Federation', '2025-08-24 12:25:56'),
+(191, 202, 'Ricardo Pablo Dela Rosa', 'Retired Educators Association', '2025-08-24 12:25:56'),
+(192, 202, 'Patricia Dela Rosa Morales', 'Bankers Association of the Philippines', '2025-08-24 12:25:56'),
+(193, 202, 'Roberto Dela Rosa Jr.', 'Police Officers Association', '2025-08-24 12:25:56'),
+(194, 203, 'Isabella Grace Fernandez', 'Single Mothers Support Group', '2025-08-24 12:25:56'),
+(195, 203, 'Rosa Fernandez Martinez', 'Workers Union Local Chapter', '2025-08-24 12:25:57'),
+(196, 204, 'Jose Miguel Cabrera', 'Farmers Cooperative', '2025-08-24 12:25:57'),
+(197, 204, 'Luz Cabrera Santos', 'Rural Women Association', '2025-08-24 12:25:57'),
+(198, 204, 'Juan Cabrera Santos', 'Young Farmers Organization', '2025-08-24 12:25:57'),
+(199, 205, 'Dr. Carmen Luna Rodriguez', 'Philippine Medical Association', '2025-08-24 12:25:57'),
+(200, 205, 'Dr. Paulo Rodriguez', 'Philippine Pediatric Society', '2025-08-24 12:25:57'),
+(201, 205, 'Jennifer Cruz Reyes', 'Teachers Association', '2025-08-24 12:25:57'),
+(202, 206, 'Michael Jose Cruz', 'OFW Mutual Aid Society', '2025-08-24 12:25:57'),
+(203, 206, 'Jennifer Cruz Reyes', 'Public School Teachers Association', '2025-08-24 12:25:57'),
+(204, 206, 'Antonio Cruz', 'Government Retirees Association', '2025-08-24 12:25:57'),
+(205, 207, 'Lakandula Bayani Magbanua', 'Indigenous Peoples Council', '2025-08-24 12:25:57'),
+(206, 207, 'Mayumi Magbanua', 'Traditional Arts Preservation Society', '2025-08-24 12:25:57'),
+(207, 207, 'Kalaw Magbanua', 'Cultural Heritage Foundation', '2025-08-24 12:25:57'),
+(208, 208, 'Alexandra Sophia Tan', 'Marketing Association Philippines', '2025-08-24 12:25:57'),
+(209, 208, 'David Tan Wong', 'Financial Analysts Society', '2025-08-24 12:25:57'),
+(210, 209, 'Corazon Esperanza Villanueva', 'Senior Citizens Club', '2025-08-24 12:25:57'),
+(211, 209, 'Teodoro Villanueva', 'Retired Principals Association', '2025-08-24 12:25:57'),
+(212, 209, 'Grace Villanueva Santos', 'Social Workers Association', '2025-08-24 12:25:57'),
+(213, 209, 'Paul Villanueva', 'Government Employees Organization', '2025-08-24 12:25:57'),
+(214, 210, 'Gabriel Andrew Moreno', 'Young Entrepreneurs Organization', '2025-08-24 12:25:57'),
+(215, 210, 'Bianca Moreno Silva', 'Digital Marketing Professionals', '2025-08-24 12:25:57'),
+(216, 211, 'TEST', 'TEST', '2025-08-24 12:37:03');
 
 -- --------------------------------------------------------
 
@@ -492,8 +579,17 @@ CREATE TABLE `resident_registrations` (
 --
 
 INSERT INTO `resident_registrations` (`id`, `first_name`, `middle_name`, `last_name`, `birth_date`, `age`, `civil_status`, `gender`, `contact_number`, `house_number`, `pangkabuhayan`, `submitted_at`, `status`, `land_ownership`, `land_ownership_other`, `house_ownership`, `house_ownership_other`, `farmland`, `cooking_energy`, `cooking_energy_other`, `toilet_type`, `toilet_type_other`, `electricity_source`, `electricity_source_other`, `water_source`, `water_source_other`, `waste_disposal`, `waste_disposal_other`, `appliances`, `transportation`, `transportation_other`, `business`, `business_other`, `contraceptive`, `interviewer`, `interviewer_title`) VALUES
-(1, 'test', '', 'test', '2025-08-01', 25, 'Unknown', 'Not Specified', '09162291763', '3', 'Not Specified', '2025-08-01 08:49:15', 'approved', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
-(2, 'Juan', 'Santos', 'Cruz', '1980-05-15', 43, 'Married', 'Male', '09123456789', '123', 'Pag-aari', '2025-08-01 09:08:43', 'approved', 'Pag-aari', NULL, 'Pag-aari', NULL, 'Pag-aari', 'LPG', NULL, 'Flush', NULL, 'Kuryente', NULL, 'Water District', NULL, 'Kinokolekta', NULL, 'Telebisyon,Refrigerator', 'Kotse,Motorsiklo', NULL, 'Sari-Sari Store', NULL, 'Wala', 'Maria Garcia', 'Barangay Health Worker');
+(201, 'Angela', 'Marie', 'Santos', '1994-06-22', 31, 'Married', 'Female', '09123456789', '101', 'Software Developer', '2025-08-24 06:25:56', 'pending', 'Pag-aari', '', 'Pag-aari', '', 'Wala', 'LPG', '', 'Flush', '', 'Kuryente', '', 'Water District', '', 'Kinokolekta', '', 'Radyo/Stereo,Telebisyon,Refrigerator,Muwebles,Computer,Air Conditioner,Washing Machine', 'Kotse,Motorsiklo', '', 'Online Business,Freelancing,Software Development', '', 'Pills', 'Jenny Mendoza', 'Barangay Health Worker'),
+(202, 'Ricardo', 'Pablo', 'Dela Rosa', '1953-02-26', 72, 'Widower', 'Male', '09234567890', '202', 'Retired Principal', '2025-08-21 06:25:56', 'approved', 'Pag-aari', '', 'Pag-aari', '', 'Wala', 'LPG', '', 'Flush', '', 'Kuryente', '', 'Water District', '', 'Kinokolekta', '', 'Radyo/Stereo,Telebisyon,Refrigerator', 'Tricycle', '', 'Pension,Government Benefits', '', 'Wala', 'Carlos Villanueva', 'Census Enumerator'),
+(203, 'Isabella', 'Grace', 'Fernandez', '2001-06-18', 24, 'Single', 'Female', '09345678901', '303', 'Cashier', '2025-08-24 00:25:56', 'pending', 'Inuupahan', '', 'Umuupa', '', 'Wala', 'Gaas', '', 'De-buhos', '', 'Gaas', '', 'Poso Artesiyano', '', 'Sinusunog', '', 'Radyo/Stereo,Telebisyon', 'Jeep,Tricycle', '', 'Sari-Sari Store', '', 'Condom', 'Maria Gonzales', 'Community Volunteer'),
+(204, 'Jose', 'Miguel', 'Cabrera', '1980-03-23', 45, 'Married', 'Male', '09456789012', '404', 'Farmer', '2025-08-17 06:25:56', 'rejected', 'Pag-aari', '', 'Pag-aari', '', 'Pag-aari', 'Kahoy', '', 'Hinuhukay/Balon', '', 'Generator', 'Solar Panel', 'Deep Well', 'Spring Water', 'Compost Pit', 'Organic Composting', 'Radyo/Stereo', 'Carabao Cart,Motorcle', 'Farm Tractor', 'Rice Farming,Vegetable Garden,Livestock', 'Organic Farming', 'NFP', 'Pedro Reyes', 'Agricultural Extension Worker'),
+(205, 'Dr. Carmen', 'Luna', 'Rodriguez', '1987-01-11', 38, 'Married', 'Female', '09567890123', '505', 'Medical Doctor', '2025-08-24 04:25:56', 'pending', 'Pag-aari', '', 'Pag-aari', '', 'Wala', 'LPG', '', 'Flush', '', 'Kuryente', '', 'Water District', '', 'Kinokolekta', '', 'Radyo/Stereo,Telebisyon,Refrigerator,Muwebles,Air Conditioner,Computer,Washing Machine', 'Kotse,Motorsiklo,Van', '', 'Medical Clinic,Health Services', '', 'IUD', 'Rosa Martinez', 'Public Health Nurse'),
+(206, 'Michael', 'Jose', 'Cruz', '1990-06-16', 35, 'Married', 'Male', '09678901234', '606', 'Overseas Worker (Dubai)', '2025-08-19 06:25:56', 'approved', 'Pag-aari', '', 'Pag-aari', '', 'Wala', 'LPG', '', 'Flush', '', 'Kuryente', '', 'Water District', '', 'Kinokolekta', '', 'Radyo/Stereo,Telebisyon,Refrigerator,Muwebles,Air Conditioner,Computer', 'Kotse,Van,Motorsiklo', '', 'Remittances,Real Estate,Investment', 'International Money Transfer', 'Pills', 'Ana Flores', 'Barangay Secretary'),
+(207, 'Lakandula', 'Bayani', 'Magbanua', '1973-10-06', 52, 'Married', 'Male', '09789012345', '707', 'Traditional Healer', '2025-08-24 02:25:56', 'pending', 'Iba pa', 'Ancestral Domain', 'Iba pa', 'Traditional House', 'Pag-aari', 'Kahoy', '', 'Hinuhukay/Balon', '', 'Iba pa', 'Solar Panel', 'Iba pa', 'Spring Water', 'Iba pa', 'Natural Composting', 'Radyo/Stereo', 'Walking,Tricycle', 'Carabao', 'Herbal Medicine,Handicrafts,Traditional Crafts', 'Cultural Arts', 'NFP', 'Esperanza Santos', 'Indigenous Peoples Affairs Officer'),
+(208, 'Alexandra', 'Sophia', 'Tan', '1996-11-08', 29, 'Married', 'Female', '09890123456', '808', 'Marketing Manager', '2025-08-23 06:25:56', 'pending', 'Pag-aari', '', 'Pag-aari', '', 'Wala', 'LPG', '', 'Flush', '', 'Kuryente', '', 'Water District', '', 'Kinokolekta', '', 'Radyo/Stereo,Telebisyon,Refrigerator,Muwebles,Air Conditioner,Computer,Washing Machine', 'Kotse,Motorcycle', '', 'Digital Marketing Agency,Online Business', '', 'Pills', 'Roberto Silva', 'IT Support Specialist'),
+(209, 'Corazon', 'Esperanza', 'Villanueva', '1947-11-01', 78, 'Married', 'Female', '09901234567', '909', 'Retired Teacher', '2025-08-10 06:25:56', 'approved', 'Pag-aari', '', 'Pag-aari', '', 'Wala', 'LPG', '', 'Flush', '', 'Kuryente', '', 'Water District', '', 'Kinokolekta', '', 'Radyo/Stereo,Telebisyon,Refrigerator', 'Wheelchair,Tricycle', 'Medical Transport', 'Pension,Social Security,Government Benefits', 'Senior Citizens Discount', 'Wala', 'Gloria Ramos', 'Senior Citizens Coordinator'),
+(210, 'Gabriel', 'Andrew', 'Moreno', '1998-08-01', 27, 'Married', 'Male', '09012345678', '1010', 'Business Owner', '2025-08-24 05:55:56', 'pending', 'Pag-aari', '', 'Pag-aari', '', 'Wala', 'LPG', '', 'Flush', '', 'Kuryente', '', 'Water District', '', 'Kinokolekta', '', 'Radyo/Stereo,Telebisyon,Refrigerator,Muwebles,Computer,Air Conditioner', 'Kotse,Delivery Van,Motorsiklo', 'Business Vehicle', 'Food Delivery,E-commerce,Digital Services', 'Tech Startup', 'Condom', 'Daniel Castro', 'Business Development Officer'),
+(211, 'TEST', '', 'TEST', '2025-08-24', 25, 'Unknown', 'Not Specified', '09162291763', '101', 'Iba pa', '2025-08-24 12:37:03', 'pending', 'Iba pa', 'TEST', 'Iba pa', 'TEST', 'Wala', 'Iba pa', 'TEST', 'Iba pa', 'TEST', 'Iba pa', 'TEST', 'Iba pa', 'TEST', 'Iba pa', 'TEST', 'Muwebles', 'Iba pa', 'TEST', 'Iba pa', 'TEST', 'Wala', 'TEST', 'TEST');
 
 -- --------------------------------------------------------
 
@@ -778,7 +874,7 @@ ALTER TABLE `updates`
 -- AUTO_INCREMENT for table `admin_logs`
 --
 ALTER TABLE `admin_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
 
 --
 -- AUTO_INCREMENT for table `admin_users`
@@ -802,19 +898,19 @@ ALTER TABLE `certificate_requests`
 -- AUTO_INCREMENT for table `family_disabilities`
 --
 ALTER TABLE `family_disabilities`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=78;
 
 --
 -- AUTO_INCREMENT for table `family_members`
 --
 ALTER TABLE `family_members`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=237;
 
 --
 -- AUTO_INCREMENT for table `family_organizations`
 --
 ALTER TABLE `family_organizations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=217;
 
 --
 -- AUTO_INCREMENT for table `notifications`
@@ -856,7 +952,7 @@ ALTER TABLE `residents`
 -- AUTO_INCREMENT for table `resident_registrations`
 --
 ALTER TABLE `resident_registrations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=212;
 
 --
 -- AUTO_INCREMENT for table `rfid_access_logs`

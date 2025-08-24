@@ -112,8 +112,12 @@ $count_stmt->execute($params);
 $total_records = $count_stmt->fetchColumn();
 $total_pages = ceil($total_records / $per_page);
 
-// Get records
-$sql = "SELECT * FROM resident_registrations $where_clause ORDER BY submitted_at DESC LIMIT $per_page OFFSET $offset";
+// Get records with additional data counts
+$sql = "SELECT rr.*, 
+        (SELECT COUNT(*) FROM family_members fm WHERE fm.registration_id = rr.id) as family_count,
+        (SELECT COUNT(*) FROM family_disabilities fd WHERE fd.registration_id = rr.id) as disability_count,
+        (SELECT COUNT(*) FROM family_organizations fo WHERE fo.registration_id = rr.id) as organization_count
+        FROM resident_registrations rr $where_clause ORDER BY submitted_at DESC LIMIT $per_page OFFSET $offset";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $registrations = $stmt->fetchAll();
@@ -476,6 +480,50 @@ if (isset($_SESSION['toast_message'])) {
         }
 
         /* Responsive Design */
+        /* Family Data Summary Styles */
+        .family-data-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            align-items: center;
+        }
+        
+        .data-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.2rem 0.4rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: help;
+        }
+        
+        .family-badge {
+            background: rgba(33, 150, 243, 0.1);
+            color: #1976d2;
+            border: 1px solid rgba(33, 150, 243, 0.3);
+        }
+        
+        .disability-badge {
+            background: rgba(255, 152, 0, 0.1);
+            color: #f57c00;
+            border: 1px solid rgba(255, 152, 0, 0.3);
+        }
+        
+        .organization-badge {
+            background: rgba(156, 39, 176, 0.1);
+            color: #7b1fa2;
+            border: 1px solid rgba(156, 39, 176, 0.3);
+        }
+        
+        .basic-badge {
+            background: rgba(158, 158, 158, 0.1);
+            color: #616161;
+            border: 1px solid rgba(158, 158, 158, 0.3);
+        }
+
         @media (max-width: 768px) {
             .admin-container {
                 padding: 1rem;
@@ -500,6 +548,17 @@ if (isset($_SESSION['toast_message'])) {
             .admin-table td {
                 padding: 0.8rem 0.5rem;
                 font-size: 0.85rem;
+            }
+            
+            .family-data-summary {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.2rem;
+            }
+            
+            .data-badge {
+                font-size: 0.65rem;
+                padding: 0.15rem 0.3rem;
             }
         }
     </style>
@@ -554,6 +613,7 @@ if (isset($_SESSION['toast_message'])) {
                         <th>Name</th>
                         <th>Age</th>
                         <th>Gender</th>
+                        <th>Family Data</th>
                         <th>Status</th>
                         <th>Submitted</th>
                         <th>View Form</th>
@@ -573,6 +633,22 @@ if (isset($_SESSION['toast_message'])) {
                         <td><?php echo $reg['age']; ?></td>
                         <td><?php echo htmlspecialchars($reg['gender']); ?></td>
                         <td>
+                            <div class="family-data-summary">
+                                <?php if ($reg['family_count'] > 0): ?>
+                                    <span class="data-badge family-badge" title="<?php echo $reg['family_count']; ?> family member(s)">👨‍👩‍👧‍👦 <?php echo $reg['family_count']; ?></span>
+                                <?php endif; ?>
+                                <?php if ($reg['disability_count'] > 0): ?>
+                                    <span class="data-badge disability-badge" title="<?php echo $reg['disability_count']; ?> disability record(s)">♿ <?php echo $reg['disability_count']; ?></span>
+                                <?php endif; ?>
+                                <?php if ($reg['organization_count'] > 0): ?>
+                                    <span class="data-badge organization-badge" title="<?php echo $reg['organization_count']; ?> organization membership(s)">🏢 <?php echo $reg['organization_count']; ?></span>
+                                <?php endif; ?>
+                                <?php if ($reg['family_count'] == 0 && $reg['disability_count'] == 0 && $reg['organization_count'] == 0): ?>
+                                    <span class="data-badge basic-badge">📋 Basic Info Only</span>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                        <td>
                             <span class="status-badge status-<?php echo $reg['status']; ?>">
                                 <?php echo ucfirst($reg['status']); ?>
                                 <?php if ($reg['status'] !== 'pending'): ?>
@@ -585,8 +661,9 @@ if (isset($_SESSION['toast_message'])) {
                             <small style="color: #666;"><?php echo date('g:i A', strtotime($reg['submitted_at'])); ?></small>
                         </td>
                         <td>
-                            <button onclick="viewRegistrationDetails(<?php echo $reg['id']; ?>)" class="view-form-btn">
-                                👁️ View Form
+                            <button onclick="viewRegistrationDetails(<?php echo $reg['id']; ?>)" class="view-form-btn" 
+                                    title="View complete registration form including personal info, family members, disabilities, and organizations">
+                                👁️ View Complete Form
                             </button>
                         </td>
                         <td>
