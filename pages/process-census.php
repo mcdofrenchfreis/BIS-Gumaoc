@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Extract basic form data
         $head_of_family = trim($_POST['headOfFamily'] ?? '');
         $cellphone = trim($_POST['cellphone'] ?? '');
+        $email = trim($_POST['email'] ?? '');
         $house_number = trim($_POST['houseNumber'] ?? '');
         $interviewer = trim($_POST['interviewer'] ?? '');
         $interviewer_title = trim($_POST['interviewerTitle'] ?? '');
@@ -68,18 +69,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Insert main registration
             $sql = "INSERT INTO resident_registrations (
                 first_name, middle_name, last_name, birth_date, age, 
-                civil_status, gender, contact_number, house_number, pangkabuhayan,
+                civil_status, gender, contact_number, email, house_number, pangkabuhayan,
                 land_ownership, land_ownership_other, house_ownership, house_ownership_other,
                 farmland, cooking_energy, cooking_energy_other, toilet_type, toilet_type_other,
                 electricity_source, electricity_source_other, water_source, water_source_other,
                 waste_disposal, waste_disposal_other, appliances, transportation, transportation_other,
                 business, business_other, contraceptive, interviewer, interviewer_title
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $stmt = $pdo->prepare($sql);
             $result = $stmt->execute([
                 $first_name, $middle_name, $last_name, $birth_date, $age,
-                $civil_status, $gender, $contact_number, $house_number, $pangkabuhayan,
+                $civil_status, $gender, $contact_number, $email, $house_number, $pangkabuhayan,
                 $land_ownership, $land_ownership_other, $house_ownership, $house_ownership_other,
                 $farmland, $cooking_energy, $cooking_energy_other, $toilet_type, $toilet_type_other,
                 $electricity_source, $electricity_source_other, $water_source, $water_source_other,

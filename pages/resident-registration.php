@@ -984,6 +984,15 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
 
           <div class="form-group">
+            <label for="email">Email Address<br><small>Email Address</small></label>
+            <input type="email" id="email" name="email" placeholder="example@email.com"
+                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['email']) : ''; ?>"
+                   <?php echo $readonly ? 'readonly' : ''; ?>>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
             <label for="houseNumber">House Number *<br><small>Numero ng Bahay *</small></label>
             <input type="text" id="houseNumber" name="houseNumber" required placeholder="Numero ng bahay" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['house_number']) : ''; ?>"
