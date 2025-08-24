@@ -51,10 +51,45 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
         }
         
         if ($status_valid) {
-            $stmt = $pdo->prepare("UPDATE certificate_requests SET status = ? WHERE id = ?");
-            $result = $stmt->execute([$new_status, $id]);
+            // Begin transaction to update both certificate and queue ticket
+            $pdo->beginTransaction();
             
-            if ($result) {
+            try {
+                // Update certificate status
+                $stmt = $pdo->prepare("UPDATE certificate_requests SET status = ? WHERE id = ?");
+                $result = $stmt->execute([$new_status, $id]);
+                
+                if (!$result) {
+                    throw new Exception("Failed to update certificate status");
+                }
+                
+                // Get the linked queue ticket ID if it exists
+                $queue_stmt = $pdo->prepare("SELECT queue_ticket_id FROM certificate_requests WHERE id = ?");
+                $queue_stmt->execute([$id]);
+                $queue_ticket_id = $queue_stmt->fetchColumn();
+                
+                // Update linked queue ticket status based on certificate status
+                if ($queue_ticket_id) {
+                    $queue_status_mapping = [
+                        'pending' => 'waiting',
+                        'processing' => 'serving', 
+                        'ready' => 'serving',
+                        'released' => 'completed'
+                    ];
+                    
+                    $queue_status = $queue_status_mapping[$new_status] ?? 'waiting';
+                    
+                    $queue_update_stmt = $pdo->prepare("UPDATE queue_tickets SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+                    $queue_update_result = $queue_update_stmt->execute([$queue_status, $queue_ticket_id]);
+                    
+                    if (!$queue_update_result) {
+                        throw new Exception("Failed to update queue ticket status");
+                    }
+                }
+                
+                // Commit transaction
+                $pdo->commit();
+                
                 // Log the status update
                 $logger->logStatusUpdate(
                     'certificate_request',
@@ -63,14 +98,20 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
                     $new_status,
                     [
                         'certificate_type' => $current_data['certificate_type'],
-                        'applicant_name' => $current_data['full_name']
+                        'applicant_name' => $current_data['full_name'],
+                        'queue_ticket_id' => $queue_ticket_id,
+                        'queue_status_updated' => $queue_ticket_id ? $queue_status : 'no_queue_ticket'
                     ]
                 );
                 
-                $_SESSION['toast_message'] = "The status of Certificate Request ID #$id has been successfully updated to " . ucfirst($new_status);
+                $queue_update_msg = $queue_ticket_id ? " and linked queue ticket status updated to " . ucfirst($queue_status) : "";
+                $_SESSION['toast_message'] = "The status of Certificate Request ID #$id has been successfully updated to " . ucfirst($new_status) . $queue_update_msg;
                 $_SESSION['toast_type'] = 'success';
-            } else {
-                $_SESSION['toast_message'] = "Failed to update status for Certificate Request ID #$id";
+                
+            } catch (Exception $e) {
+                // Rollback transaction on error
+                $pdo->rollback();
+                $_SESSION['toast_message'] = "Failed to update status for Certificate Request ID #$id: " . $e->getMessage();
                 $_SESSION['toast_type'] = 'error';
             }
         } else {
@@ -102,17 +143,17 @@ $where_conditions = [];
 $params = [];
 
 if ($status_filter && in_array($status_filter, ['pending', 'processing', 'ready', 'released'])) {
-    $where_conditions[] = "status = ?";
+    $where_conditions[] = "cr.status = ?";
     $params[] = $status_filter;
 }
 
 if ($cert_type) {
-    $where_conditions[] = "certificate_type = ?";
+    $where_conditions[] = "cr.certificate_type = ?";
     $params[] = $cert_type;
 }
 
 if ($search) {
-    $where_conditions[] = "(full_name LIKE ? OR certificate_type LIKE ? OR purpose LIKE ?)";
+    $where_conditions[] = "(cr.full_name LIKE ? OR cr.certificate_type LIKE ? OR cr.purpose LIKE ?)";
     $search_term = "%$search%";
     $params[] = $search_term;
     $params[] = $search_term;
@@ -122,7 +163,7 @@ if ($search) {
 $where_clause = $where_conditions ? "WHERE " . implode(" AND ", $where_conditions) : "";
 
 // Get total count
-$count_sql = "SELECT COUNT(*) FROM certificate_requests $where_clause";
+$count_sql = "SELECT COUNT(*) FROM certificate_requests cr $where_clause";
 $count_stmt = $pdo->prepare($count_sql);
 $count_stmt->execute($params);
 $total_records = $count_stmt->fetchColumn();
@@ -131,15 +172,15 @@ $total_pages = ceil($total_records / $per_page);
 // Get records with all tricycle permit data
 $sql = "SELECT cr.*, 
         CASE 
-            WHEN certificate_type = 'TRICYCLE PERMIT' THEN 
-                CONCAT(vehicle_make_type, ' - ', plate_no)
-            ELSE purpose 
+            WHEN cr.certificate_type = 'TRICYCLE PERMIT' THEN 
+                CONCAT(cr.vehicle_make_type, ' - ', cr.plate_no)
+            ELSE cr.purpose 
         END as display_info,
         qt.ticket_number as queue_ticket,
         qt.status as queue_status
         FROM certificate_requests cr
         LEFT JOIN queue_tickets qt ON cr.queue_ticket_id = qt.id
-        $where_clause ORDER BY submitted_at DESC LIMIT $per_page OFFSET $offset";
+        $where_clause ORDER BY cr.submitted_at DESC LIMIT $per_page OFFSET $offset";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $requests = $stmt->fetchAll();
@@ -173,7 +214,12 @@ function getPrintUrl($certificate_type, $id) {
         'RESIDENCY' => '../pages/print-residency.php',
         'PROOF OF RESIDENCY' => '../pages/print-residency.php',
         'TRICYCLE PERMIT' => '../pages/print-tricycle-permit.php',
-        'CEDULA' => '../pages/print-tricycle-permit.php' // Legacy support
+        'CEDULA' => '../pages/print-tricycle-permit.php', // Legacy support
+        'CERTIFICATE OF RESIDENCY' => '../pages/print-residency.php',
+        'RESIDENCY CERTIFICATE' => '../pages/print-residency.php',
+        'BARANGAY CERTIFICATE' => '../pages/print-barangay-clearance.php',
+        'CERTIFICATE' => '../pages/print-generic-certificate.php',
+        'CLEARANCE CERTIFICATE' => '../pages/print-barangay-clearance.php'
     ];
     
     return isset($print_urls[$certificate_type]) ? $print_urls[$certificate_type] . '?id=' . $id : null;
@@ -647,6 +693,70 @@ function getRequestDetails($request) {
                 padding: 0.2rem 0.4rem;
             }
         }
+        
+        /* Queue Info Styling */
+        .queue-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+            min-width: 120px;
+        }
+        
+        .queue-ticket {
+            font-family: monospace;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+        
+        .queue-status {
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            text-align: center;
+        }
+        
+        .queue-status.status-waiting {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .queue-status.status-serving {
+            background: #cce5ff;
+            color: #0066cc;
+        }
+        
+        .queue-status.status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .queue-status.status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .no-queue {
+            color: #999;
+            font-style: italic;
+            font-size: 0.8rem;
+            padding: 0.5rem;
+            text-align: center;
+        }
+        
+        .queue-sync-indicator {
+            color: #28a745;
+            font-size: 0.65rem;
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+            margin-top: 0.1rem;
+        }
     </style>
 </head>
 <body>
@@ -671,7 +781,7 @@ function getRequestDetails($request) {
         <div class="admin-header">
             <div>
                 <h1>📄 Certificate Requests</h1>
-                <p>Total: <?php echo $total_records; ?> requests | Tricycle Permits: <?php echo count(array_filter($requests, fn($r) => $r['certificate_type'] === 'TRICYCLE PERMIT')); ?></p>
+                <p>Total: <?php echo $total_records; ?> requests | Processing: <?php echo count(array_filter($requests, fn($r) => $r['status'] === 'processing')); ?> ready to print</p>
             </div>
             <a href="dashboard.php" class="admin-btn">← Back to Dashboard</a>
         </div>
@@ -763,13 +873,17 @@ function getRequestDetails($request) {
                                     👁️ View Form
                                 </button>
                                 <?php 
-                                // Only show print button when status is "processing"
+                                // Show print button when status is "processing" for all certificate types
                                 if ($req['status'] === 'processing') {
                                     $print_url = getPrintUrl($req['certificate_type'], $req['id']);
                                     if ($print_url): 
                                 ?>
                                 <a href="<?php echo $print_url; ?>" target="_blank" class="print-cert-btn">
                                     🖨️ Print <?php echo $req['certificate_type'] === 'TRICYCLE PERMIT' ? 'Permit' : 'Certificate'; ?>
+                                </a>
+                                <?php else: ?>
+                                <a href="../pages/print-generic-certificate.php?id=<?php echo $req['id']; ?>" target="_blank" class="print-cert-btn">
+                                    🖨️ Print Certificate
                                 </a>
                                 <?php 
                                     endif;
@@ -796,15 +910,35 @@ function getRequestDetails($request) {
                             <?php endif; ?>
                         </td>
                         <td>
-                            <?php if ($request['queue_ticket']): ?>
+                            <?php if ($req['queue_ticket']): ?>
                                 <div class="queue-info">
-                                    <span class="queue-ticket"><?php echo htmlspecialchars($request['queue_ticket']); ?></span>
-                                    <span class="queue-status status-<?php echo $request['queue_status']; ?>">
-                                        <?php echo ucfirst($request['queue_status']); ?>
+                                    <span class="queue-ticket"><?php echo htmlspecialchars($req['queue_ticket']); ?></span>
+                                    <span class="queue-status status-<?php echo $req['queue_status']; ?>">
+                                        <?php echo ucfirst($req['queue_status']); ?>
                                     </span>
+                                    <?php 
+                                    // Show sync indicator based on certificate-queue status alignment
+                                    $cert_status = $req['status'];
+                                    $queue_status = $req['queue_status'];
+                                    $is_synced = (
+                                        ($cert_status === 'pending' && $queue_status === 'waiting') ||
+                                        ($cert_status === 'processing' && $queue_status === 'serving') ||
+                                        ($cert_status === 'ready' && $queue_status === 'serving') ||
+                                        ($cert_status === 'released' && $queue_status === 'completed')
+                                    );
+                                    ?>
+                                    <?php if ($is_synced): ?>
+                                        <div class="queue-sync-indicator">
+                                            ✓ Synchronized
+                                        </div>
+                                    <?php else: ?>
+                                        <div class="queue-sync-indicator" style="color: #ffc107;">
+                                            ⚠ Needs sync
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             <?php else: ?>
-                                <span class="no-queue">No Queue</span>
+                                <span class="no-queue">No Queue Ticket</span>
                             <?php endif; ?>
                         </td>
                     </tr>

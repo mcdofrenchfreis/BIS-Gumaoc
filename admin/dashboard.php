@@ -731,6 +731,30 @@ try {
         .stat-card:nth-child(3) { animation-delay: 0.3s; }
         .stat-card:nth-child(4) { animation-delay: 0.4s; }
         .stat-card:nth-child(5) { animation-delay: 0.5s; }
+
+        /* Queue Monitor (Dashboard preview) */
+        .queue-section .queue-stats { display: grid; grid-template-columns: repeat(5, minmax(100px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+        .queue-section .qstat { background: rgba(27, 94, 32, 0.04); border: 1px solid rgba(27, 94, 32, 0.1); border-radius: 10px; padding: 0.75rem; text-align: center; }
+        .queue-section .qnum { font-size: 1.4rem; font-weight: 800; color: #1b5e20; }
+        .queue-section .qlabel { font-size: 0.8rem; color: #46634a; }
+        .queue-lists { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; }
+        .queue-panel { background: rgba(255,255,255,0.95); border: 1px solid rgba(27, 94, 32, 0.1); border-radius: 12px; padding: 1rem; }
+        .queue-panel h3 { margin: 0 0 0.75rem 0; color: #1b5e20; font-size: 1rem; }
+        .queue-list { max-height: 300px; overflow-y: auto; display: grid; gap: 0.5rem; }
+        .queue-ticket { display:flex; justify-content:space-between; align-items:center; background: rgba(27, 94, 32, 0.04); border: 1px solid rgba(27, 94, 32, 0.1); padding: 0.6rem 0.75rem; border-radius: 10px; }
+        .qbadges { display:flex; gap: 6px; align-items:center; }
+        .qbadge { padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; border: 1px solid transparent; }
+        .qbadge.waiting { background:#fff3cd; color:#856404; border-color: rgba(133,100,4,0.15); }
+        .qbadge.serving { background:#d4edda; color:#155724; border-color: rgba(21,87,36,0.15); }
+        .qbadge.urgent { background:#f8d7da; color:#721c24; border-color: rgba(114,28,36,0.15); }
+        .qbadge.priority { background:#cce5ff; color:#004085; border-color: rgba(0,64,133,0.15); }
+        .queue-actions { display:flex; justify-content: flex-end; margin-top: 0.75rem; }
+        .queue-link { display:inline-block; padding: 0.6rem 1rem; background: linear-gradient(135deg, #1b5e20 0%, #4caf50 100%); color:#fff; text-decoration:none; border-radius: 10px; font-weight: 600; }
+
+        @media (max-width: 768px) {
+            .queue-section .queue-stats { grid-template-columns: repeat(5, minmax(80px, 1fr)); }
+            .queue-lists { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -742,6 +766,10 @@ try {
         
         <div class="admin-nav">
             <a href="forms-manager.php">📋 Forms Manager</a>
+            <a href="manage-blotter.php">📝 Blotter Management</a>
+            <a href="captain-clearances.php">🛡️ Captain Clearances</a>
+            <a href="blotter-reports.php">📊 Blotter Reports</a>
+            <a href="queue-monitor.php">📺 Queue Monitor</a>
             <a href="../index.php" target="_blank">🌐 View Website</a>
             <a href="logout.php">🚪 Logout</a>
         </div>
@@ -828,6 +856,27 @@ try {
                     </div>
                     
                     <div class="action-card">
+                        <div class="action-icon">📝</div>
+                        <h3>Blotter Management</h3>
+                        <p>Record and manage complaints, incidents, and disputes within the barangay</p>
+                        <a href="manage-blotter.php" class="admin-btn">Manage Blotter</a>
+                    </div>
+                    
+                    <div class="action-card">
+                        <div class="action-icon">🛡️</div>
+                        <h3>Captain Clearances</h3>
+                        <p>Manage clearances for residents with records or requiring special permissions</p>
+                        <a href="captain-clearances.php" class="admin-btn">Manage Clearances</a>
+                    </div>
+                    
+                    <div class="action-card">
+                        <div class="action-icon">📈</div>
+                        <h3>Blotter Reports</h3>
+                        <p>Generate reports and analyze trends in community incidents and resolutions</p>
+                        <a href="blotter-reports.php" class="admin-btn">View Reports</a>
+                    </div>
+                    
+                    <div class="action-card">
                         <div class="action-icon">📊</div>
                         <h3>Forms Manager</h3>
                         <p>Comprehensive form management and analytics</p>
@@ -835,7 +884,7 @@ try {
                     </div>
                     
                     <div class="action-card">
-                        <div class="action-icon">📊</div>
+                        <div class="action-icon">📋</div>
                         <h3>System Logs</h3>
                         <p>View activity logs and system events</p>
                         <a href="view-logs.php" class="admin-btn">View Logs</a>
@@ -865,6 +914,33 @@ try {
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </ul>
+            </div>
+        </div>
+        
+        <div class="dashboard-section queue-section">
+            <h2 class="section-title">
+                <div class="section-icon">🖥️</div>
+                Queue Monitor
+            </h2>
+            <div class="queue-stats" id="queue-stats">
+                <div class="qstat"><div class="qnum">0</div><div class="qlabel">Waiting</div></div>
+                <div class="qstat"><div class="qnum">0</div><div class="qlabel">Serving</div></div>
+                <div class="qstat"><div class="qnum">0</div><div class="qlabel">Completed</div></div>
+                <div class="qstat"><div class="qnum">0</div><div class="qlabel">Cancelled</div></div>
+                <div class="qstat"><div class="qnum">0</div><div class="qlabel">Total</div></div>
+            </div>
+            <div class="queue-lists">
+                <div class="queue-panel">
+                    <h3>Currently Serving</h3>
+                    <div class="queue-list" id="queue-serving"></div>
+                </div>
+                <div class="queue-panel">
+                    <h3>Waiting Queue</h3>
+                    <div class="queue-list" id="queue-waiting"></div>
+                </div>
+            </div>
+            <div class="queue-actions">
+                <a href="queue-monitor.php" class="queue-link">Open Full Monitor</a>
             </div>
         </div>
     </div>
@@ -901,6 +977,74 @@ try {
                 });
             });
         });
+        
+        // Queue Monitor (Dashboard preview)
+        (function() {
+            const apiUrl = '../api/queue-state.php';
+            const statsEl = document.getElementById('queue-stats');
+            const servingEl = document.getElementById('queue-serving');
+            const waitingEl = document.getElementById('queue-waiting');
+            if (!statsEl || !servingEl || !waitingEl) return;
+
+            function escapeHtml(s) {
+                if (s == null) return '';
+                return String(s).replace(/[&<>\"]+/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c] || c));
+            }
+
+            function badgeForPriority(level) {
+                if (level === 'urgent') return '<span class="qbadge urgent">Urgent</span>';
+                if (level === 'priority') return '<span class="qbadge priority">Priority</span>';
+                return '';
+            }
+
+            function renderQueue() {
+                fetch(apiUrl, { credentials: 'same-origin' })
+                    .then(r => r.json())
+                    .then(data => {
+                        const s = data && data.stats ? data.stats : {};
+                        statsEl.innerHTML = `
+                            <div class=\"qstat\"><div class=\"qnum\">${s.waiting || 0}</div><div class=\"qlabel\">Waiting</div></div>
+                            <div class=\"qstat\"><div class=\"qnum\">${s.serving || 0}</div><div class=\"qlabel\">Serving</div></div>
+                            <div class=\"qstat\"><div class=\"qnum\">${s.completed || 0}</div><div class=\"qlabel\">Completed</div></div>
+                            <div class=\"qstat\"><div class=\"qnum\">${s.cancelled || 0}</div><div class=\"qlabel\">Cancelled</div></div>
+                            <div class=\"qstat\"><div class=\"qnum\">${s.total || 0}</div><div class=\"qlabel\">Total</div></div>
+                        `;
+
+                        const serving = (data && data.serving) ? data.serving : [];
+                        servingEl.innerHTML = serving.map(t => `
+                            <div class=\"queue-ticket\">
+                                <div>
+                                    <div><strong>${escapeHtml(t.ticket_number)}</strong> — ${escapeHtml(t.service_name || '')}</div>
+                                    <div style=\"font-size:12px;color:#555\">${escapeHtml(t.customer_name || '')}</div>
+                                </div>
+                                <div class=\"qbadges\">
+                                    <span class=\"qbadge serving\">${escapeHtml(t.window_number || t.window_name || 'Serving')}</span>
+                                </div>
+                            </div>
+                        `).join('');
+
+                        const waiting = (data && data.waiting) ? data.waiting : [];
+                        waitingEl.innerHTML = waiting.slice(0, 15).map(t => `
+                            <div class=\"queue-ticket\">
+                                <div>
+                                    <div><strong>${escapeHtml(t.ticket_number)}</strong> — ${escapeHtml(t.service_name || '')}</div>
+                                    <div style=\"font-size:12px;color:#555\">#${t.queue_position ?? '-'} · ${escapeHtml(t.priority_level || 'normal')}</div>
+                                </div>
+                                <div class=\"qbadges\">
+                                    <span class=\"qbadge waiting\">Waiting</span>
+                                    ${badgeForPriority(t.priority_level)}
+                                </div>
+                            </div>
+                        `).join('');
+                    })
+                    .catch(() => {
+                        // Silent fail on preview
+                    });
+            }
+
+            renderQueue();
+            setInterval(renderQueue, 10000);
+        })();
     </script>
 </body>
 </html>
