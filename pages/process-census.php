@@ -6,13 +6,32 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 include '../includes/db_connect.php';
+require_once '../includes/email_service.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        // Extract basic form data
-        $head_of_family = trim($_POST['headOfFamily'] ?? '');
+        // Extract basic form data - Updated to handle separate name fields
+        $first_name = trim($_POST['firstName'] ?? '');
+        $middle_name = trim($_POST['middleName'] ?? '');
+        $last_name = trim($_POST['lastName'] ?? '');
+        
+        // Backward compatibility - if separate name fields are empty, try legacy headOfFamily
+        if (empty($first_name) && empty($last_name) && !empty($_POST['headOfFamily'])) {
+            $head_of_family_legacy = trim($_POST['headOfFamily']);
+            $name_parts = explode(' ', $head_of_family_legacy);
+            $first_name = $name_parts[0] ?? '';
+            $last_name = end($name_parts) ?? '';
+            $middle_name = count($name_parts) > 2 ? $name_parts[1] : '';
+        }
+        
+        // Build full name for compatibility
+        $head_of_family = trim($first_name . ' ' . $middle_name . ' ' . $last_name);
+        $head_of_family = preg_replace('/\s+/', ' ', $head_of_family); // Normalize spaces
+        
         $cellphone = trim($_POST['cellphone'] ?? '');
         $email = trim($_POST['email'] ?? '');
+        $birthday = trim($_POST['birthday'] ?? '');
+        $birth_place = trim($_POST['birthPlace'] ?? '');
         $house_number = trim($_POST['houseNumber'] ?? '');
         $interviewer = trim($_POST['interviewer'] ?? '');
         $interviewer_title = trim($_POST['interviewerTitle'] ?? '');
@@ -42,23 +61,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $business_other = $_POST['businessOther'] ?? '';
         $contraceptive = isset($_POST['contraceptive']) ? implode(',', $_POST['contraceptive']) : '';
         
-        // For database compatibility, use head_of_family as the name fields
-        $name_parts = explode(' ', $head_of_family);
-        $first_name = $name_parts[0] ?? '';
-        $last_name = end($name_parts) ?? '';
-        $middle_name = count($name_parts) > 2 ? $name_parts[1] : '';
+        // Name fields are already extracted above
+        // No need to split head_of_family since we have separate fields
         
         // Set default values for required fields
-        $birth_date = date('Y-m-d');
-        $age = 25;
-        $civil_status = 'Unknown';
-        $gender = 'Not Specified';
         $contact_number = $cellphone;
         $pangkabuhayan = $land_ownership ?: 'Not Specified';
         
-        // Validation
+        // Calculate age from birthday if provided
+        $age = 25; // Default age
+        if (!empty($birthday)) {
+            $birth_date = $birthday;
+            $birth_year = date('Y', strtotime($birthday));
+            $current_year = date('Y');
+            $age = $current_year - $birth_year;
+            // Adjust for birthday not yet occurred this year
+            if (date('md') < date('md', strtotime($birthday))) {
+                $age--;
+            }
+        } else {
+            // If no birthday provided, estimate from age
+            $estimated_birth_year = date('Y') - $age;
+            $birth_date = "$estimated_birth_year-01-01";
+        }
+        
+        $civil_status = 'Unknown';
+        $gender = 'Not Specified';
+        
+        // Validation - Updated for separate name fields
         $errors = [];
-        if (empty($head_of_family)) $errors[] = "Head of family name is required";
+        if (empty($first_name)) $errors[] = "First name is required";
+        if (empty($last_name)) $errors[] = "Last name is required";
+        if (empty($birthday)) $errors[] = "Date of birth is required";
+        if (empty($birth_place)) $errors[] = "Place of birth is required";
         if (empty($house_number)) $errors[] = "House number is required";
         if (empty($interviewer)) $errors[] = "Interviewer name is required";
         
@@ -66,7 +101,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Start transaction
             $pdo->beginTransaction();
             
-            // Insert main registration
+            // Generate RFID and temporary password for the new user
+            $generated_rfid = EmailService::generateUniqueRFID($pdo);
+            $temp_password = EmailService::generateTempPassword();
+            $hashed_password = password_hash($temp_password, PASSWORD_DEFAULT);
+            
+            // Create a full address
+            $full_address = "House $house_number, Barangay Gumaoc East, San Jose del Monte, Bulacan, Philippines";
+            
+            // Estimate birthdate from age (current year - age)
+            $estimated_birth_year = date('Y') - $age;
+            $estimated_birthdate = "$estimated_birth_year-01-01";
+            
+            // Insert into residents table (main user table)
+            $residents_sql = "INSERT INTO residents (
+                first_name, middle_name, last_name, email, phone, password,
+                address, house_number, barangay, sitio, interviewer, interviewer_title,
+                birthdate, birth_place, gender, civil_status, rfid_code, rfid,
+                status, profile_complete, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 1, NOW())";
+            
+            $residents_stmt = $pdo->prepare($residents_sql);
+            $residents_result = $residents_stmt->execute([
+                $first_name, $middle_name, $last_name, $email, $contact_number, $hashed_password,
+                $full_address, $house_number, 'Gumaoc East', 'BLOCK', $interviewer, $interviewer_title,
+                $birth_date, $birth_place, $gender, $civil_status, $generated_rfid, $generated_rfid
+            ]);
+            
+            if (!$residents_result) {
+                throw new Exception("Failed to create resident account");
+            }
+            
+            $resident_id = $pdo->lastInsertId();
+            
+            // Insert main registration (for census tracking)
             $sql = "INSERT INTO resident_registrations (
                 first_name, middle_name, last_name, birth_date, age, 
                 civil_status, gender, contact_number, email, house_number, pangkabuhayan,
@@ -89,25 +157,127 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             
             if (!$result) {
-                throw new Exception("Failed to insert main registration");
+                throw new Exception("Failed to insert census registration");
             }
             
             $registration_id = $pdo->lastInsertId();
             
-            // Insert family members
+            // Insert family members and send email notifications
+            $family_email_count = 0;
+            $family_email_success = 0;
+            $family_users_created = 0;
             if (isset($_POST['familyName']) && is_array($_POST['familyName'])) {
                 $family_stmt = $pdo->prepare("INSERT INTO family_members (registration_id, full_name, relationship, age, gender, civil_status, email, occupation) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                
+                // Get registrant's full name for email notifications
+                $registrant_full_name = trim($first_name . ' ' . $middle_name . ' ' . $last_name);
                 
                 foreach ($_POST['familyName'] as $index => $name) {
                     if (!empty(trim($name))) {
                         $relationship = $_POST['familyRelation'][$index] ?? '';
-                        $age = !empty($_POST['familyAge'][$index]) ? (int)$_POST['familyAge'][$index] : null;
-                        $gender = $_POST['familyGender'][$index] ?? '';
-                        $civil_status = $_POST['familyCivilStatus'][$index] ?? '';
-                        $email = $_POST['familyEmail'][$index] ?? '';
+                        $family_age = !empty($_POST['familyAge'][$index]) ? (int)$_POST['familyAge'][$index] : null;
+                        $family_gender = $_POST['familyGender'][$index] ?? '';
+                        $family_civil_status = $_POST['familyCivilStatus'][$index] ?? '';
+                        $family_email = trim($_POST['familyEmail'][$index] ?? '');
                         $occupation = $_POST['familyOccupation'][$index] ?? '';
                         
-                        $family_stmt->execute([$registration_id, trim($name), $relationship, $age, $gender, $civil_status, $email, $occupation]);
+                        // Insert family member into database
+                        $family_stmt->execute([$registration_id, trim($name), $relationship, $family_age, $family_gender, $family_civil_status, $family_email, $occupation]);
+                        
+                        // Create family member as user in residents table if they have an email
+                        if (!empty($family_email) && filter_var($family_email, FILTER_VALIDATE_EMAIL)) {
+                            try {
+                                // Check if family member already exists as a user
+                                $check_user_stmt = $pdo->prepare("SELECT COUNT(*) FROM residents WHERE email = ?");
+                                $check_user_stmt->execute([$family_email]);
+                                $user_exists = $check_user_stmt->fetchColumn() > 0;
+                                
+                                if (!$user_exists) {
+                                    // Parse family member name into components
+                                    $name_parts = explode(' ', trim($name));
+                                    $family_first_name = $name_parts[0] ?? '';
+                                    $family_last_name = end($name_parts) ?? '';
+                                    $family_middle_name = count($name_parts) > 2 ? $name_parts[1] : '';
+                                    
+                                    // Generate RFID and password for family member
+                                    $family_rfid = EmailService::generateUniqueRFID($pdo);
+                                    $family_temp_password = EmailService::generateTempPassword();
+                                    $family_hashed_password = password_hash($family_temp_password, PASSWORD_DEFAULT);
+                                    
+                                    // Estimate birth date from age
+                                    $family_birth_year = date('Y') - ($family_age ?: 25);
+                                    $family_birth_date = "$family_birth_year-01-01";
+                                    
+                                    // Set default values for incomplete profile
+                                    $family_gender_standard = ($family_gender === 'Male' || $family_gender === 'Female') ? $family_gender : 'Male';
+                                    $family_civil_status_standard = in_array($family_civil_status, ['Single', 'Married', 'Widowed', 'Separated', 'Divorced']) ? $family_civil_status : 'Single';
+                                    
+                                    // Insert family member as resident user with incomplete profile
+                                    $family_residents_sql = "INSERT INTO residents (
+                                        first_name, middle_name, last_name, email, phone, password,
+                                        address, house_number, barangay, sitio, interviewer, interviewer_title,
+                                        birthdate, birth_place, gender, civil_status, rfid_code, rfid,
+                                        status, profile_complete, created_by, relationship_to_head, created_at
+                                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, ?, ?, NOW())";
+                                    
+                                    $family_residents_stmt = $pdo->prepare($family_residents_sql);
+                                    $family_residents_result = $family_residents_stmt->execute([
+                                        $family_first_name, $family_middle_name, $family_last_name, $family_email, '', $family_hashed_password,
+                                        $full_address, $house_number, 'Gumaoc East', 'BLOCK', $interviewer, $interviewer_title,
+                                        $family_birth_date, 'Unknown', $family_gender_standard, $family_civil_status_standard, $family_rfid, $family_rfid,
+                                        $resident_id, $relationship
+                                    ]);
+                                    
+                                    if ($family_residents_result) {
+                                        $family_users_created++;
+                                        
+                                        // Send activation email to family member
+                                        try {
+                                            $emailService = new EmailService();
+                                            $family_activation_sent = $emailService->sendRFIDActivationEmail(
+                                                $family_email,
+                                                trim($name),
+                                                $family_rfid,
+                                                $family_temp_password
+                                            );
+                                            
+                                            if ($family_activation_sent) {
+                                                error_log("Family member activation email sent to: $family_email (" . trim($name) . ")");
+                                            } else {
+                                                error_log("Failed to send family member activation email to: $family_email");
+                                            }
+                                        } catch (Exception $e) {
+                                            error_log("Family member activation email error for $family_email: " . $e->getMessage());
+                                        }
+                                    }
+                                }
+                            } catch (Exception $e) {
+                                error_log("Error creating family member user account for $family_email: " . $e->getMessage());
+                            }
+                        }
+                        
+                        // Send family member notification email
+                        if (!empty($family_email) && filter_var($family_email, FILTER_VALIDATE_EMAIL)) {
+                            $family_email_count++;
+                            try {
+                                $emailService = new EmailService();
+                                $email_sent = $emailService->sendFamilyMemberNotification(
+                                    $family_email,
+                                    trim($name),
+                                    $registrant_full_name,
+                                    $relationship
+                                );
+                                
+                                if ($email_sent) {
+                                    $family_email_success++;
+                                    error_log("Family member notification sent to: $family_email (" . trim($name) . ")");
+                                } else {
+                                    error_log("Failed to send family member notification to: $family_email");
+                                }
+                            } catch (Exception $e) {
+                                error_log("Family member email notification error for $family_email: " . $e->getMessage());
+                            }
+                        }
                     }
                 }
             }
@@ -137,8 +307,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Commit transaction
             $pdo->commit();
             
-            error_log("Complete Census Registration Inserted Successfully - ID: " . $registration_id);
-            $_SESSION['success'] = "Census registration submitted successfully! Reference ID: " . $registration_id;
+            // Send activation email with RFID and password
+            $email_sent = false;
+            if (!empty($email)) {
+                try {
+                    $emailService = new EmailService();
+                    $full_name = trim($first_name . ' ' . $middle_name . ' ' . $last_name);
+                    $email_sent = $emailService->sendRFIDActivationEmail(
+                        $email,
+                        $full_name,
+                        $generated_rfid,
+                        $temp_password
+                    );
+                } catch (Exception $e) {
+                    error_log("Email sending failed: " . $e->getMessage());
+                }
+            }
+            
+            error_log("Complete Registration Created - Resident ID: $resident_id, Registration ID: $registration_id, Email Sent: " . ($email_sent ? 'Yes' : 'No') . ", Family Notifications: $family_email_success/$family_email_count, Family Users Created: $family_users_created");
+            
+            // Build success message
+            $success_message = "Registration successful! ";
+            
+            if ($email_sent) {
+                $success_message .= "Login credentials have been sent to $email. ";
+            } else {
+                $success_message .= "Login credentials could not be sent via email. Please contact the administrator for your login credentials. ";
+            }
+            
+            // Add family notification info
+            if ($family_email_count > 0) {
+                if ($family_email_success == $family_email_count) {
+                    $success_message .= "Family member notifications have been sent to $family_email_success family member(s). ";
+                } else {
+                    $success_message .= "$family_email_success out of $family_email_count family member notifications were sent successfully. ";
+                }
+            }
+            
+            // Add family user creation info
+            if ($family_users_created > 0) {
+                $success_message .= "$family_users_created family member(s) have been registered as users and will receive login credentials via email. ";
+            }
+            
+            $success_message .= "You can now login with your RFID or email and password once you receive your credentials.";
+            
+            $_SESSION['success'] = $success_message;
+            
             header('Location: forms.php?success=1');
             exit;
             

@@ -969,10 +969,28 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
 
         <div class="form-group">
-          <label for="headOfFamily">Head of Family Name *<br><small>Pangalan ng Puno ng Pamilya *</small></label>
-          <input type="text" id="headOfFamily" name="headOfFamily" required placeholder="Buong pangalan ng puno ng pamilya"
-                 value="<?php echo $registration_data ? htmlspecialchars(trim($registration_data['first_name'] . ' ' . $registration_data['middle_name'] . ' ' . $registration_data['last_name'])) : ''; ?>"
-                 <?php echo $readonly ? 'readonly' : ''; ?>>
+          <label>Head of Family Name *<br><small>Pangalan ng Puno ng Pamilya *</small></label>
+          <div class="name-fields-group">
+            <div class="name-field">
+              <input type="text" id="firstName" name="firstName" required placeholder="First Name / Pangalan" 
+                     value="<?php echo $registration_data ? htmlspecialchars($registration_data['first_name']) : ''; ?>"
+                     <?php echo $readonly ? 'readonly' : ''; ?>>
+              <small>First Name</small>
+            </div>
+            <div class="name-field">
+              <input type="text" id="middleName" name="middleName" placeholder="Middle Name / Gitnang Pangalan (Optional)"
+                     value="<?php echo $registration_data ? htmlspecialchars($registration_data['middle_name']) : ''; ?>"
+                     <?php echo $readonly ? 'readonly' : ''; ?>>
+              <small>Middle Name (Optional)</small>
+            </div>
+            <div class="name-field">
+              <input type="text" id="lastName" name="lastName" required placeholder="Last Name / Apelyido"
+                     value="<?php echo $registration_data ? htmlspecialchars($registration_data['last_name']) : ''; ?>"
+                     <?php echo $readonly ? 'readonly' : ''; ?>>
+              <small>Last Name</small>
+            </div>
+          </div>
+          <div id="nameValidation" class="validation-message"></div>
         </div>
 
         <div class="form-grid">
@@ -987,6 +1005,23 @@ document.addEventListener('DOMContentLoaded', function() {
             <label for="email">Email Address<br><small>Email Address</small></label>
             <input type="email" id="email" name="email" placeholder="example@email.com"
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['email']) : ''; ?>"
+                   <?php echo $readonly ? 'readonly' : ''; ?>>
+            <div id="emailValidation" class="validation-message"></div>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="birthday">Date of Birth *<br><small>Petsa ng Kapanganakan *</small></label>
+            <input type="date" id="birthday" name="birthday" required
+                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['birth_date']) : ''; ?>"
+                   <?php echo $readonly ? 'readonly' : ''; ?>>
+          </div>
+
+          <div class="form-group">
+            <label for="birthPlace">Place of Birth *<br><small>Lugar ng Kapanganakan *</small></label>
+            <input type="text" id="birthPlace" name="birthPlace" required placeholder="City, Province, Country"
+                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['birth_place'] ?? '') : ''; ?>"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
         </div>
@@ -1046,7 +1081,31 @@ document.addEventListener('DOMContentLoaded', function() {
                   <?php foreach ($family_members as $index => $member): ?>
                     <tr class="family-member-row">
                       <td data-label="Name" class="scrollable-name-cell"><input type="text" name="familyName[]" class="table-input scrollable-name-input" placeholder="Pangalan" value="<?php echo htmlspecialchars($member['full_name']); ?>" <?php echo $readonly ? 'readonly' : ''; ?>></td>
-                      <td data-label="Relationship"><input type="text" name="familyRelation[]" class="table-input" placeholder="Relasyon" value="<?php echo isset($member['relationship']) ? htmlspecialchars($member['relationship']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>></td>
+                      <td data-label="Relationship">
+                        <select name="familyRelation[]" class="table-input" <?php echo $readonly ? 'disabled' : ''; ?>>
+                          <option value="">Piliin ang Relasyon</option>
+                          <option value="Asawa" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Asawa') ? 'selected' : ''; ?>>Asawa (Spouse)</option>
+                          <option value="Anak" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Anak') ? 'selected' : ''; ?>>Anak (Child)</option>
+                          <option value="Ama" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Ama') ? 'selected' : ''; ?>>Ama (Father)</option>
+                          <option value="Ina" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Ina') ? 'selected' : ''; ?>>Ina (Mother)</option>
+                          <option value="Kapatid" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Kapatid') ? 'selected' : ''; ?>>Kapatid (Sibling)</option>
+                          <option value="Lolo" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Lolo') ? 'selected' : ''; ?>>Lolo (Grandfather)</option>
+                          <option value="Lola" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Lola') ? 'selected' : ''; ?>>Lola (Grandmother)</option>
+                          <option value="Apo" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Apo') ? 'selected' : ''; ?>>Apo (Grandchild)</option>
+                          <option value="Tiyahin" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Tiyahin') ? 'selected' : ''; ?>>Tiyahin (Aunt)</option>
+                          <option value="Tiyuhin" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Tiyuhin') ? 'selected' : ''; ?>>Tiyuhin (Uncle)</option>
+                          <option value="Pamangkin" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Pamangkin') ? 'selected' : ''; ?>>Pamangkin (Nephew/Niece)</option>
+                          <option value="Pinsan" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Pinsan') ? 'selected' : ''; ?>>Pinsan (Cousin)</option>
+                          <option value="Manugang" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Manugang') ? 'selected' : ''; ?>>Manugang (Son/Daughter-in-law)</option>
+                          <option value="Biyenan" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Biyenan') ? 'selected' : ''; ?>>Biyenan (Parent-in-law)</option>
+                          <option value="Ninong" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Ninong') ? 'selected' : ''; ?>>Ninong (Godfather)</option>
+                          <option value="Ninang" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Ninang') ? 'selected' : ''; ?>>Ninang (Godmother)</option>
+                          <option value="Inaanak" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Inaanak') ? 'selected' : ''; ?>>Inaanak (Godchild)</option>
+                          <option value="Kasambahay" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Kasambahay') ? 'selected' : ''; ?>>Kasambahay (Helper)</option>
+                          <option value="Boarder" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Boarder') ? 'selected' : ''; ?>>Boarder</option>
+                          <option value="Iba pa" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Iba pa') ? 'selected' : ''; ?>>Iba pa (Others)</option>
+                        </select>
+                      </td>
                       <td data-label="Age"><input type="number" name="familyAge[]" class="table-input" placeholder="Edad" min="0" max="120" value="<?php echo $member['age']; ?>" <?php echo $readonly ? 'readonly' : ''; ?>></td>
                       <td data-label="Gender">
                         <select name="familyGender[]" class="table-input" <?php echo $readonly ? 'disabled' : ''; ?>>
@@ -1074,7 +1133,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 <?php else: ?>
                   <tr class="family-member-row">
                     <td data-label="Name" class="scrollable-name-cell"><input type="text" name="familyName[]" class="table-input scrollable-name-input" placeholder="Pangalan" <?php echo $readonly ? 'readonly' : ''; ?>></td>
-                    <td data-label="Relationship"><input type="text" name="familyRelation[]" class="table-input" placeholder="Relasyon" <?php echo $readonly ? 'readonly' : ''; ?>></td>
+                    <td data-label="Relationship">
+                      <select name="familyRelation[]" class="table-input" <?php echo $readonly ? 'disabled' : ''; ?>>
+                        <option value="">Piliin ang Relasyon</option>
+                        <option value="Asawa">Asawa (Spouse)</option>
+                        <option value="Anak">Anak (Child)</option>
+                        <option value="Ama">Ama (Father)</option>
+                        <option value="Ina">Ina (Mother)</option>
+                        <option value="Kapatid">Kapatid (Sibling)</option>
+                        <option value="Lolo">Lolo (Grandfather)</option>
+                        <option value="Lola">Lola (Grandmother)</option>
+                        <option value="Apo">Apo (Grandchild)</option>
+                        <option value="Tiyahin">Tiyahin (Aunt)</option>
+                        <option value="Tiyuhin">Tiyuhin (Uncle)</option>
+                        <option value="Pamangkin">Pamangkin (Nephew/Niece)</option>
+                        <option value="Pinsan">Pinsan (Cousin)</option>
+                        <option value="Manugang">Manugang (Son/Daughter-in-law)</option>
+                        <option value="Biyenan">Biyenan (Parent-in-law)</option>
+                        <option value="Ninong">Ninong (Godfather)</option>
+                        <option value="Ninang">Ninang (Godmother)</option>
+                        <option value="Inaanak">Inaanak (Godchild)</option>
+                        <option value="Kasambahay">Kasambahay (Helper)</option>
+                        <option value="Boarder">Boarder</option>
+                        <option value="Iba pa">Iba pa (Others)</option>
+                      </select>
+                    </td>
                     <td data-label="Age"><input type="number" name="familyAge[]" class="table-input" placeholder="Edad" min="0" max="120" <?php echo $readonly ? 'readonly' : ''; ?>></td>
                     <td data-label="Gender">
                       <select name="familyGender[]" class="table-input" <?php echo $readonly ? 'disabled' : ''; ?>>
@@ -3016,6 +3099,108 @@ h4 small {
 .form-group textarea:hover {
   border-color: rgba(76, 175, 80, 0.4);
   box-shadow: 0 4px 12px rgba(27, 94, 32, 0.08);
+}
+
+/* Name Fields Group Styles */
+.name-fields-group {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+}
+
+.name-field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.name-field:nth-child(2) {
+  flex: 0.8; /* Make middle name field slightly smaller */
+}
+
+.name-field input {
+  margin-bottom: 0.5rem;
+}
+
+.name-field small {
+  font-size: 0.8rem;
+  color: #6c757d;
+  font-weight: 500;
+  text-align: center;
+  display: block;
+  width: 100%;
+}
+
+/* Validation Message Styles */
+.validation-message {
+  margin-top: 0.5rem;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: none;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+}
+
+.validation-message.show {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.validation-message.success {
+  background: rgba(40, 167, 69, 0.1);
+  color: #155724;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.validation-message.error {
+  background: rgba(220, 53, 69, 0.1);
+  color: #721c24;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.validation-message.loading {
+  background: rgba(255, 193, 7, 0.1);
+  color: #856404;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+/* Input validation states */
+.form-group input.validating {
+  border-color: #ffc107;
+  box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.15);
+}
+
+.form-group input.valid {
+  border-color: #28a745;
+  box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.15);
+}
+
+.form-group input.invalid {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15);
+}
+
+/* Responsive adjustments for name fields */
+@media (max-width: 768px) {
+  .name-fields-group {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .name-field:nth-child(2) {
+    flex: 1; /* Reset flex on mobile */
+  }
+}
+
+@media (max-width: 480px) {
+  .name-fields-group {
+    gap: 0.8rem;
+  }
 }
 
 /* Table Styles */
@@ -5263,7 +5448,31 @@ function addFamilyMember() {
     newRow.className = 'family-member-row';
     newRow.innerHTML = `
         <td data-label="Name" class="scrollable-name-cell"><input type="text" name="familyName[]" class="table-input scrollable-name-input" placeholder="Pangalan"></td>
-        <td data-label="Relationship"><input type="text" name="familyRelation[]" class="table-input" placeholder="Relasyon"></td>
+        <td data-label="Relationship">
+            <select name="familyRelation[]" class="table-input">
+                <option value="">Piliin ang Relasyon</option>
+                <option value="Asawa">Asawa (Spouse)</option>
+                <option value="Anak">Anak (Child)</option>
+                <option value="Ama">Ama (Father)</option>
+                <option value="Ina">Ina (Mother)</option>
+                <option value="Kapatid">Kapatid (Sibling)</option>
+                <option value="Lolo">Lolo (Grandfather)</option>
+                <option value="Lola">Lola (Grandmother)</option>
+                <option value="Apo">Apo (Grandchild)</option>
+                <option value="Tiyahin">Tiyahin (Aunt)</option>
+                <option value="Tiyuhin">Tiyuhin (Uncle)</option>
+                <option value="Pamangkin">Pamangkin (Nephew/Niece)</option>
+                <option value="Pinsan">Pinsan (Cousin)</option>
+                <option value="Manugang">Manugang (Son/Daughter-in-law)</option>
+                <option value="Biyenan">Biyenan (Parent-in-law)</option>
+                <option value="Ninong">Ninong (Godfather)</option>
+                <option value="Ninang">Ninang (Godmother)</option>
+                <option value="Inaanak">Inaanak (Godchild)</option>
+                <option value="Kasambahay">Kasambahay (Helper)</option>
+                <option value="Boarder">Boarder</option>
+                <option value="Iba pa">Iba pa (Others)</option>
+            </select>
+        </td>
         <td data-label="Age"><input type="number" name="familyAge[]" class="table-input" placeholder="Edad" min="0" max="120"></td>
         <td data-label="Gender">
             <select name="familyGender[]" class="table-input">
@@ -5622,6 +5831,196 @@ function showMessage(message, type = 'info') {
         }
     }, 2000);
 }
+
+// Real-time Validation Functions
+let validationTimeout = null;
+
+function validateEmail(email) {
+    const emailInput = document.getElementById('email');
+    const validationDiv = document.getElementById('emailValidation');
+    
+    // Clear previous timeout
+    if (validationTimeout) {
+        clearTimeout(validationTimeout);
+    }
+    
+    // Reset states
+    emailInput.classList.remove('validating', 'valid', 'invalid');
+    validationDiv.classList.remove('show');
+    
+    // If email is empty, just clear validation
+    if (!email || email.trim() === '') {
+        return;
+    }
+    
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        emailInput.classList.add('invalid');
+        showValidationMessage('emailValidation', 'Please enter a valid email format', 'error');
+        return;
+    }
+    
+    // Show loading state
+    emailInput.classList.add('validating');
+    showValidationMessage('emailValidation', 'Checking email availability...', 'loading');
+    
+    // Debounce the API call
+    validationTimeout = setTimeout(() => {
+        fetch('../api/validate_registration.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                type: 'email',
+                value: email
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            emailInput.classList.remove('validating');
+            
+            if (data.valid) {
+                emailInput.classList.add('valid');
+                showValidationMessage('emailValidation', '✓ ' + data.message, 'success');
+            } else {
+                emailInput.classList.add('invalid');
+                showValidationMessage('emailValidation', '✗ ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Email validation error:', error);
+            emailInput.classList.remove('validating');
+            emailInput.classList.add('invalid');
+            showValidationMessage('emailValidation', 'Error checking email availability', 'error');
+        });
+    }, 500); // 500ms delay
+}
+
+function validateName() {
+    const firstNameInput = document.getElementById('firstName');
+    const middleNameInput = document.getElementById('middleName');
+    const lastNameInput = document.getElementById('lastName');
+    const validationDiv = document.getElementById('nameValidation');
+    
+    // Clear previous timeout
+    if (validationTimeout) {
+        clearTimeout(validationTimeout);
+    }
+    
+    // Reset states
+    [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+        input.classList.remove('validating', 'valid', 'invalid');
+    });
+    validationDiv.classList.remove('show');
+    
+    const firstName = firstNameInput.value.trim();
+    const middleName = middleNameInput.value.trim();
+    const lastName = lastNameInput.value.trim();
+    
+    // Check if required fields are filled
+    if (!firstName || !lastName) {
+        if (!firstName) firstNameInput.classList.add('invalid');
+        if (!lastName) lastNameInput.classList.add('invalid');
+        showValidationMessage('nameValidation', 'First name and last name are required', 'error');
+        return;
+    }
+    
+    // Show loading state
+    [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+        input.classList.add('validating');
+    });
+    showValidationMessage('nameValidation', 'Checking name availability...', 'loading');
+    
+    // Debounce the API call
+    validationTimeout = setTimeout(() => {
+        fetch('../api/validate_registration.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                type: 'name',
+                firstName: firstName,
+                middleName: middleName,
+                lastName: lastName
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                input.classList.remove('validating');
+            });
+            
+            if (data.valid) {
+                [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                    input.classList.add('valid');
+                });
+                showValidationMessage('nameValidation', '✓ ' + data.message, 'success');
+            } else {
+                [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                    input.classList.add('invalid');
+                });
+                showValidationMessage('nameValidation', '✗ ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Name validation error:', error);
+            [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                input.classList.remove('validating');
+                input.classList.add('invalid');
+            });
+            showValidationMessage('nameValidation', 'Error checking name availability', 'error');
+        });
+    }, 800); // 800ms delay for name (longer since it checks multiple fields)
+}
+
+function showValidationMessage(elementId, message, type) {
+    const validationDiv = document.getElementById(elementId);
+    if (validationDiv) {
+        validationDiv.textContent = message;
+        validationDiv.className = `validation-message ${type} show`;
+    }
+}
+
+// Initialize validation when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Only add validation for non-readonly mode
+    const isReadonly = <?php echo $readonly ? 'true' : 'false'; ?>;
+    
+    if (!isReadonly) {
+        // Email validation
+        const emailInput = document.getElementById('email');
+        if (emailInput) {
+            emailInput.addEventListener('input', function() {
+                validateEmail(this.value);
+            });
+            
+            emailInput.addEventListener('blur', function() {
+                if (this.value) {
+                    validateEmail(this.value);
+                }
+            });
+        }
+        
+        // Name validation
+        const nameInputs = ['firstName', 'middleName', 'lastName'];
+        nameInputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.addEventListener('input', function() {
+                    validateName();
+                });
+                
+                input.addEventListener('blur', function() {
+                    validateName();
+                });
+            }
+        });
+    }
+});
+
 </script>
 
 <?php include '../includes/footer.php'; ?>

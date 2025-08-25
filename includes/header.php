@@ -684,7 +684,7 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                     <li><a href="/GUMAOC/pages/services.php" class="nav-link">🛠️ Services</a></li>
                     <li class="nav-dropdown">
                         <a href="/GUMAOC/pages/forms.php" class="nav-link">
-                            📋 Forms <span class="dropdown-arrow">▼</span>
+                            📋 E-Services <span class="dropdown-arrow">▼</span>
                         </a>
                         <ul class="dropdown-menu">
                             <li><a href="/GUMAOC/pages/resident-registration.php">
@@ -704,14 +704,14 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                     <li><a href="/GUMAOC/pages/report.php" class="nav-link">🚨 Report</a></li>
                     <li><a href="/GUMAOC/pages/contact.php" class="nav-link">📞 Contact</a></li>
                     <li><a href="/GUMAOC/login.php" class="nav-link">🔐 Login</a></li>
-                    <li><a href="/GUMAOC/register.php" class="nav-link">📝 Register</a></li>
+                    <li><a href="/GUMAOC/pages/resident-registration.php" class="nav-link">📝 Register</a></li>
                 <?php else: ?>
                     <!-- Authenticated User Navigation -->
                     <li><a href="/GUMAOC/index.php" class="nav-link">🏠 Dashboard</a></li>
                     <li><a href="/GUMAOC/pages/services.php" class="nav-link">🛠️ Services</a></li>
                     <li class="nav-dropdown">
                         <a href="/GUMAOC/pages/forms.php" class="nav-link">
-                            📋 Forms <span class="dropdown-arrow">▼</span>
+                            📋 E-Services <span class="dropdown-arrow">▼</span>
                         </a>
                         <ul class="dropdown-menu">
                             <li><a href="/GUMAOC/pages/resident-registration.php">

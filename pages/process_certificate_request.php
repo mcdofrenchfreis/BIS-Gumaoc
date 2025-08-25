@@ -11,6 +11,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
+    // Get user ID if logged in (for business applications), null for guest users
+    $user_id = $_SESSION['user_id'] ?? null;
+    
     // Get form data
     $certificate_type = $_POST['certificateType'] ?? '';
     $first_name = trim($_POST['firstName'] ?? '');
@@ -34,7 +37,7 @@ try {
     }
     
     // Validate certificate type
-    $allowed_types = ['BRGY. CLEARANCE', 'BRGY. INDIGENCY', 'TRICYCLE PERMIT', 'PROOF OF RESIDENCY'];
+    $allowed_types = ['BRGY. CLEARANCE', 'BRGY. INDIGENCY', 'TRICYCLE PERMIT', 'PROOF OF RESIDENCY', 'BUSINESS APPLICATION'];
     if (!in_array($certificate_type, $allowed_types)) {
         throw new Exception('Invalid certificate type selected.');
     }
@@ -100,6 +103,67 @@ try {
         }
     }
     
+    // Initialize business application fields
+    $business_name = null;
+    $business_location = null;
+    $business_owner_address = null;
+    $business_or_number = null;
+    $business_ctc_number = null;
+    $business_application_date = null;
+    $business_reference_no = null;
+    
+    // Handle business application specific fields
+    if ($certificate_type === 'BUSINESS APPLICATION') {
+        $business_name = trim($_POST['businessName'] ?? '');
+        $business_location = trim($_POST['businessLocation'] ?? '');
+        $business_owner_address = trim($_POST['businessOwnerAddress'] ?? '');
+        $business_or_number = trim($_POST['businessOrNumber'] ?? '');
+        $business_ctc_number = trim($_POST['businessCtcNumber'] ?? '');
+        $business_application_date = $_POST['businessApplicationDate'] ?? '';
+        $business_reference_no = trim($_POST['businessReferenceNo'] ?? '');
+        
+        // Validate required business fields
+        if (empty($business_name) || empty($business_location) || empty($business_owner_address) || 
+            empty($business_or_number) || empty($business_ctc_number)) {
+            throw new Exception('Please fill in all required business application fields.');
+        }
+        
+        // Generate reference number if not provided
+        if (empty($business_reference_no)) {
+            $year = date('Y');
+            $random_num = str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
+            $business_reference_no = "BA-{$year}-{$random_num}";
+        }
+        
+        // Validate business application date
+        if (!empty($business_application_date)) {
+            $business_date_obj = DateTime::createFromFormat('Y-m-d', $business_application_date);
+            if (!$business_date_obj || $business_date_obj->format('Y-m-d') !== $business_application_date) {
+                throw new Exception('Please enter a valid business application date.');
+            }
+        }
+        
+        // Handle file uploads
+        $ctc_image_path = null;
+        $certificate_image_path = null;
+        
+        // Create upload directory if it doesn't exist
+        $upload_dir = '../assets/uploads/business_applications/';
+        if (!file_exists($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
+        
+        // Handle CTC image upload
+        if (isset($_FILES['ctcImage']) && $_FILES['ctcImage']['error'] === UPLOAD_ERR_OK) {
+            $ctc_image_path = handleFileUpload($_FILES['ctcImage'], $upload_dir, 'ctc_' . $business_reference_no);
+        }
+        
+        // Handle certificate image upload
+        if (isset($_FILES['certificateImage']) && $_FILES['certificateImage']['error'] === UPLOAD_ERR_OK) {
+            $certificate_image_path = handleFileUpload($_FILES['certificateImage'], $upload_dir, 'cert_' . $business_reference_no);
+        }
+    }
+    
     // Validate birth date
     $birth_date_obj = DateTime::createFromFormat('Y-m-d', $birth_date);
     if (!$birth_date_obj || $birth_date_obj->format('Y-m-d') !== $birth_date) {
@@ -114,22 +178,112 @@ try {
     // Begin transaction
     $pdo->beginTransaction();
     
-    // Prepare SQL statement
-    $sql = "INSERT INTO certificate_requests (
-        full_name, address, mobile_number, civil_status, gender, 
-        birth_date, birth_place, citizenship, years_of_residence, 
-        certificate_type, purpose, vehicle_make_type, motor_no, 
-        chassis_no, plate_no, vehicle_color, year_model, body_no, 
-        operator_license, submitted_at, status
-    ) VALUES (
-        :full_name, :address, :mobile_number, :civil_status, :gender,
-        :birth_date, :birth_place, :citizenship, :years_of_residence,
-        :certificate_type, :purpose, :vehicle_make_type, :motor_no,
-        :chassis_no, :plate_no, :vehicle_color, :year_model, :body_no,
-        :operator_license, NOW(), 'pending'
-    )";
-    
-    $stmt = $pdo->prepare($sql);
+    // Handle business application differently
+    if ($certificate_type === 'BUSINESS APPLICATION') {
+        // Insert into business_applications table
+        $business_sql = "INSERT INTO business_applications (
+            user_id, reference_no, application_date, first_name, middle_name, last_name,
+            business_name, business_type, business_address, business_location,
+            owner_name, owner_address, contact_number, or_number, ctc_number,
+            years_operation, investment_capital, status, submitted_at
+        ) VALUES (
+            :user_id, :reference_no, :application_date, :first_name, :middle_name, :last_name,
+            :business_name, 'General Business', :business_location, :business_location,
+            :owner_name, :business_owner_address, :mobile_number, :or_number, :ctc_number,
+            1, 0.00, 'pending', NOW()
+        )";
+        
+        $business_stmt = $pdo->prepare($business_sql);
+        
+        // Bind business application parameters
+        $business_stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+        $business_stmt->bindParam(':reference_no', $business_reference_no);
+        $business_stmt->bindParam(':application_date', $business_application_date ?: date('Y-m-d'));
+        $business_stmt->bindParam(':first_name', $first_name);
+        $business_stmt->bindParam(':middle_name', $middle_name);
+        $business_stmt->bindParam(':last_name', $last_name);
+        $business_stmt->bindParam(':business_name', $business_name);
+        $business_stmt->bindParam(':business_location', $business_location);
+        $business_stmt->bindParam(':owner_name', $full_name);
+        $business_stmt->bindParam(':business_owner_address', $business_owner_address);
+        $business_stmt->bindParam(':mobile_number', $mobile_number);
+        $business_stmt->bindParam(':or_number', $business_or_number);
+        $business_stmt->bindParam(':ctc_number', $business_ctc_number);
+        
+        if ($business_stmt->execute()) {
+            $request_id = $pdo->lastInsertId();
+            
+            // Store file attachment information separately if files were uploaded
+            if ($ctc_image_path || $certificate_image_path) {
+                $attachments_sql = "INSERT INTO business_attachments (business_id, ctc_image, certificate_image) VALUES (?, ?, ?) 
+                                    ON DUPLICATE KEY UPDATE ctc_image = VALUES(ctc_image), certificate_image = VALUES(certificate_image)";
+                try {
+                    $attachments_stmt = $pdo->prepare($attachments_sql);
+                    $attachments_stmt->execute([$request_id, $ctc_image_path, $certificate_image_path]);
+                } catch (PDOException $e) {
+                    // If the table doesn't exist, log the file paths for future reference
+                    error_log("Business application attachments - ID: {$request_id}, CTC: {$ctc_image_path}, Certificate: {$certificate_image_path}");
+                }
+            }
+            
+            // Generate queue ticket for business application
+            $queueManager = new QueueManager($pdo);
+            $service_id = 6; // Business Application service ID
+            
+            $queue_result = $queueManager->generateTicket(
+                $service_id,
+                $full_name,
+                $mobile_number,
+                null,
+                "Business Application: {$business_name}",
+                'normal'
+            );
+            
+            if ($queue_result['success']) {
+                // Commit transaction
+                $pdo->commit();
+                
+                $_SESSION['success'] = "Your Business Permit Application has been successfully submitted!<br>
+                                       <strong>Reference No:</strong> {$business_reference_no}<br>
+                                       <strong>Application ID:</strong> #{$request_id}<br>
+                                       <strong>Queue Ticket:</strong> {$queue_result['ticket_number']}<br>
+                                       <strong>Estimated Time:</strong> {$queue_result['estimated_time']}<br>
+                                       Please save your reference number and queue ticket for tracking.";
+                
+                // Store queue info in session
+                $_SESSION['queue_ticket_number'] = $queue_result['ticket_number'];
+                $_SESSION['queue_position'] = $queue_result['queue_position'];
+                $_SESSION['service_name'] = $queue_result['service_name'];
+                
+            } else {
+                $pdo->commit();
+                $_SESSION['success'] = "Your Business Permit Application has been successfully submitted! Reference: {$business_reference_no}, Application ID: #{$request_id}. However, there was an issue generating your queue ticket.";
+            }
+            
+            error_log("Business application submitted - ID: {$request_id}, Reference: {$business_reference_no}, Business: {$business_name}, Owner: {$full_name}");
+            
+        } else {
+            throw new Exception('Failed to submit business application. Please try again.');
+        }
+        
+    } else {
+        // Handle regular certificate requests
+        // Prepare SQL statement
+        $sql = "INSERT INTO certificate_requests (
+            full_name, address, mobile_number, civil_status, gender, 
+            birth_date, birth_place, citizenship, years_of_residence, 
+            certificate_type, purpose, vehicle_make_type, motor_no, 
+            chassis_no, plate_no, vehicle_color, year_model, body_no, 
+            operator_license, submitted_at, status
+        ) VALUES (
+            :full_name, :address, :mobile_number, :civil_status, :gender,
+            :birth_date, :birth_place, :citizenship, :years_of_residence,
+            :certificate_type, :purpose, :vehicle_make_type, :motor_no,
+            :chassis_no, :plate_no, :vehicle_color, :year_model, :body_no,
+            :operator_license, NOW(), 'pending'
+        )";
+        
+        $stmt = $pdo->prepare($sql);
     
     // Bind parameters
     $stmt->bindParam(':full_name', $full_name);
@@ -164,7 +318,8 @@ try {
             'BRGY. CLEARANCE' => 1,      // Barangay Clearance
             'BRGY. INDIGENCY' => 2,      // Barangay Indigency  
             'TRICYCLE PERMIT' => 3,      // Tricycle Permit
-            'PROOF OF RESIDENCY' => 4    // Proof of Residency
+            'PROOF OF RESIDENCY' => 4,   // Proof of Residency
+            'BUSINESS APPLICATION' => 6  // Business Application
         ];
         
         $service_id = $service_mapping[$certificate_type] ?? 5; // Default to General Services
@@ -197,6 +352,8 @@ try {
                 $certificate_display = 'Barangay Indigency Certificate';
             } elseif ($certificate_type === 'PROOF OF RESIDENCY') {
                 $certificate_display = 'Proof of Residency Certificate';
+            } elseif ($certificate_type === 'BUSINESS APPLICATION') {
+                $certificate_display = 'Business Permit Application';
             }
             
             $_SESSION['success'] = "Your {$certificate_display} request has been successfully submitted!<br>
@@ -224,6 +381,8 @@ try {
         throw new Exception('Failed to submit certificate request. Please try again.');
     }
     
+    } // End of else block for regular certificate processing
+    
 } catch (Exception $e) {
     // Rollback transaction if it was started
     if ($pdo->inTransaction()) {
@@ -246,4 +405,35 @@ try {
 // Redirect back to form
 header('Location: certificate-request.php');
 exit;
+
+// File upload handling function
+function handleFileUpload($file, $upload_dir, $prefix) {
+    // Validate file size (5MB limit)
+    $max_size = 5 * 1024 * 1024; // 5MB
+    if ($file['size'] > $max_size) {
+        throw new Exception('File size must be less than 5MB');
+    }
+    
+    // Validate file type
+    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    $file_type = $file['type'];
+    if (!in_array($file_type, $allowed_types)) {
+        throw new Exception('Only PNG, JPG, and PDF files are allowed');
+    }
+    
+    // Get file extension
+    $file_info = pathinfo($file['name']);
+    $extension = strtolower($file_info['extension']);
+    
+    // Generate unique filename
+    $filename = $prefix . '_' . time() . '_' . uniqid() . '.' . $extension;
+    $file_path = $upload_dir . $filename;
+    
+    // Move uploaded file
+    if (!move_uploaded_file($file['tmp_name'], $file_path)) {
+        throw new Exception('Failed to upload file');
+    }
+    
+    return $filename; // Return just the filename, not the full path
+}
 ?>

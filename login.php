@@ -27,6 +27,15 @@ if ($_POST && isset($_POST['rfid_code'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
             
+            // Check if profile is complete
+            if (isset($user['profile_complete']) && $user['profile_complete'] == 0) {
+                // Redirect to profile completion page with notification
+                $_SESSION['profile_incomplete'] = true;
+                $_SESSION['user_email'] = $user['email'];
+                header('Location: pages/complete-profile.php');
+                exit();
+            }
+            
             $redirect = isset($_GET['redirect']) ? $_GET['redirect'] : 'index.php';
             header('Location: ' . $redirect);
             exit();
@@ -52,6 +61,15 @@ if ($_POST && isset($_POST['username']) && isset($_POST['password'])) {
             $_SESSION['rfid_authenticated'] = true;
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
+            
+            // Check if profile is complete
+            if (isset($user['profile_complete']) && $user['profile_complete'] == 0) {
+                // Redirect to profile completion page with notification
+                $_SESSION['profile_incomplete'] = true;
+                $_SESSION['user_email'] = $user['email'];
+                header('Location: pages/complete-profile.php');
+                exit();
+            }
             
             $redirect = isset($_GET['redirect']) ? $_GET['redirect'] : 'index.php';
             header('Location: ' . $redirect);
@@ -676,8 +694,7 @@ if ($_POST && isset($_POST['otp']) && isset($_POST['new_password'])) {
         
         <div class="links">
             <a href="index.php">🏠 Back to Home</a>
-            <a href="register.php">📝 Create Account</a>
-            <a href="resident-registration.php">🏷️ Register RFID Only</a>
+            <a href="pages/resident-registration.php">📝 Register for Services</a>
         </div>
     </div>
 

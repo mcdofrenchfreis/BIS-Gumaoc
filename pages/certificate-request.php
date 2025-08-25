@@ -5,13 +5,30 @@ $page_title = 'Certificate Request - Barangay Gumaoc East';
 $header_title = 'Certificate Request Form';
 $header_subtitle = 'Request for Barangay Certificates';
 
+// Initialize database connection
+include '../includes/db_connect.php';
+
 // Check if this is an admin view
 $admin_view = isset($_GET['admin_view']) ? (int)$_GET['admin_view'] : null;
 $readonly = isset($_GET['readonly']) && $_GET['readonly'] === '1';
 $request_data = null;
 
+// Get current user data for auto-population
+$current_user = null;
+$is_logged_in = isset($_SESSION['rfid_authenticated']) && $_SESSION['rfid_authenticated'] === true;
+
+if ($is_logged_in && isset($_SESSION['user_id'])) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM residents WHERE id = ?");
+        $stmt->execute([$_SESSION['user_id']]);
+        $current_user = $stmt->fetch();
+    } catch (PDOException $e) {
+        // Handle database error silently for form functionality
+        $current_user = null;
+    }
+}
+
 if ($admin_view) {
-    include '../includes/db_connect.php';
     $stmt = $pdo->prepare("SELECT * FROM certificate_requests WHERE id = ?");
     $stmt->execute([$admin_view]);
     $request_data = $stmt->fetch();
@@ -25,12 +42,15 @@ if ($admin_view) {
 // Determine if tricycle or cedula section should be shown by default
 $show_tricycle_section = false;
 $show_cedula_section = false;
+$show_business_section = false;
 
 if ($request_data) {
     if ($request_data['certificate_type'] === 'TRICYCLE PERMIT') {
         $show_tricycle_section = true;
     } elseif ($request_data['certificate_type'] === 'CEDULA/CTC') {
         $show_cedula_section = true;
+    } elseif ($request_data['certificate_type'] === 'BUSINESS APPLICATION') {
+        $show_business_section = true;
     }
 }
 
@@ -79,43 +99,82 @@ include '../includes/header.php';
       </div>
     <?php endif; ?>
     
-    <form id="certificateForm" class="certificate-form" method="POST" action="process_certificate_request.php" <?php echo $readonly ? 'style="pointer-events: none;"' : ''; ?>>
-
-      <fieldset>
-        <legend>PAKILAGYAN NG CHECK ANG NAAAKMANG KAILANGAN</legend>
-        
-        <div class="certificate-types">
-          <label class="certificate-option">
-            <input type="radio" name="certificateType" value="BRGY. CLEARANCE" <?php echo ($request_data && $request_data['certificate_type'] === 'BRGY. CLEARANCE') ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>>
-            <span class="checkmark"></span>
-            BRGY. CLEARANCE
-          </label>
-          
-          <label class="certificate-option">
-            <input type="radio" name="certificateType" value="BRGY. INDIGENCY" <?php echo ($request_data && $request_data['certificate_type'] === 'BRGY. INDIGENCY') ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>>
-            <span class="checkmark"></span>
-            BRGY. INDIGENCY
-          </label>
-          
-          <label class="certificate-option">
-            <input type="radio" name="certificateType" value="TRICYCLE PERMIT" <?php echo ($request_data && $request_data['certificate_type'] === 'TRICYCLE PERMIT') ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>>
-            <span class="checkmark"></span>
-            TRICYCLE PERMIT
-          </label>
-          
-          <label class="certificate-option">
-            <input type="radio" name="certificateType" value="PROOF OF RESIDENCY" <?php echo ($request_data && $request_data['certificate_type'] === 'PROOF OF RESIDENCY') ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>>
-            <span class="checkmark"></span>
-            PROOF OF RESIDENCY
-          </label>
-          
-          <label class="certificate-option">
-            <input type="radio" name="certificateType" value="CEDULA/CTC" <?php echo ($request_data && $request_data['certificate_type'] === 'CEDULA/CTC') ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>>
-            <span class="checkmark"></span>
-            CEDULA/CTC
-          </label>
+    <!-- Certificate Selection Screen -->
+    <div id="certificateSelectionScreen" class="certificate-selection-screen">
+      <h1 class="kiosk-title">Select Certificate Type</h1>
+      <p class="kiosk-subtitle">Choose the type of certificate you would like to request</p>
+      
+      <div class="certificate-types">
+        <div class="certificate-option" data-type="BRGY. CLEARANCE" <?php echo ($request_data && $request_data['certificate_type'] === 'BRGY. CLEARANCE') ? 'data-selected="true"' : ''; ?>>
+          <div class="certificate-icon">🏠</div>
+          <div class="certificate-text">
+            <strong>BARANGAY CLEARANCE</strong>
+            <small style="display: block; margin-top: 8px; opacity: 0.8;">Certificate of good moral character</small>
+          </div>
         </div>
-      </fieldset>
+        
+        <div class="certificate-option" data-type="BRGY. INDIGENCY" <?php echo ($request_data && $request_data['certificate_type'] === 'BRGY. INDIGENCY') ? 'data-selected="true"' : ''; ?>>
+          <div class="certificate-icon">💰</div>
+          <div class="certificate-text">
+            <strong>BARANGAY INDIGENCY</strong>
+            <small style="display: block; margin-top: 8px; opacity: 0.8;">Certificate of financial status</small>
+          </div>
+        </div>
+        
+        <div class="certificate-option" data-type="TRICYCLE PERMIT" <?php echo ($request_data && $request_data['certificate_type'] === 'TRICYCLE PERMIT') ? 'data-selected="true"' : ''; ?>>
+          <div class="certificate-icon">🚲</div>
+          <div class="certificate-text">
+            <strong>TRICYCLE PERMIT</strong>
+            <small style="display: block; margin-top: 8px; opacity: 0.8;">Vehicle operation permit</small>
+          </div>
+        </div>
+        
+        <div class="certificate-option" data-type="PROOF OF RESIDENCY" <?php echo ($request_data && $request_data['certificate_type'] === 'PROOF OF RESIDENCY') ? 'data-selected="true"' : ''; ?>>
+          <div class="certificate-icon">📍</div>
+          <div class="certificate-text">
+            <strong>PROOF OF RESIDENCY</strong>
+            <small style="display: block; margin-top: 8px; opacity: 0.8;">Certificate of residence</small>
+          </div>
+        </div>
+        
+        <div class="certificate-option" data-type="CEDULA/CTC" <?php echo ($request_data && $request_data['certificate_type'] === 'CEDULA/CTC') ? 'data-selected="true"' : ''; ?>>
+          <div class="certificate-icon">📄</div>
+          <div class="certificate-text">
+            <strong>CEDULA/CTC</strong>
+            <small style="display: block; margin-top: 8px; opacity: 0.8;">Community Tax Certificate</small>
+          </div>
+        </div>
+        
+        <div class="certificate-option" data-type="BUSINESS APPLICATION" <?php echo ($request_data && $request_data['certificate_type'] === 'BUSINESS APPLICATION') ? 'data-selected="true"' : ''; ?>>
+          <div class="certificate-icon">🏢</div>
+          <div class="certificate-text">
+            <strong>BUSINESS APPLICATION</strong>
+            <small style="display: block; margin-top: 8px; opacity: 0.8;">Business permit application</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Container -->
+    <div id="formContainer" class="form-container">
+      <button type="button" class="back-to-selection" onclick="showSelectionScreen()">
+        ← Back to Certificate Selection
+      </button>
+      
+      <form id="certificateForm" class="certificate-form" method="POST" action="process_certificate_request.php" enctype="multipart/form-data" <?php echo $readonly ? 'style="pointer-events: none;"' : ''; ?>>
+        <input type="hidden" id="selectedCertificateType" name="certificateType" value="<?php echo $request_data ? htmlspecialchars($request_data['certificate_type']) : ''; ?>">
+
+        <?php if ($current_user && !$admin_view): ?>
+          <div class="auto-populated-notice">
+            <div class="notice-content">
+              <span class="notice-icon">✅</span>
+              <div class="notice-text">
+                <strong>Personal Information Auto-Populated</strong>
+                <p>Your account details have been automatically filled. Please review and update if needed.</p>
+              </div>
+            </div>
+          </div>
+        <?php endif; ?>
 
       <!-- Tricycle Details Section -->
       <fieldset id="tricycleDetailsSection" style="display: <?php echo $show_tricycle_section ? 'block' : 'none'; ?>;">
@@ -412,26 +471,147 @@ include '../includes/header.php';
         </div>
       </fieldset>
 
+      <!-- Business Application Details Section -->
+      <fieldset id="businessApplicationSection" style="display: <?php echo $show_business_section ? 'block' : 'none'; ?>;">
+        <legend>Business Application Details</legend>
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="businessApplicationDate">Application Date *</label>
+            <input type="date" id="businessApplicationDate" name="businessApplicationDate" 
+                   value="<?php echo $request_data ? ($request_data['business_application_date'] ?? date('Y-m-d')) : date('Y-m-d'); ?>" 
+                   <?php echo $readonly ? 'readonly' : ''; ?>>
+          </div>
+
+          <div class="form-group">
+            <label for="businessReferenceNo">Reference No.</label>
+            <input type="text" id="businessReferenceNo" name="businessReferenceNo" 
+                   placeholder="Auto-generated" 
+                   value="<?php echo $request_data ? htmlspecialchars($request_data['business_reference_no'] ?? '') : ''; ?>" 
+                   readonly style="background-color: #f8f9fa; cursor: not-allowed;">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="businessName">Business Name *</label>
+          <input type="text" id="businessName" name="businessName" 
+                 placeholder="Enter business name" 
+                 value="<?php echo $request_data ? htmlspecialchars($request_data['business_name'] ?? '') : ''; ?>" 
+                 <?php echo $readonly ? 'readonly' : ''; ?>>
+        </div>
+
+        <div class="form-grid-two">
+          <div class="form-group">
+            <label for="businessLocation">Business Location *</label>
+            <textarea id="businessLocation" name="businessLocation" rows="3" 
+                      placeholder="Enter complete business address..."
+                      <?php echo $readonly ? 'readonly' : ''; ?>><?php echo $request_data ? htmlspecialchars($request_data['business_location'] ?? '') : ''; ?></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="businessOwnerAddress">Owner Address *</label>
+            <textarea id="businessOwnerAddress" name="businessOwnerAddress" rows="3" 
+                      placeholder="Enter complete home address..."
+                      <?php echo $readonly ? 'readonly' : ''; ?>><?php echo $request_data ? htmlspecialchars($request_data['business_owner_address'] ?? '') : ''; ?></textarea>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="businessOrNumber">OR Number *</label>
+            <input type="text" id="businessOrNumber" name="businessOrNumber" 
+                   placeholder="Enter Official Receipt number" 
+                   value="<?php echo $request_data ? htmlspecialchars($request_data['business_or_number'] ?? '') : ''; ?>" 
+                   <?php echo $readonly ? 'readonly' : ''; ?>>
+          </div>
+
+          <div class="form-group">
+            <label for="businessCtcNumber">CTC Number *</label>
+            <input type="text" id="businessCtcNumber" name="businessCtcNumber" 
+                   placeholder="Enter Community Tax Certificate number" 
+                   value="<?php echo $request_data ? htmlspecialchars($request_data['business_ctc_number'] ?? '') : ''; ?>" 
+                   <?php echo $readonly ? 'readonly' : ''; ?>>
+          </div>
+        </div>
+
+        <!-- Image Attachments Section -->
+        <div class="form-section">
+          <h4>📎 Optional Attachments</h4>
+          <p class="section-description">Upload images of your CTC and business certificate (optional)</p>
+          
+          <div class="form-grid-two">
+            <div class="form-group">
+              <label for="ctcImage">CTC Image (Optional)</label>
+              <div class="file-upload-container">
+                <input type="file" id="ctcImage" name="ctcImage" 
+                       accept="image/*,.pdf" 
+                       class="file-input"
+                       <?php echo $readonly ? 'disabled' : ''; ?>>
+                <div class="file-upload-display">
+                  <div class="file-upload-icon">📄</div>
+                  <div class="file-upload-text">
+                    <span class="file-upload-label">Click to upload CTC image</span>
+                    <span class="file-upload-hint">PNG, JPG, PDF up to 5MB</span>
+                  </div>
+                </div>
+                <div class="file-preview" id="ctcImagePreview" style="display: none;"></div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="certificateImage">Business Certificate Image (Optional)</label>
+              <div class="file-upload-container">
+                <input type="file" id="certificateImage" name="certificateImage" 
+                       accept="image/*,.pdf" 
+                       class="file-input"
+                       <?php echo $readonly ? 'disabled' : ''; ?>>
+                <div class="file-upload-display">
+                  <div class="file-upload-icon">📄</div>
+                  <div class="file-upload-text">
+                    <span class="file-upload-label">Click to upload certificate image</span>
+                    <span class="file-upload-hint">PNG, JPG, PDF up to 5MB</span>
+                  </div>
+                </div>
+                <div class="file-preview" id="certificateImagePreview" style="display: none;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
       <fieldset>
         <legend>Personal Information</legend>
         
         <div class="form-group">
           <label for="requestDate">Date *</label>
-          <input type="date" id="requestDate" name="requestDate" required>
+          <input type="date" id="requestDate" name="requestDate" required 
+                 value="<?php echo date('Y-m-d'); ?>">
         </div>
 
         <div class="form-grid">
           <div class="form-group">
             <label for="firstName">First Name *</label>
             <input type="text" id="firstName" name="firstName" required placeholder="Enter first name" 
-                   value="<?php echo $request_data ? htmlspecialchars(explode(' ', $request_data['full_name'])[0] ?? '') : ''; ?>" 
+                   value="<?php 
+                   if ($request_data) {
+                       echo htmlspecialchars(explode(' ', $request_data['full_name'])[0] ?? '');
+                   } elseif ($current_user) {
+                       echo htmlspecialchars($current_user['first_name'] ?? '');
+                   }
+                   ?>" 
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
 
           <div class="form-group">
             <label for="middleName">Middle Name</label>
             <input type="text" id="middleName" name="middleName" placeholder="Enter middle name" 
-                   value="<?php echo $request_data ? htmlspecialchars(implode(' ', array_slice(explode(' ', $request_data['full_name']), 1, -1))) : ''; ?>" 
+                   value="<?php 
+                   if ($request_data) {
+                       echo htmlspecialchars(implode(' ', array_slice(explode(' ', $request_data['full_name']), 1, -1)));
+                   } elseif ($current_user) {
+                       echo htmlspecialchars($current_user['middle_name'] ?? '');
+                   }
+                   ?>" 
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
 
@@ -442,6 +622,8 @@ include '../includes/header.php';
             if ($request_data && !empty($request_data['full_name'])) {
                 $nameParts = explode(' ', $request_data['full_name']);
                 $lastName = end($nameParts);
+            } elseif ($current_user) {
+                $lastName = $current_user['last_name'] ?? '';
             }
             ?>
             <input type="text" id="lastName" name="lastName" required placeholder="Enter last name" 
@@ -456,7 +638,13 @@ include '../includes/header.php';
             <div class="address-input-container">
               <input type="text" id="address1" name="address1" required 
                      placeholder="Search street address in Barangay Gumaoc East..." 
-                     value="<?php echo $request_data ? htmlspecialchars($request_data['address']) : ''; ?>" 
+                     value="<?php 
+                     if ($request_data) {
+                         echo htmlspecialchars($request_data['address']);
+                     } elseif ($current_user) {
+                         echo htmlspecialchars($current_user['address'] ?? '');
+                     }
+                     ?>" 
                      <?php echo $readonly ? 'readonly' : ''; ?>
                      autocomplete="off">
               <div id="addressSuggestions" class="address-suggestions"></div>
@@ -484,7 +672,21 @@ include '../includes/header.php';
                      pattern="9[0-9]{9}" 
                      maxlength="10"
                      title="Please enter a valid Philippine mobile number (starting with 9, 10 digits total)"
-                     value="<?php echo $request_data && $request_data['mobile_number'] ? substr($request_data['mobile_number'], 3) : ''; ?>" 
+                     value="<?php 
+                     if ($request_data && $request_data['mobile_number']) {
+                         echo substr($request_data['mobile_number'], 3);
+                     } elseif ($current_user && $current_user['phone']) {
+                         // Remove +63 prefix if present
+                         $phone = $current_user['phone'];
+                         if (substr($phone, 0, 3) === '+63') {
+                             echo substr($phone, 3);
+                         } elseif (substr($phone, 0, 2) === '63') {
+                             echo substr($phone, 2);
+                         } else {
+                             echo $phone;
+                         }
+                     }
+                     ?>" 
                      <?php echo $readonly ? 'readonly' : ''; ?>>
             </div>
             <small class="input-help">Enter your mobile number without +63 (e.g., 9171234567)</small>
@@ -494,11 +696,19 @@ include '../includes/header.php';
             <label for="civilStatus">Civil Status *</label>
             <select id="civilStatus" name="civilStatus" required <?php echo $readonly ? 'disabled' : ''; ?>>
               <option value="">Select Civil Status</option>
-              <option value="Single" <?php echo ($request_data && $request_data['civil_status'] === 'Single') ? 'selected' : ''; ?>>Single</option>
-              <option value="Married" <?php echo ($request_data && $request_data['civil_status'] === 'Married') ? 'selected' : ''; ?>>Married</option>
-              <option value="Divorced" <?php echo ($request_data && $request_data['civil_status'] === 'Divorced') ? 'selected' : ''; ?>>Divorced</option>
-              <option value="Widowed" <?php echo ($request_data && $request_data['civil_status'] === 'Widowed') ? 'selected' : ''; ?>>Widowed</option>
-              <option value="Separated" <?php echo ($request_data && $request_data['civil_status'] === 'Separated') ? 'selected' : ''; ?>>Separated</option>
+              <?php 
+              $civil_status_value = '';
+              if ($request_data) {
+                  $civil_status_value = $request_data['civil_status'];
+              } elseif ($current_user) {
+                  $civil_status_value = $current_user['civil_status'];
+              }
+              ?>
+              <option value="Single" <?php echo ($civil_status_value === 'Single') ? 'selected' : ''; ?>>Single</option>
+              <option value="Married" <?php echo ($civil_status_value === 'Married') ? 'selected' : ''; ?>>Married</option>
+              <option value="Divorced" <?php echo ($civil_status_value === 'Divorced') ? 'selected' : ''; ?>>Divorced</option>
+              <option value="Widowed" <?php echo ($civil_status_value === 'Widowed') ? 'selected' : ''; ?>>Widowed</option>
+              <option value="Separated" <?php echo ($civil_status_value === 'Separated') ? 'selected' : ''; ?>>Separated</option>
             </select>
           </div>
 
@@ -506,8 +716,16 @@ include '../includes/header.php';
             <label for="gender">Gender *</label>
             <select id="gender" name="gender" required <?php echo $readonly ? 'disabled' : ''; ?>>
               <option value="">Select Gender</option>
-              <option value="Male" <?php echo ($request_data && $request_data['gender'] === 'Male') ? 'selected' : ''; ?>>Male</option>
-              <option value="Female" <?php echo ($request_data && $request_data['gender'] === 'Female') ? 'selected' : ''; ?>>Female</option>
+              <?php 
+              $gender_value = '';
+              if ($request_data) {
+                  $gender_value = $request_data['gender'];
+              } elseif ($current_user) {
+                  $gender_value = $current_user['gender'];
+              }
+              ?>
+              <option value="Male" <?php echo ($gender_value === 'Male') ? 'selected' : ''; ?>>Male</option>
+              <option value="Female" <?php echo ($gender_value === 'Female') ? 'selected' : ''; ?>>Female</option>
             </select>
           </div>
         </div>
@@ -516,7 +734,13 @@ include '../includes/header.php';
           <div class="form-group">
             <label for="birthdate">Birthdate *</label>
             <input type="date" id="birthdate" name="birthdate" required 
-                   value="<?php echo $request_data ? $request_data['birth_date'] : ''; ?>" 
+                   value="<?php 
+                   if ($request_data) {
+                       echo $request_data['birth_date'];
+                   } elseif ($current_user) {
+                       echo htmlspecialchars($current_user['birthdate'] ?? '');
+                   }
+                   ?>" 
                    onchange="calculateAge()"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
@@ -525,8 +749,15 @@ include '../includes/header.php';
             <label for="age">Age</label>
             <?php 
             $calculated_age = '';
+            $birth_date_for_age = '';
             if ($request_data && !empty($request_data['birth_date'])) {
-                $birth_date = new DateTime($request_data['birth_date']);
+                $birth_date_for_age = $request_data['birth_date'];
+            } elseif ($current_user && !empty($current_user['birthdate'])) {
+                $birth_date_for_age = $current_user['birthdate'];
+            }
+            
+            if ($birth_date_for_age) {
+                $birth_date = new DateTime($birth_date_for_age);
                 $today = new DateTime();
                 $calculated_age = $today->diff($birth_date)->y;
             }
@@ -538,7 +769,13 @@ include '../includes/header.php';
           <div class="form-group">
             <label for="birthplace">Birthplace *</label>
             <input type="text" id="birthplace" name="birthplace" required placeholder="Place of birth" 
-                   value="<?php echo $request_data ? htmlspecialchars($request_data['birth_place']) : ''; ?>" 
+                   value="<?php 
+                   if ($request_data) {
+                       echo htmlspecialchars($request_data['birth_place']);
+                   } elseif ($current_user) {
+                       echo htmlspecialchars($current_user['birth_place'] ?? '');
+                   }
+                   ?>" 
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
         </div>
@@ -547,7 +784,13 @@ include '../includes/header.php';
           <div class="form-group">
             <label for="citizenship">Citizenship</label>
             <input type="text" id="citizenship" name="citizenship" placeholder="Filipino" 
-                   value="<?php echo $request_data ? htmlspecialchars($request_data['citizenship']) : 'Filipino'; ?>" 
+                   value="<?php 
+                   if ($request_data) {
+                       echo htmlspecialchars($request_data['citizenship']);
+                   } else {
+                       echo 'Filipino';
+                   }
+                   ?>" 
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
 
@@ -577,7 +820,8 @@ include '../includes/header.php';
         <?php endif; ?>
       </div>
 
-    </form>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -639,6 +883,68 @@ include '../includes/header.php';
     margin-top: 15px;
     flex-wrap: wrap;
     justify-content: center;
+}
+
+/* Auto-populated Notice Styling */
+.auto-populated-notice {
+  background: linear-gradient(135deg, #d4edda, #c3e6cb);
+  border: 2px solid #28a745;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15);
+}
+
+.notice-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notice-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.notice-text {
+  flex: 1;
+}
+
+.notice-text strong {
+  color: #155724;
+  font-size: 16px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.notice-text p {
+  color: #155724;
+  font-size: 14px;
+  margin: 0;
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .auto-populated-notice {
+    padding: 14px 16px;
+  }
+  
+  .notice-content {
+    gap: 10px;
+  }
+  
+  .notice-icon {
+    font-size: 20px;
+  }
+  
+  .notice-text strong {
+    font-size: 14px;
+  }
+  
+  .notice-text p {
+    font-size: 13px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -804,7 +1110,8 @@ body {
 
 /* Container and Layout */
 .container {
-  max-width: 1000px;
+  max-width: 95%;
+  width: 95%;
   margin: 20px auto;
   padding: 20px 15px;
   background: rgba(255, 255, 255, 0.98);
@@ -812,6 +1119,7 @@ body {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  min-height: 80vh;
 }
 
 .section {
@@ -935,44 +1243,143 @@ legend {
   border: none;
 }
 
-/* Certificate Types */
+/* Kiosk-style Certificate Selection */
+.certificate-selection-screen {
+  text-align: center;
+  padding: 40px 20px;
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.kiosk-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.kiosk-subtitle {
+  font-size: 1.2rem;
+  color: #6c757d;
+  margin-bottom: 50px;
+  font-weight: 400;
+}
+
 .certificate-types {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 15px;
-  margin-top: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 25px;
+  margin-top: 40px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .certificate-option {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 15px;
-  padding: 20px;
-  background: #f8f9fa;
-  border: 2px solid #e9ecef;
-  border-radius: 12px;
+  gap: 20px;
+  padding: 40px 30px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 3px solid #e9ecef;
+  border-radius: 20px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: 500;
-  font-size: 16px;
+  transition: all 0.4s ease;
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-align: center;
+  min-height: 180px;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.certificate-option::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transition: left 0.5s ease;
+}
+
+.certificate-option:hover::before {
+  left: 100%;
+}
+
+.certificate-icon {
+  font-size: 3rem;
+  margin-bottom: 10px;
+  transition: transform 0.3s ease;
+}
+
+.certificate-option:hover .certificate-icon {
+  transform: scale(1.1) rotate(5deg);
 }
 
 .certificate-option:hover {
-  background: rgba(40, 167, 69, 0.1);
+  background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.1) 100%);
   border-color: #28a745;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 15px 35px rgba(40, 167, 69, 0.3);
 }
 
 .certificate-option input[type="radio"] {
-  width: 20px;
-  height: 20px;
-  accent-color: #28a745;
-  cursor: pointer;
+  display: none;
 }
 
-.certificate-option input[type="radio"]:checked + .checkmark {
-  background: #28a745;
+.certificate-option.selected {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border-color: #28a745;
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 15px 35px rgba(40, 167, 69, 0.4);
+}
+
+.certificate-option.selected .certificate-icon {
+  color: white;
+}
+
+/* Form Container - Initially Hidden */
+.form-container {
+  display: none;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.5s ease;
+}
+
+.form-container.show {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Back Button */
+.back-to-selection {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.back-to-selection:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
 }
 
 /* Form Groups */
@@ -1010,6 +1417,179 @@ legend {
   background: #f8f9fa;
   color: #6c757d;
   cursor: not-allowed;
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: #fff;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: #28a745;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}
+
+.form-group textarea[readonly] {
+  background: #f8f9fa;
+  color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Form Section Styling */
+.form-section {
+  margin: 25px 0;
+  padding: 20px;
+  background: rgba(40, 167, 69, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(40, 167, 69, 0.1);
+}
+
+.form-section h4 {
+  color: #28a745;
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.section-description {
+  color: #6c757d;
+  margin: 0 0 20px 0;
+  font-size: 0.9rem;
+}
+
+/* File Upload Styling */
+.file-upload-container {
+  position: relative;
+  border: 2px dashed #d0d7de;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.file-upload-container:hover {
+  border-color: #28a745;
+  background: rgba(40, 167, 69, 0.05);
+}
+
+.file-upload-container.drag-over {
+  border-color: #28a745;
+  background: rgba(40, 167, 69, 0.1);
+  transform: scale(1.02);
+}
+
+.file-input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+}
+
+.file-upload-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.file-upload-icon {
+  font-size: 2rem;
+  color: #6c757d;
+}
+
+.file-upload-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.file-upload-label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+}
+
+.file-upload-hint {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.file-preview {
+  margin-top: 15px;
+  padding: 10px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.file-preview img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 4px;
+}
+
+.file-preview-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  margin-top: 10px;
+}
+
+.file-preview-icon {
+  font-size: 1.5rem;
+}
+
+.file-preview-details {
+  flex: 1;
+}
+
+.file-preview-name {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+}
+
+.file-preview-size {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.file-remove-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.3s ease;
+}
+
+.file-remove-btn:hover {
+  background: #c82333;
+  transform: scale(1.1);
 }
 
 /* Form Grid */
@@ -1139,6 +1719,30 @@ legend {
   .form-group select {
     padding: 10px 12px;
     font-size: 13px;
+  }
+  
+  .file-upload-container {
+    padding: 15px;
+  }
+  
+  .file-upload-icon {
+    font-size: 1.5rem;
+  }
+  
+  .file-upload-label {
+    font-size: 13px;
+  }
+  
+  .file-upload-hint {
+    font-size: 11px;
+  }
+  
+  .form-section {
+    padding: 15px;
+  }
+  
+  .form-section h4 {
+    font-size: 1rem;
   }
 }
 
@@ -1409,8 +2013,34 @@ legend {
 }
 
 @media (max-width: 768px) {
+  .container {
+    max-width: 98%;
+    width: 98%;
+    margin: 10px auto;
+    padding: 15px 10px;
+  }
+  
+  .kiosk-title {
+    font-size: 2rem;
+  }
+  
+  .kiosk-subtitle {
+    font-size: 1rem;
+    margin-bottom: 30px;
+  }
+  
   .certificate-types {
     grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .certificate-option {
+    min-height: 150px;
+    padding: 30px 20px;
+  }
+  
+  .certificate-icon {
+    font-size: 2.5rem;
   }
   
   .radio-group {
@@ -1732,53 +2362,118 @@ function calculateAge() {
   }
 }
 
-// Main function to toggle certificate details based on selection
-function toggleCertificateDetails() {
-  console.log('toggleCertificateDetails called');
+// Show certificate selection screen
+function showSelectionScreen() {
+  const selectionScreen = document.getElementById('certificateSelectionScreen');
+  const formContainer = document.getElementById('formContainer');
   
-  const tricycleOption = document.querySelector('input[value="TRICYCLE PERMIT"]');
-  const cedulaOption = document.querySelector('input[value="CEDULA/CTC"]');
+  if (selectionScreen && formContainer) {
+    formContainer.classList.remove('show');
+    setTimeout(() => {
+      formContainer.style.display = 'none';
+      selectionScreen.style.display = 'block';
+    }, 300);
+  }
+  
+  // Clear selection
+  document.querySelectorAll('.certificate-option').forEach(option => {
+    option.classList.remove('selected');
+  });
+  
+  // Clear hidden input
+  const hiddenInput = document.getElementById('selectedCertificateType');
+  if (hiddenInput) {
+    hiddenInput.value = '';
+  }
+}
+
+// Show form for selected certificate type
+function showCertificateForm(certificateType) {
+  const selectionScreen = document.getElementById('certificateSelectionScreen');
+  const formContainer = document.getElementById('formContainer');
+  const hiddenInput = document.getElementById('selectedCertificateType');
+  
+  // Hide selection screen
+  if (selectionScreen) {
+    selectionScreen.style.display = 'none';
+  }
+  
+  // Set certificate type
+  if (hiddenInput) {
+    hiddenInput.value = certificateType;
+  }
+  
+  // Show form
+  if (formContainer) {
+    formContainer.style.display = 'block';
+    setTimeout(() => {
+      formContainer.classList.add('show');
+    }, 100);
+  }
+  
+  // Toggle specific sections
+  toggleCertificateDetails(certificateType);
+}
+
+// Main function to toggle certificate details based on selection
+function toggleCertificateDetails(certificateType) {
+  console.log('toggleCertificateDetails called for:', certificateType);
+  
   const tricycleSection = document.getElementById('tricycleDetailsSection');
   const cedulaSection = document.getElementById('cedulaDetailsSection');
-  
-  console.log('Elements found:', {
-    tricycleOption: tricycleOption,
-    cedulaOption: cedulaOption,
-    tricycleSection: tricycleSection,
-    cedulaSection: cedulaSection
-  });
+  const businessSection = document.getElementById('businessApplicationSection');
   
   // Hide all sections first
   if (tricycleSection) {
     tricycleSection.style.display = 'none';
-    console.log('Tricycle section hidden');
   }
   if (cedulaSection) {
     cedulaSection.style.display = 'none';
-    console.log('Cedula section hidden');
+  }
+  if (businessSection) {
+    businessSection.style.display = 'none';
   }
   
   // Show relevant section based on selection
-  if (tricycleOption && tricycleOption.checked) {
+  if (certificateType === 'TRICYCLE PERMIT') {
     console.log('Tricycle permit selected');
     if (tricycleSection) {
       tricycleSection.style.display = 'block';
-      console.log('Tricycle section shown');
     }
     setTricycleFieldsRequired(true);
     setCedulaFieldsRequired(false);
-  } else if (cedulaOption && cedulaOption.checked) {
+    setBusinessFieldsRequired(false);
+  } else if (certificateType === 'CEDULA/CTC') {
     console.log('Cedula/CTC selected');
     if (cedulaSection) {
       cedulaSection.style.display = 'block';
-      console.log('Cedula section shown');
     }
     setCedulaFieldsRequired(true);
     setTricycleFieldsRequired(false);
-  } else {
-    console.log('No relevant certificate type selected');
+    setBusinessFieldsRequired(false);
+  } else if (certificateType === 'BUSINESS APPLICATION') {
+    console.log('Business application selected');
+    if (businessSection) {
+      businessSection.style.display = 'block';
+    }
+    setBusinessFieldsRequired(true);
     setTricycleFieldsRequired(false);
     setCedulaFieldsRequired(false);
+    
+    // Generate reference number for business application
+    generateBusinessReferenceNumber();
+    
+    // Set today's date for business application date
+    const businessDateField = document.getElementById('businessApplicationDate');
+    if (businessDateField && !businessDateField.value) {
+      const today = new Date().toISOString().split('T')[0];
+      businessDateField.value = today;
+    }
+  } else {
+    console.log('Basic certificate type selected');
+    setTricycleFieldsRequired(false);
+    setCedulaFieldsRequired(false);
+    setBusinessFieldsRequired(false);
   }
 }
 
@@ -1815,6 +2510,37 @@ function setCedulaFieldsRequired(required) {
       console.log(`${fieldId} required set to ${required}`);
     }
   });
+}
+
+// Set required status for business application fields
+function setBusinessFieldsRequired(required) {
+  const isReadonly = document.querySelector('form[style*="pointer-events: none"]');
+  if (isReadonly) return;
+  
+  const fields = [
+    'businessName', 'businessLocation', 'businessOwnerAddress',
+    'businessOrNumber', 'businessCtcNumber'
+  ];
+  
+  fields.forEach(fieldId => {
+    const field = document.getElementById(fieldId);
+    if (field) {
+      field.required = required;
+      console.log(`${fieldId} required set to ${required}`);
+    }
+  });
+}
+
+// Generate business reference number
+function generateBusinessReferenceNumber() {
+  const referenceField = document.getElementById('businessReferenceNo');
+  if (referenceField && !referenceField.value) {
+    const year = new Date().getFullYear();
+    const randomNum = Math.floor(Math.random() * 9999) + 1;
+    const paddedNum = randomNum.toString().padStart(4, '0');
+    const referenceNo = `BA-${year}-${paddedNum}`;
+    referenceField.value = referenceNo;
+  }
 }
 
 // Update basic community tax amount based on type
@@ -2081,35 +2807,56 @@ function initializeAddressSearch() {
   });
 }
 
+// Setup certificate selection handlers
+function setupCertificateSelection() {
+  const certificateOptions = document.querySelectorAll('.certificate-option');
+  
+  certificateOptions.forEach(option => {
+    option.addEventListener('click', function() {
+      const certificateType = this.getAttribute('data-type');
+      
+      // Update visual selection
+      certificateOptions.forEach(opt => opt.classList.remove('selected'));
+      this.classList.add('selected');
+      
+      // Show form after short delay for better UX
+      setTimeout(() => {
+        showCertificateForm(certificateType);
+      }, 300);
+    });
+  });
+}
+
 // Check for pre-selected certificate type
 function checkPreSelectedCertificateType() {
   console.log('Checking pre-selected certificate type...');
   
-  const checkedRadio = document.querySelector('input[name="certificateType"]:checked');
-  console.log('Pre-checked radio found:', checkedRadio?.value);
-  
-  if (checkedRadio) {
-    toggleCertificateDetails();
-  } else {
-    // Check for existing data to determine which section to show
-    const makeTypeInput = document.getElementById('makeType');
-    const cedulaYearInput = document.getElementById('cedulaYear');
+  // Only auto-select if we're in admin view mode with existing data
+  if (window.location.search.includes('admin_view=') || window.location.search.includes('readonly=1')) {
+    const preSelectedOption = document.querySelector('.certificate-option[data-selected="true"]');
     
-    if (makeTypeInput && makeTypeInput.value) {
-      console.log('Found tricycle data, selecting tricycle permit');
-      const tricycleRadio = document.querySelector('input[value="TRICYCLE PERMIT"]');
-      if (tricycleRadio) {
-        tricycleRadio.checked = true;
-        toggleCertificateDetails();
-      }
-    } else if (cedulaYearInput && cedulaYearInput.value) {
-      console.log('Found cedula data, selecting cedula/ctc');
-      const cedulaRadio = document.querySelector('input[value="CEDULA/CTC"]');
-      if (cedulaRadio) {
-        cedulaRadio.checked = true;
-        toggleCertificateDetails();
-      }
+    if (preSelectedOption) {
+      const certificateType = preSelectedOption.getAttribute('data-type');
+      console.log('Admin view - Pre-selected certificate type found:', certificateType);
+      
+      // Mark as selected and show form immediately for admin view
+      preSelectedOption.classList.add('selected');
+      showCertificateForm(certificateType);
+      return;
     }
+  }
+  
+  // For regular users, always show the selection screen first
+  console.log('Regular user access - showing selection screen');
+  const selectionScreen = document.getElementById('certificateSelectionScreen');
+  const formContainer = document.getElementById('formContainer');
+  
+  if (selectionScreen) {
+    selectionScreen.style.display = 'block';
+  }
+  if (formContainer) {
+    formContainer.style.display = 'none';
+    formContainer.classList.remove('show');
   }
 }
 
@@ -2148,21 +2895,13 @@ document.addEventListener('DOMContentLoaded', function() {
   if (successToast) showToast('successToast');
   if (errorToast) showToast('errorToast');
   
-  // Add event listeners for certificate type changes
-  const certificateRadios = document.querySelectorAll('input[name="certificateType"]');
-  console.log('Found certificate radios:', certificateRadios.length);
-  
-  certificateRadios.forEach((radio) => {
-    radio.addEventListener('change', function() {
-      console.log('Certificate type changed to:', this.value);
-      toggleCertificateDetails();
-    });
-  });
+  // Setup certificate selection
+  setupCertificateSelection();
   
   // Initialize address search
   initializeAddressSearch();
   
-  // Check for pre-selected certificate type
+  // Check for pre-selected certificate type (only for admin views)
   checkPreSelectedCertificateType();
   
   // Initialize tax calculations if cedula is selected
@@ -2170,7 +2909,142 @@ document.addEventListener('DOMContentLoaded', function() {
   updateTaxCalculations();
   
   console.log('Initialization complete');
+  
+  // Setup file upload functionality
+  setupFileUploads();
 });
+
+// File Upload Functionality
+function setupFileUploads() {
+  const fileInputs = document.querySelectorAll('.file-input');
+  
+  fileInputs.forEach(input => {
+    const container = input.closest('.file-upload-container');
+    const previewId = input.id + 'Preview';
+    const preview = document.getElementById(previewId);
+    
+    // File selection handler
+    input.addEventListener('change', function(e) {
+      handleFileSelection(e.target, preview);
+    });
+    
+    // Drag and drop handlers
+    container.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      container.classList.add('drag-over');
+    });
+    
+    container.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      container.classList.remove('drag-over');
+    });
+    
+    container.addEventListener('drop', function(e) {
+      e.preventDefault();
+      container.classList.remove('drag-over');
+      
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        input.files = files;
+        handleFileSelection(input, preview);
+      }
+    });
+  });
+}
+
+function handleFileSelection(input, preview) {
+  const file = input.files[0];
+  
+  if (!file) {
+    hideFilePreview(preview);
+    return;
+  }
+  
+  // Validate file size (5MB limit)
+  const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+  if (file.size > maxSize) {
+    alert('File size must be less than 5MB');
+    input.value = '';
+    hideFilePreview(preview);
+    return;
+  }
+  
+  // Validate file type
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+  if (!allowedTypes.includes(file.type)) {
+    alert('Please select an image (PNG, JPG) or PDF file');
+    input.value = '';
+    hideFilePreview(preview);
+    return;
+  }
+  
+  showFilePreview(file, preview, input);
+}
+
+function showFilePreview(file, preview, input) {
+  if (!preview) return;
+  
+  preview.style.display = 'block';
+  
+  const isImage = file.type.startsWith('image/');
+  const fileSize = formatFileSize(file.size);
+  
+  if (isImage) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.innerHTML = `
+        <img src="${e.target.result}" alt="Preview">
+        <div class="file-preview-info">
+          <div class="file-preview-icon">🖼️</div>
+          <div class="file-preview-details">
+            <div class="file-preview-name">${file.name}</div>
+            <div class="file-preview-size">${fileSize}</div>
+          </div>
+          <button type="button" class="file-remove-btn" onclick="removeFile('${input.id}', '${preview.id}')">
+            ×
+          </button>
+        </div>
+      `;
+    };
+    reader.readAsDataURL(file);
+  } else {
+    preview.innerHTML = `
+      <div class="file-preview-info">
+        <div class="file-preview-icon">📄</div>
+        <div class="file-preview-details">
+          <div class="file-preview-name">${file.name}</div>
+          <div class="file-preview-size">${fileSize}</div>
+        </div>
+        <button type="button" class="file-remove-btn" onclick="removeFile('${input.id}', '${preview.id}')">
+          ×
+        </button>
+      </div>
+    `;
+  }
+}
+
+function hideFilePreview(preview) {
+  if (preview) {
+    preview.style.display = 'none';
+    preview.innerHTML = '';
+  }
+}
+
+function removeFile(inputId, previewId) {
+  const input = document.getElementById(inputId);
+  const preview = document.getElementById(previewId);
+  
+  if (input) input.value = '';
+  hideFilePreview(preview);
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
 
 // Enhanced form validation
 document.addEventListener('DOMContentLoaded', function() {
@@ -2246,6 +3120,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
       
+      // Validate business application fields if selected
+      const selectedCertificateType = document.getElementById('selectedCertificateType');
+      if (selectedCertificateType && selectedCertificateType.value === 'BUSINESS APPLICATION') {
+        const requiredBusinessFields = [
+          { id: 'businessName', name: 'Business Name' },
+          { id: 'businessLocation', name: 'Business Location' },
+          { id: 'businessOwnerAddress', name: 'Owner Address' },
+          { id: 'businessOrNumber', name: 'OR Number' },
+          { id: 'businessCtcNumber', name: 'CTC Number' }
+        ];
+        
+        for (const field of requiredBusinessFields) {
+          const element = document.getElementById(field.id);
+          if (element && !element.value.trim()) {
+            e.preventDefault();
+            alert(`${field.name} is required for business applications.`);
+            element.focus();
+            return;
+          }
+        }
+      }
+      
       console.log('Form validation passed');
     });
   }
@@ -2253,65 +3149,49 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <!-- PHP-based solution as primary backup -->
-<?php if ($request_data && $request_data['certificate_type'] === 'TRICYCLE PERMIT'): ?>
+<?php if ($admin_view && $request_data && $request_data['certificate_type'] === 'TRICYCLE PERMIT'): ?>
 <script>
-// IMMEDIATE execution for PHP-detected tricycle permits
-console.log('PHP detected TRICYCLE PERMIT - forcing section display immediately');
+// IMMEDIATE execution for PHP-detected tricycle permits in admin view only
+console.log('PHP detected TRICYCLE PERMIT in admin view - forcing section display immediately');
 
 // Force show immediately without waiting
 function forceShowTricycleSection() {
   const tricycleSection = document.getElementById('tricycleDetailsSection');
-  const tricycleRadio = document.querySelector('input[name="certificateType"][value="TRICYCLE PERMIT"]');
   
   if (tricycleSection) {
     tricycleSection.style.display = 'block';
     console.log('Tricycle section forced to show via PHP detection');
   }
-  
-  if (tricycleRadio) {
-    tricycleRadio.checked = true;
-    console.log('Tricycle radio checked via PHP detection');
-  }
 }
 
-// Execute immediately
+// Execute immediately for admin view only
 forceShowTricycleSection();
-
-// Also execute after short delays
 setTimeout(forceShowTricycleSection, 1);
 setTimeout(forceShowTricycleSection, 10);
 setTimeout(forceShowTricycleSection, 50);
 setTimeout(forceShowTricycleSection, 100);
 setTimeout(forceShowTricycleSection, 200);
 
-// Execute when DOM is ready
 document.addEventListener('DOMContentLoaded', forceShowTricycleSection);
-
-// Execute when window is loaded
 window.addEventListener('load', forceShowTricycleSection);
 </script>
 <?php endif; ?>
 
 <!-- Enhanced PHP-based solution for cedula -->
-<?php if ($request_data && $request_data['certificate_type'] === 'CEDULA/CTC'): ?>
+<?php if ($admin_view && $request_data && $request_data['certificate_type'] === 'CEDULA/CTC'): ?>
 <script>
-console.log('PHP detected CEDULA/CTC - forcing section display immediately');
+console.log('PHP detected CEDULA/CTC in admin view - forcing section display immediately');
 
 function forceShowCedulaSection() {
   const cedulaSection = document.getElementById('cedulaDetailsSection');
-  const cedulaRadio = document.querySelector('input[name="certificateType"][value="CEDULA/CTC"]');
   
   if (cedulaSection) {
     cedulaSection.style.display = 'block';
     console.log('Cedula section forced to show via PHP detection');
   }
-  
-  if (cedulaRadio) {
-    cedulaRadio.checked = true;
-    console.log('Cedula radio checked via PHP detection');
-  }
 }
 
+// Execute immediately for admin view only
 forceShowCedulaSection();
 setTimeout(forceShowCedulaSection, 1);
 setTimeout(forceShowCedulaSection, 10);
@@ -2322,5 +3202,100 @@ document.addEventListener('DOMContentLoaded', forceShowCedulaSection);
 window.addEventListener('load', forceShowCedulaSection);
 </script>
 <?php endif; ?>
+
+<!-- Enhanced PHP-based solution for business application -->
+<?php if ($admin_view && $request_data && $request_data['certificate_type'] === 'BUSINESS APPLICATION'): ?>
+<script>
+console.log('PHP detected BUSINESS APPLICATION in admin view - forcing section display immediately');
+
+function forceShowBusinessSection() {
+  const businessSection = document.getElementById('businessApplicationSection');
+  
+  if (businessSection) {
+    businessSection.style.display = 'block';
+    console.log('Business section forced to show via PHP detection');
+  }
+}
+
+// Execute immediately for admin view only
+forceShowBusinessSection();
+setTimeout(forceShowBusinessSection, 1);
+setTimeout(forceShowBusinessSection, 10);
+setTimeout(forceShowBusinessSection, 50);
+setTimeout(forceShowBusinessSection, 100);
+
+document.addEventListener('DOMContentLoaded', forceShowBusinessSection);
+window.addEventListener('load', forceShowBusinessSection);
+</script>
+<?php endif; ?>
+
+<!-- Auto-populate user data enhancement script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-populate birthdate to age calculation
+    const birthdateField = document.getElementById('birthdate');
+    if (birthdateField && birthdateField.value) {
+        calculateAge();
+    }
+    
+    // Auto-format mobile number input
+    const mobileField = document.getElementById('mobileNumber');
+    if (mobileField) {
+        mobileField.addEventListener('input', function(e) {
+            // Remove non-digits
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            // Ensure it starts with 9 for Philippine mobile numbers
+            if (this.value.length > 0 && this.value[0] !== '9') {
+                this.value = '9' + this.value;
+            }
+        });
+    }
+    
+    // Show notice animation for auto-populated data
+    <?php if ($current_user && !$admin_view): ?>
+    const noticeElement = document.querySelector('.auto-populated-notice');
+    if (noticeElement) {
+        // Scroll to notice smoothly after page loads
+        setTimeout(function() {
+            noticeElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Add a subtle animation to draw attention
+            noticeElement.style.transform = 'scale(1.02)';
+            noticeElement.style.transition = 'transform 0.3s ease';
+            
+            setTimeout(function() {
+                noticeElement.style.transform = 'scale(1)';
+            }, 300);
+        }, 500);
+    }
+    <?php endif; ?>
+});
+</script>
+
+<!-- Auto-populate user data if logged in -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-populate birthdate to age calculation
+    const birthdateField = document.getElementById('birthdate');
+    if (birthdateField && birthdateField.value) {
+        calculateAge();
+    }
+    
+    // Auto-format mobile number input
+    const mobileField = document.getElementById('mobileNumber');
+    if (mobileField) {
+        mobileField.addEventListener('input', function(e) {
+            // Remove non-digits
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            // Ensure it starts with 9 for Philippine mobile numbers
+            if (this.value.length > 0 && this.value[0] !== '9') {
+                this.value = '9' + this.value;
+            }
+        });
+    }
+});
+</script>
 
 <?php include '../includes/footer.php'; ?>
