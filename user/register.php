@@ -1,72 +1,8 @@
 <?php
 session_start();
-require_once '../includes/db_connect.php';
 
 $page_title = 'User Registration';
 $base_path = '../';
-
-// Process registration
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $full_name = $_POST['full_name'] ?? '';
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-    $confirm_password = $_POST['confirm_password'] ?? '';
-    $phone = $_POST['phone'] ?? '';
-    $address = $_POST['address'] ?? '';
-    
-    // Validation
-    $errors = [];
-    
-    if (empty($full_name)) {
-        $errors[] = "Full name is required";
-    }
-    
-    if (empty($email)) {
-        $errors[] = "Email is required";
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = "Invalid email format";
-    }
-    
-    if (empty($password)) {
-        $errors[] = "Password is required";
-    } elseif (strlen($password) < 6) {
-        $errors[] = "Password must be at least 6 characters";
-    }
-    
-    if ($password !== $confirm_password) {
-        $errors[] = "Passwords do not match";
-    }
-    
-    if (empty($phone)) {
-        $errors[] = "Phone number is required";
-    }
-    
-    if (empty($address)) {
-        $errors[] = "Address is required";
-    }
-    
-    // Check if email already exists
-    if (empty($errors)) {
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt->execute([$email]);
-        if ($stmt->fetch()) {
-            $errors[] = "Email already registered";
-        }
-    }
-    
-    // If no errors, create user
-    if (empty($errors)) {
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-        
-        $stmt = $pdo->prepare("INSERT INTO users (full_name, email, password, phone, address, created_at) VALUES (?, ?, ?, ?, ?, NOW())");
-        
-        if ($stmt->execute([$full_name, $email, $hashed_password, $phone, $address])) {
-            $success = "Registration successful! You can now login.";
-        } else {
-            $errors[] = "Registration failed. Please try again.";
-        }
-    }
-}
 
 include '../includes/header.php';
 ?>
@@ -81,21 +17,9 @@ include '../includes/header.php';
     padding: 20px;
 }
 
-.register-wrapper::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('../background.jpg') center/cover;
-    opacity: 0.1;
-    z-index: -1;
-}
-
 .register-container {
     width: 100%;
-    max-width: 500px;
+    max-width: 600px;
     z-index: 1;
 }
 
@@ -106,130 +30,62 @@ include '../includes/header.php';
     padding: 40px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.register-header {
     text-align: center;
-    margin-bottom: 30px;
 }
 
 .register-header h2 {
     color: #333;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
     font-size: 28px;
 }
 
-.register-header p {
-    color: #666;
-    font-size: 14px;
+.info-box {
+    background: #e3f2fd;
+    border: 1px solid #2196f3;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+    text-align: left;
 }
 
-.form-group {
-    margin-bottom: 20px;
+.info-box h4 {
+    color: #1976d2;
+    margin: 0 0 15px 0;
+    font-size: 18px;
 }
 
-.form-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: #333;
-    font-weight: 500;
-}
-
-.form-group input, .form-group textarea {
-    width: 100%;
-    padding: 12px 16px;
-    border: 2px solid #e1e5e9;
-    border-radius: 10px;
-    font-size: 16px;
-    transition: all 0.3s ease;
-    box-sizing: border-box;
-}
-
-.form-group input:focus, .form-group textarea:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.form-group textarea {
-    resize: vertical;
-    min-height: 80px;
+.info-box p {
+    color: #424242;
+    margin: 10px 0;
+    line-height: 1.6;
 }
 
 .btn-register {
-    width: 100%;
-    padding: 14px;
+    display: inline-block;
+    padding: 15px 30px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
-    border: none;
-    border-radius: 10px;
+    text-decoration: none;
+    border-radius: 25px;
     font-size: 16px;
     font-weight: 600;
-    cursor: pointer;
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    margin: 10px;
 }
 
 .btn-register:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    color: white;
 }
 
-.btn-register i {
-    font-size: 18px;
+.btn-secondary {
+    background: #6c757d;
 }
 
-.error-message {
-    background: #fee;
-    color: #c33;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    border: 1px solid #fcc;
-}
-
-.success-message {
-    background: #efe;
-    color: #363;
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-    border: 1px solid #cfc;
-}
-
-.login-link {
-    text-align: center;
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 1px solid #e1e5e9;
-}
-
-.login-link a {
-    color: #667eea;
-    text-decoration: none;
-    font-weight: 500;
-}
-
-.login-link a:hover {
-    text-decoration: underline;
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.register-card {
-    animation: slideUp 0.6s ease-out;
+.btn-secondary:hover {
+    background: #5a6268;
+    box-shadow: 0 10px 20px rgba(108, 117, 125, 0.3);
 }
 </style>
 
@@ -237,63 +93,36 @@ include '../includes/header.php';
     <div class="register-container">
         <div class="register-card">
             <div class="register-header">
-                <h2>User Registration</h2>
-                <p>Create your account to access personalized services</p>
+                <h2>👋 Welcome to User Registration</h2>
             </div>
             
-            <?php if (!empty($errors)): ?>
-                <div class="error-message">
-                    <?php foreach ($errors as $error): ?>
-                        <div><?php echo htmlspecialchars($error); ?></div>
-                    <?php endforeach; ?>
-                </div>
-            <?php endif; ?>
+            <div class="info-box">
+                <h4>📋 Complete Census Registration</h4>
+                <p><strong>To access user services, please complete the census registration process:</strong></p>
+                <p>• Fill out the comprehensive resident registration form</p>
+                <p>• Provide your family and household information</p>
+                <p>• Receive your login credentials automatically</p>
+                <p>• Access all available e-services</p>
+                
+                <h4 style="margin-top: 20px;">🏠 What You'll Get:</h4>
+                <p>• Personal user account</p>
+                <p>• RFID access (optional)</p>
+                <p>• Access to document requests</p>
+                <p>• Community service applications</p>
+                <p>• Emergency reporting system</p>
+            </div>
             
-            <?php if (isset($success)): ?>
-                <div class="success-message">
-                    <?php echo htmlspecialchars($success); ?>
-                </div>
-            <?php endif; ?>
+            <div style="margin: 30px 0;">
+                <a href="../pages/resident-registration.php" class="btn-register">
+                    📝 Complete Census Registration
+                </a>
+            </div>
             
-            <form method="POST" action="">
-                <div class="form-group">
-                    <label for="full_name">Full Name</label>
-                    <input type="text" id="full_name" name="full_name" value="<?php echo htmlspecialchars($_POST['full_name'] ?? ''); ?>" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" name="phone" value="<?php echo htmlspecialchars($_POST['phone'] ?? ''); ?>" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="address">Address</label>
-                    <textarea id="address" name="address" required><?php echo htmlspecialchars($_POST['address'] ?? ''); ?></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="confirm_password">Confirm Password</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required>
-                </div>
-                
-                <button type="submit" class="btn-register">
-                    <i class="fas fa-user-plus"></i>
-                    Register
-                </button>
-            </form>
-            
-            <div class="login-link">
-                <p>Already have an account? <a href="login.php">Login here</a></p>
+            <div style="margin-top: 30px;">
+                <p style="color: #666;">Already completed registration?</p>
+                <a href="login.php" class="btn-register btn-secondary">
+                    🔑 Login Here
+                </a>
             </div>
         </div>
     </div>

@@ -9,15 +9,15 @@ $message = '';
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $login_id = $_POST['login_id'] ?? '';
+    $email = $_POST['email'] ?? '';
     $contact_number = $_POST['contact_number'] ?? '';
     
-    if (empty($login_id) || empty($contact_number)) {
-        $error = "Please provide both Login ID and Contact Number";
+    if (empty($email) || empty($contact_number)) {
+        $error = "Please provide both Email and Contact Number";
     } else {
-        // Check if the login_id and contact_number match
-        $stmt = $pdo->prepare("SELECT * FROM resident_registrations WHERE login_id = ? AND contact_number = ?");
-        $stmt->execute([$login_id, $contact_number]);
+        // Check if the email and contact_number match
+        $stmt = $pdo->prepare("SELECT * FROM residents WHERE email = ? AND phone = ? AND status = 'active'");
+        $stmt->execute([$email, $contact_number]);
         $resident = $stmt->fetch();
         
         if ($resident) {
@@ -26,14 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
             
             // Update password in database
-            $update_stmt = $pdo->prepare("UPDATE resident_registrations SET password = ? WHERE id = ?");
+            $update_stmt = $pdo->prepare("UPDATE residents SET password = ? WHERE id = ?");
             if ($update_stmt->execute([$hashed_password, $resident['id']])) {
                 $message = "Password reset successful! Your new password is: <strong>" . $new_password . "</strong><br><br>Please save this password and use it to login.";
             } else {
                 $error = "Failed to reset password. Please try again.";
             }
         } else {
-            $error = "Invalid Login ID or Contact Number. Please check your details.";
+            $error = "Invalid Email or Contact Number. Please check your details.";
         }
     }
 }
@@ -212,7 +212,7 @@ include '../includes/header.php';
         <div class="reset-card">
             <div class="reset-header">
                 <h2>Reset Password</h2>
-                <p>Enter your Login ID and Contact Number to reset your password</p>
+                <p>Enter your Email and Contact Number to reset your password</p>
             </div>
             
             <div class="info-box">
@@ -234,8 +234,8 @@ include '../includes/header.php';
             
             <form method="POST" action="">
                 <div class="form-group">
-                    <label for="login_id">Login ID</label>
-                    <input type="text" id="login_id" name="login_id" required placeholder="e.g., R1234">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email" required placeholder="your.email@example.com">
                 </div>
                 
                 <div class="form-group">
