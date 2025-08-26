@@ -128,7 +128,7 @@ $page_title = 'Manage Services - Admin Panel';
 $header_title = 'Manage Digital Services';
 $header_subtitle = 'Configure and manage service content';
 
-include '../includes/header.php';
+include '../includes/admin_header.php';
 ?>
 
 <body>

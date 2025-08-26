@@ -57,6 +57,71 @@ if ($request_data) {
 include '../includes/header.php';
 ?>
 
+<script>
+// Define dismiss functions immediately when page loads
+function dismissNotification() {
+  console.log('Debug: dismissNotification called');
+  
+  const notification = document.getElementById('autoPopulatedNotification');
+  
+  if (!notification) {
+    console.log('Debug: Notification element not found');
+    return false;
+  }
+  
+  console.log('Debug: Starting dismiss animation');
+  
+  // Immediate visual feedback
+  notification.style.pointerEvents = 'none';
+  
+  // Apply animation styles
+  notification.style.transition = 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+  notification.style.transform = 'translateX(100px) scale(0.8)';
+  notification.style.opacity = '0';
+  
+  // Remove element after animation
+  setTimeout(function() {
+    console.log('Debug: Removing notification from DOM');
+    if (notification && notification.parentNode) {
+      notification.parentNode.removeChild(notification);
+      console.log('Debug: Notification removed successfully');
+    }
+  }, 400);
+  
+  return false;
+}
+
+// Alternative simple hide function
+function forceHideNotification() {
+  const notification = document.getElementById('autoPopulatedNotification');
+  if (notification) {
+    notification.style.display = 'none';
+    console.log('Debug: Notification hidden with display:none');
+  }
+}
+
+// Add pulse animation
+const style = document.createElement('style');
+style.textContent = `
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+`;
+document.head.appendChild(style);
+
+// Enhanced keyboard support
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape' || event.keyCode === 27) {
+    console.log('Debug: ESC key pressed');
+    const notification = document.getElementById('autoPopulatedNotification');
+    if (notification && notification.style.display !== 'none') {
+      dismissNotification();
+    }
+  }
+});
+</script>
+
 <div class="container">
   <div class="section">
     <?php if (isset($_SESSION['success'])): ?>
@@ -157,24 +222,32 @@ include '../includes/header.php';
 
     <!-- Form Container -->
     <div id="formContainer" class="form-container">
-      <button type="button" class="back-to-selection" onclick="showSelectionScreen()">
-        ← Back to Certificate Selection
-      </button>
-      
-      <form id="certificateForm" class="certificate-form" method="POST" action="process_certificate_request.php" enctype="multipart/form-data" <?php echo $readonly ? 'style="pointer-events: none;"' : ''; ?>>
-        <input type="hidden" id="selectedCertificateType" name="certificateType" value="<?php echo $request_data ? htmlspecialchars($request_data['certificate_type']) : ''; ?>">
-
+      <!-- Simple Row with Inline Styles for Guaranteed Layout -->
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; width: 100%;">
+        <div style="flex: 0 0 auto;">
+          <button type="button" class="back-to-selection" onclick="showSelectionScreen()">
+            ← Back to Certificate Selection
+          </button>
+        </div>
+        
         <?php if ($current_user && !$admin_view): ?>
-          <div class="auto-populated-notice">
-            <div class="notice-content">
-              <span class="notice-icon">✅</span>
-              <div class="notice-text">
-                <strong>Personal Information Auto-Populated</strong>
-                <p>Your account details have been automatically filled. Please review and update if needed.</p>
+          <div style="flex: 0 0 auto; margin-left: 20px;">
+            <div class="simple-notification" id="autoPopulatedNotification" style="display: inline-flex; align-items: center; background: #e8f5e9; border: 2px solid #4caf50; border-radius: 10px; padding: 12px 16px; gap: 12px; box-shadow: 0 3px 12px rgba(76, 175, 80, 0.25); max-width: 380px; min-width: 320px;">
+              <span style="font-size: 20px; animation: pulse 2s infinite;">✅</span>
+              <div style="flex: 1;">
+                <div style="color: #1b5e20; font-weight: 700; font-size: 15px; margin-bottom: 4px; line-height: 1.2;">Auto-Populated</div>
+                <div style="color: #2e7d32; font-size: 13px; opacity: 0.9; line-height: 1.3;">Information has been pre-filled. Please review and update if needed.</div>
               </div>
+              <button id="dismissBtn" onclick="dismissNotification(); return false;" onmouseover="this.style.background='rgba(220, 53, 69, 0.1)'; this.style.color='#dc3545';" onmouseout="this.style.background='rgba(0, 0, 0, 0.05)'; this.style.color='#666';" style="background: rgba(0, 0, 0, 0.05); border: none; font-size: 18px; color: #666; cursor: pointer; padding: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease; font-weight: bold;" title="Dismiss notification">
+                ×
+              </button>
             </div>
           </div>
         <?php endif; ?>
+      </div>
+      
+      <form id="certificateForm" class="certificate-form" method="POST" action="process_certificate_request.php" enctype="multipart/form-data" <?php echo $readonly ? 'style="pointer-events: none;"' : ''; ?>>
+        <input type="hidden" id="selectedCertificateType" name="certificateType" value="<?php echo $request_data ? htmlspecialchars($request_data['certificate_type']) : ''; ?>">
 
       <!-- Tricycle Details Section -->
       <fieldset id="tricycleDetailsSection" style="display: <?php echo $show_tricycle_section ? 'block' : 'none'; ?>;">
@@ -885,65 +958,142 @@ include '../includes/header.php';
     justify-content: center;
 }
 
-/* Auto-populated Notice Styling */
-.auto-populated-notice {
-  background: linear-gradient(135deg, #d4edda, #c3e6cb);
-  border: 2px solid #28a745;
-  border-radius: 12px;
-  padding: 16px 20px;
-  margin-bottom: 25px;
-  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15);
-}
 
-.notice-content {
+
+/* Auto-populated Inline Card Design */
+.auto-populated-inline-card {
+  background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+  border: 2px solid #4caf50;
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  max-width: 280px;
+  animation: slideInFromRight 0.5s ease;
+  border-left: 4px solid #4caf50;
 }
 
-.notice-icon {
-  font-size: 24px;
+.auto-populated-inline-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(76, 175, 80, 0.2);
+  transition: all 0.3s ease;
+}
+
+@keyframes slideInFromRight {
+  0% {
+    transform: translateX(30px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.auto-populated-inline-card .card-icon {
+  font-size: 18px;
   flex-shrink: 0;
+  animation: iconPulse 3s infinite;
 }
 
-.notice-text {
+@keyframes iconPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.auto-populated-inline-card .card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   flex: 1;
 }
 
-.notice-text strong {
-  color: #155724;
-  font-size: 16px;
-  font-weight: 600;
-  display: block;
-  margin-bottom: 4px;
+.auto-populated-inline-card .card-text strong {
+  color: #1b5e20;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
-.notice-text p {
-  color: #155724;
-  font-size: 14px;
-  margin: 0;
+.auto-populated-inline-card .card-text span {
+  color: #2e7d32;
+  font-size: 12px;
+  line-height: 1.3;
   opacity: 0.9;
 }
 
+/* Responsive design for form header */
 @media (max-width: 768px) {
-  .auto-populated-notice {
-    padding: 14px 16px;
+  .form-header-row {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
   }
   
-  .notice-content {
+  .auto-populated-inline-card {
+    max-width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-header-row {
+    gap: 12px;
+  }
+  
+  .auto-populated-inline-card {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  
+  .auto-populated-inline-card .card-text strong {
+    font-size: 13px;
+  }
+  
+  .auto-populated-inline-card .card-text span {
+    font-size: 11px;
+  }
+}
+
+/* Responsive design for mobile */
+@media (max-width: 768px) {
+  .auto-populated-card {
+    position: relative !important;
+    top: auto !important;
+    right: auto !important;
+    margin-bottom: 20px;
+    max-width: 100%;
+    min-width: auto;
+  }
+  
+  .auto-populated-card::after {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .auto-populated-card {
+    padding: 14px 18px;
     gap: 10px;
+    border-radius: 12px;
   }
   
-  .notice-icon {
-    font-size: 20px;
+  .card-icon {
+    font-size: 18px;
   }
   
-  .notice-text strong {
+  .card-text strong {
     font-size: 14px;
   }
   
-  .notice-text p {
-    font-size: 13px;
+  .card-text span {
+    font-size: 11px;
   }
 }
 

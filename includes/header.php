@@ -693,10 +693,7 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                             <li><a href="/GUMAOC/pages/certificate-request.php">
                                 <span class="dropdown-icon">📄</span>Certificate Requests
                             </a></li>
-                            <li><a href="/GUMAOC/pages/business-application.php">
-                                <span class="dropdown-icon">🏢</span>Business Application
-                            </a></li>
-                            <li><a href="pages/forms.php">
+                            <li><a href="/GUMAOC/pages/forms.php">
                                 <span class="dropdown-icon">📋</span>All Forms
                             </a></li>
                         </ul>
@@ -720,10 +717,7 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                             <li><a href="/GUMAOC/pages/certificate-request.php">
                                 <span class="dropdown-icon">📄</span>Certificate Requests
                             </a></li>
-                            <li><a href="/GUMAOC/pages/business-application.php">
-                                <span class="dropdown-icon">🏢</span>Business Application
-                            </a></li>
-                            <li><a href="pages/forms.php">
+                            <li><a href="/GUMAOC/pages/forms.php">
                                 <span class="dropdown-icon">📋</span>All Forms
                             </a></li>
                         </ul>

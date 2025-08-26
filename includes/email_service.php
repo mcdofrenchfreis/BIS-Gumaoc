@@ -173,6 +173,14 @@ class EmailService {
     }
     
     public static function generateUniqueRFID($pdo, $length = 10) {
+        // First try to get an available pre-scanned RFID code
+        $available_rfid = self::getAvailableRFIDCode($pdo);
+        
+        if ($available_rfid) {
+            return $available_rfid;
+        }
+        
+        // Fallback to generating random RFID if no pre-scanned codes available
         do {
             // Generate RFID with numbers and uppercase letters
             $rfid = '';
@@ -181,14 +189,65 @@ class EmailService {
                 $rfid .= $chars[random_int(0, strlen($chars) - 1)];
             }
             
-            // Check if RFID already exists
+            // Check if RFID already exists in residents table
             $stmt = $pdo->prepare("SELECT id FROM residents WHERE rfid_code = ? OR rfid = ?");
             $stmt->execute([$rfid, $rfid]);
             $exists = $stmt->fetch();
             
+            // Also check if it exists in scanned RFID codes
+            if (!$exists) {
+                $stmt = $pdo->prepare("SELECT id FROM scanned_rfid_codes WHERE rfid_code = ?");
+                $stmt->execute([$rfid]);
+                $exists = $stmt->fetch();
+            }
+            
         } while ($exists);
         
         return $rfid;
+    }
+    
+    public static function getAvailableRFIDCode($pdo) {
+        try {
+            // Get the oldest available RFID code
+            $stmt = $pdo->prepare("
+                SELECT id, rfid_code 
+                FROM scanned_rfid_codes 
+                WHERE status = 'available' 
+                ORDER BY scanned_at ASC 
+                LIMIT 1
+            ");
+            $stmt->execute();
+            $rfid_data = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($rfid_data) {
+                return $rfid_data['rfid_code'];
+            }
+            
+            return null;
+            
+        } catch (Exception $e) {
+            error_log("Error getting available RFID code: " . $e->getMessage());
+            return null;
+        }
+    }
+    
+    public static function assignRFIDCode($pdo, $rfid_code, $resident_id = null, $email = null) {
+        try {
+            $stmt = $pdo->prepare("
+                UPDATE scanned_rfid_codes 
+                SET status = 'assigned', 
+                    assigned_at = NOW(), 
+                    assigned_to_resident_id = ?, 
+                    assigned_to_email = ? 
+                WHERE rfid_code = ? AND status = 'available'
+            ");
+            
+            return $stmt->execute([$resident_id, $email, $rfid_code]);
+            
+        } catch (Exception $e) {
+            error_log("Error assigning RFID code: " . $e->getMessage());
+            return false;
+        }
     }
     
     public static function generateTempPassword($length = 8) {

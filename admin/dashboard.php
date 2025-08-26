@@ -75,20 +75,14 @@ try {
     $services_count = $pdo->query("SELECT COUNT(*) FROM services")->fetchColumn();
     $updates_count = $pdo->query("SELECT COUNT(*) FROM updates")->fetchColumn();
     
-    // Get recent activity (latest submissions)
-    $recent_activities = [];
+    // Get RFID statistics
+    $rfid_available = 0;
+    $rfid_assigned = 0;
     try {
-        $stmt = $pdo->query("
-            (SELECT 'Certificate Request' as type, id, created_at, 'certificate-request.php' as link FROM certificate_requests ORDER BY created_at DESC LIMIT 3)
-            UNION ALL
-            (SELECT 'Business Application' as type, id, created_at, 'business-application.php' as link FROM business_applications ORDER BY created_at DESC LIMIT 3)
-            UNION ALL
-            (SELECT 'Census Registration' as type, id, created_at, 'resident-registration.php' as link FROM resident_registrations ORDER BY created_at DESC LIMIT 3)
-            ORDER BY created_at DESC LIMIT 5
-        ");
-        $recent_activities = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rfid_available = $pdo->query("SELECT COUNT(*) FROM scanned_rfid_codes WHERE status = 'available'")->fetchColumn();
+        $rfid_assigned = $pdo->query("SELECT COUNT(*) FROM scanned_rfid_codes WHERE status = 'assigned'")->fetchColumn();
     } catch (Exception $e) {
-        // Tables don't exist yet
+        // Table doesn't exist yet
     }
     
 } catch (Exception $e) {
@@ -102,7 +96,8 @@ try {
     $pending_business = 0;
     $services_count = 0;
     $updates_count = 0;
-    $recent_activities = [];
+    $rfid_available = 0;
+    $rfid_assigned = 0;
 }
 ?>
 <!DOCTYPE html>
@@ -331,9 +326,7 @@ try {
 
         /* Main Content Grid */
         .dashboard-main {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 2rem;
+            display: block;
             margin-bottom: 2rem;
         }
         
@@ -374,7 +367,7 @@ try {
         /* Action Cards */
         .dashboard-actions {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 1.5rem;
         }
         
@@ -479,55 +472,6 @@ try {
             box-shadow: 0 8px 25px rgba(27, 94, 32, 0.4);
             text-decoration: none;
             color: white;
-        }
-        
-        /* Recent Activity Section */
-        .recent-activity {
-            height: fit-content;
-        }
-        
-        .activity-list {
-            list-style: none;
-        }
-        
-        .activity-item {
-            background: linear-gradient(135deg, rgba(27, 94, 32, 0.05) 0%, rgba(76, 175, 80, 0.03) 100%);
-            padding: 1rem;
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            border-left: 4px solid #4caf50;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(76, 175, 80, 0.1);
-        }
-        
-        .activity-item:hover {
-            background: linear-gradient(135deg, rgba(27, 94, 32, 0.1) 0%, rgba(76, 175, 80, 0.08) 100%);
-            transform: translateX(5px);
-            box-shadow: 0 4px 15px rgba(27, 94, 32, 0.1);
-        }
-        
-        .activity-type {
-            font-weight: 600;
-            color: #1b5e20;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-        
-        .activity-time {
-            color: #666;
-            font-size: 0.8rem;
-            margin-top: 0.3rem;
-        }
-        
-        .empty-activity {
-            text-align: center;
-            color: #999;
-            font-style: italic;
-            padding: 2rem;
-            background: rgba(255, 255, 255, 0.5);
-            border-radius: 12px;
-            border: 2px dashed rgba(27, 94, 32, 0.2);
         }
         
         /* Alert Styles */
@@ -766,6 +710,7 @@ try {
         
         <div class="admin-nav">
             <a href="forms-manager.php">📋 Forms Manager</a>
+            <a href="rfid-scanner.php">📱 RFID Scanner</a>
             <a href="manage-blotter.php">📝 Blotter Management</a>
             <a href="captain-clearances.php">🛡️ Captain Clearances</a>
             <a href="blotter-reports.php">📊 Blotter Reports</a>
@@ -800,15 +745,15 @@ try {
             </div>
             
             <div class="stat-card">
-                <h3>⚙️ Digital Services</h3>
-                <div class="stat-number"><?php echo $services_count; ?></div>
-                <div class="stat-pending">Active services</div>
+                <h3>📱 Available RFID Codes</h3>
+                <div class="stat-number"><?php echo $rfid_available; ?></div>
+                <div class="stat-pending">Ready for assignment</div>
             </div>
             
             <div class="stat-card">
-                <h3>📢 Latest Updates</h3>
-                <div class="stat-number"><?php echo $updates_count; ?></div>
-                <div class="stat-pending">Published updates</div>
+                <h3>🆔 Assigned RFID Codes</h3>
+                <div class="stat-number"><?php echo $rfid_assigned; ?></div>
+                <div class="stat-pending">Currently in use</div>
             </div>
         </div>
         
@@ -884,36 +829,20 @@ try {
                     </div>
                     
                     <div class="action-card">
+                        <div class="action-icon">📱</div>
+                        <h3>RFID Scanner</h3>
+                        <p>Scan and manage RFID codes for resident registration</p>
+                        <a href="rfid-scanner.php" class="admin-btn">Open Scanner</a>
+                    </div>
+                    
+                    
+                    <div class="action-card">
                         <div class="action-icon">📋</div>
                         <h3>System Logs</h3>
                         <p>View activity logs and system events</p>
                         <a href="view-logs.php" class="admin-btn">View Logs</a>
                     </div>
                 </div>
-            </div>
-            
-            <div class="dashboard-section recent-activity">
-                <h2 class="section-title">
-                    <div class="section-icon">⏰</div>
-                    Recent Activity
-                </h2>
-                
-                <ul class="activity-list">
-                    <?php if (empty($recent_activities)): ?>
-                        <li class="empty-activity">
-                            No recent activity to display
-                        </li>
-                    <?php else: ?>
-                        <?php foreach ($recent_activities as $activity): ?>
-                            <li class="activity-item">
-                                <div class="activity-type"><?php echo htmlspecialchars($activity['type']); ?></div>
-                                <div class="activity-time">
-                                    <?php echo date('M d, Y H:i', strtotime($activity['created_at'])); ?>
-                                </div>
-                            </li>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </ul>
             </div>
         </div>
         

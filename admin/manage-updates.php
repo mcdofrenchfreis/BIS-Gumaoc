@@ -194,7 +194,7 @@ $page_title = 'Manage Updates - Admin Panel';
 $header_title = 'Manage Latest Updates';
 $header_subtitle = 'Configure and manage community updates';
 
-include '../includes/header.php';
+include '../includes/admin_header.php';
 ?>
 
 <body>

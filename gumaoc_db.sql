@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 25, 2025 at 03:24 PM
+-- Generation Time: Aug 26, 2025 at 03:13 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -98,7 +98,9 @@ INSERT INTO `admin_logs` (`id`, `admin_id`, `action_type`, `target_type`, `targe
 (51, 'admin', 'form_view', 'resident_registration', 201, 'Viewed resident registration form ID #201', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:26:02'),
 (52, 'admin', 'form_view', 'resident_registration', 210, 'Viewed resident registration form ID #210', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:26:14'),
 (53, 'admin', 'form_view', 'resident_registration', 202, 'Viewed resident registration form ID #202', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:26:27'),
-(54, 'admin', 'form_view', 'resident_registration', 211, 'Viewed resident registration form ID #211', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:41:55');
+(54, 'admin', 'form_view', 'resident_registration', 211, 'Viewed resident registration form ID #211', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:41:55'),
+(55, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-26 11:49:49'),
+(56, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed manage updates admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-26 12:24:03');
 
 -- --------------------------------------------------------
 
@@ -418,8 +420,7 @@ CREATE TABLE `residents` (
 --
 
 INSERT INTO `residents` (`id`, `first_name`, `middle_name`, `last_name`, `email`, `phone`, `password`, `address`, `house_number`, `barangay`, `sitio`, `interviewer`, `interviewer_title`, `birthdate`, `birth_place`, `gender`, `civil_status`, `rfid_code`, `rfid`, `status`, `reset_otp`, `otp_expiry`, `created_at`, `updated_at`, `profile_complete`, `created_by`, `relationship_to_head`) VALUES
-(7, 'Mar Yvan', 'Sagun', 'Dela Cruz', 'biofrostyv@gmail.com', '09162291763', '$2y$10$DKTrf7q6zK6rpKBCYlL6AOTpj5/5mX0qN4Tma5mKUr1KZtFyemAeC', 'House 101, Barangay Gumaoc East, San Jose del Monte, Bulacan, Philippines', '101', 'Gumaoc East', 'BLOCK', 'TEST ME PLEASE', 'TEST ME PLEASE', '2004-07-08', 'Caloocan City', '', '', 'A9ZS6XI3EJ', 'A9ZS6XI3EJ', 'active', NULL, NULL, '2025-08-25 13:13:04', '2025-08-25 13:13:04', 1, NULL, NULL),
-(8, 'TEST', 'ME', 'PLEASE', 'marandrei2k22@gmail.com', '', '$2y$10$pE5.b2HhlTVwqP.f01H25.yYKXtgsxC9aHZOLws61JjzVxqXD6jDa', 'House 101, Barangay Gumaoc East, San Jose del Monte, Bulacan, Philippines', '101', 'Gumaoc East', 'BLOCK', 'TEST ME PLEASE', 'TEST ME PLEASE', '2007-01-01', 'Unknown', 'Male', 'Single', 'Q45708IJNW', 'Q45708IJNW', 'active', NULL, NULL, '2025-08-25 13:13:04', '2025-08-25 13:13:04', 0, 7, 'Anak');
+(10, 'Mar Yvan', '', 'Dela Cruz', 'biofrostyv@gmail.com', '09162291763', '$2y$10$.QTJXyrfz0gIAWKqRSeZLuGjE3Y2oLOzYjkE7RuGhizbZ2MufzXO2', 'House 101, Barangay Gumaoc East, San Jose del Monte, Bulacan, Philippines', '101', 'Gumaoc East', 'BLOCK', 'TEST ME PLEASE', 'TEST ME PLEASE', '2004-07-08', 'Caloocan City', '', '', '0006954375', '0006954375', 'active', NULL, NULL, '2025-08-26 13:09:35', '2025-08-26 13:09:35', 1, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -473,7 +474,8 @@ CREATE TABLE `resident_registrations` (
 
 INSERT INTO `resident_registrations` (`id`, `first_name`, `middle_name`, `last_name`, `birth_date`, `age`, `civil_status`, `gender`, `contact_number`, `email`, `house_number`, `pangkabuhayan`, `submitted_at`, `status`, `land_ownership`, `land_ownership_other`, `house_ownership`, `house_ownership_other`, `farmland`, `cooking_energy`, `cooking_energy_other`, `toilet_type`, `toilet_type_other`, `electricity_source`, `electricity_source_other`, `water_source`, `water_source_other`, `waste_disposal`, `waste_disposal_other`, `appliances`, `transportation`, `transportation_other`, `business`, `business_other`, `contraceptive`, `interviewer`, `interviewer_title`) VALUES
 (214, 'Mar Yvan', 'Sagun', 'Dela Cruz', '2004-07-08', 21, 'Unknown', 'Not Specified', '09162291763', 'biofrostyv@gmail.com', '101', 'Iba pa', '2025-08-25 13:04:06', 'pending', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Radyo/Stereo,Telebisyon,Refrigerator,Muwebles', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'TEST ME PLEASE', 'TEST ME PLEASE'),
-(215, 'Mar Yvan', 'Sagun', 'Dela Cruz', '2004-07-08', 21, 'Unknown', 'Not Specified', '09162291763', 'biofrostyv@gmail.com', '101', 'Iba pa', '2025-08-25 13:13:04', 'pending', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Muwebles', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'TEST ME PLEASE', 'TEST ME PLEASE');
+(215, 'Mar Yvan', 'Sagun', 'Dela Cruz', '2004-07-08', 21, 'Unknown', 'Not Specified', '09162291763', 'biofrostyv@gmail.com', '101', 'Iba pa', '2025-08-25 13:13:04', 'pending', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Muwebles', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'TEST ME PLEASE', 'TEST ME PLEASE'),
+(216, 'Mar Yvan', '', 'Dela Cruz', '2004-07-08', 21, 'Unknown', 'Not Specified', '09162291763', 'biofrostyv@gmail.com', '101', 'Iba pa', '2025-08-26 13:09:35', 'pending', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Muwebles', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'TEST ME PLEASE', 'TEST ME PLEASE');
 
 -- --------------------------------------------------------
 
@@ -535,6 +537,45 @@ CREATE TABLE `rfid_users` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `scanned_rfid_codes`
+--
+
+CREATE TABLE `scanned_rfid_codes` (
+  `id` int(11) NOT NULL,
+  `rfid_code` varchar(50) NOT NULL,
+  `status` enum('available','assigned','disabled','archived') DEFAULT 'available',
+  `scanned_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `assigned_at` timestamp NULL DEFAULT NULL,
+  `assigned_to_resident_id` int(11) DEFAULT NULL,
+  `assigned_to_email` varchar(255) DEFAULT NULL,
+  `scanned_by_admin_id` int(11) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `scanned_rfid_codes`
+--
+
+INSERT INTO `scanned_rfid_codes` (`id`, `rfid_code`, `status`, `scanned_at`, `assigned_at`, `assigned_to_resident_id`, `assigned_to_email`, `scanned_by_admin_id`, `notes`, `created_at`, `updated_at`) VALUES
+(1, 'TEST001', 'archived', '2025-08-26 11:53:26', NULL, NULL, NULL, NULL, 'Test RFID code for development', '2025-08-26 11:53:26', '2025-08-26 13:05:28'),
+(2, 'TEST002', 'archived', '2025-08-26 11:53:26', NULL, NULL, NULL, NULL, 'Test RFID code for development', '2025-08-26 11:53:26', '2025-08-26 13:05:30'),
+(3, 'TEST003', 'archived', '2025-08-26 11:53:26', NULL, NULL, NULL, NULL, 'Test RFID code for development', '2025-08-26 11:53:26', '2025-08-26 13:05:32'),
+(4, '0006954375', 'assigned', '2025-08-26 13:05:56', '2025-08-26 13:09:35', 10, 'biofrostyv@gmail.com', 1, '', '2025-08-26 13:05:56', '2025-08-26 13:09:35'),
+(5, '0005805639', 'available', '2025-08-26 13:06:46', NULL, NULL, NULL, 1, '', '2025-08-26 13:06:46', '2025-08-26 13:06:46'),
+(6, '0006909504', 'available', '2025-08-26 13:07:29', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:29', '2025-08-26 13:07:29'),
+(7, '0006892606', 'available', '2025-08-26 13:07:31', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:31', '2025-08-26 13:07:31'),
+(8, '0005794103', 'available', '2025-08-26 13:07:38', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:38', '2025-08-26 13:07:38'),
+(9, '0006894001', 'available', '2025-08-26 13:07:41', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:41', '2025-08-26 13:07:41'),
+(10, '0005810785', 'available', '2025-08-26 13:07:44', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:44', '2025-08-26 13:07:44'),
+(11, '0005797452', 'available', '2025-08-26 13:07:46', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:46', '2025-08-26 13:07:46'),
+(12, '0005845889', 'available', '2025-08-26 13:07:48', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:48', '2025-08-26 13:07:48'),
+(13, '0005786280', 'available', '2025-08-26 13:07:50', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:50', '2025-08-26 13:07:50');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `services`
 --
 
@@ -559,8 +600,7 @@ CREATE TABLE `services` (
 INSERT INTO `services` (`id`, `title`, `description`, `icon`, `button_text`, `button_link`, `is_featured`, `features`, `display_order`, `created_at`, `updated_at`) VALUES
 (1, 'Emergency Response', 'Real-time incident reporting with IoT sensors and instant emergency response coordination.', '????', 'Report Incident', 'pages/report.php', 1, 'IoT Enabled,24/7 Monitoring', 0, '2025-08-04 06:22:38', '2025-08-04 06:22:38'),
 (2, 'Document Requests', 'Request certificates, clearances, and official documents online with automated processing.', '????', 'Apply Now', 'pages/forms.php', 0, 'Online Processing,Fast Approval', 0, '2025-08-04 06:22:38', '2025-08-04 06:22:38'),
-(3, 'Community Census', 'Register as a resident and contribute to our comprehensive community database.', '????', 'Register', 'pages/forms.php', 0, 'Digital Registry,Secure Data', 0, '2025-08-04 06:22:38', '2025-08-04 06:22:38'),
-(5, 'TEST', 'TEST', '', 'TEST', 'pages/services.php', 0, 'TEST', 0, '2025-08-04 06:29:39', '2025-08-04 06:29:39');
+(3, 'Community Census', 'Register as a resident and contribute to our comprehensive community database.', '????', 'Register', 'pages/forms.php', 0, 'Digital Registry,Secure Data', 0, '2025-08-04 06:22:38', '2025-08-04 06:22:38');
 
 -- --------------------------------------------------------
 
@@ -736,6 +776,17 @@ ALTER TABLE `rfid_users`
   ADD UNIQUE KEY `rfid_tag` (`rfid_tag`);
 
 --
+-- Indexes for table `scanned_rfid_codes`
+--
+ALTER TABLE `scanned_rfid_codes`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `rfid_code` (`rfid_code`),
+  ADD KEY `idx_rfid_code` (`rfid_code`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_scanned_at` (`scanned_at`),
+  ADD KEY `scanned_by_admin_id` (`scanned_by_admin_id`);
+
+--
 -- Indexes for table `services`
 --
 ALTER TABLE `services`
@@ -755,7 +806,7 @@ ALTER TABLE `updates`
 -- AUTO_INCREMENT for table `admin_logs`
 --
 ALTER TABLE `admin_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=55;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
 
 --
 -- AUTO_INCREMENT for table `admin_users`
@@ -827,13 +878,13 @@ ALTER TABLE `queue_windows`
 -- AUTO_INCREMENT for table `residents`
 --
 ALTER TABLE `residents`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `resident_registrations`
 --
 ALTER TABLE `resident_registrations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=216;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=217;
 
 --
 -- AUTO_INCREMENT for table `rfid_access_logs`
@@ -852,6 +903,12 @@ ALTER TABLE `rfid_registrations`
 --
 ALTER TABLE `rfid_users`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `scanned_rfid_codes`
+--
+ALTER TABLE `scanned_rfid_codes`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `services`
@@ -930,6 +987,12 @@ ALTER TABLE `residents`
 --
 ALTER TABLE `rfid_access_logs`
   ADD CONSTRAINT `rfid_access_logs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `rfid_users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `scanned_rfid_codes`
+--
+ALTER TABLE `scanned_rfid_codes`
+  ADD CONSTRAINT `scanned_rfid_codes_ibfk_1` FOREIGN KEY (`scanned_by_admin_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

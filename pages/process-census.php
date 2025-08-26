@@ -134,6 +134,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $resident_id = $pdo->lastInsertId();
             
+            // Assign the RFID code to this resident in the scanned codes table
+            EmailService::assignRFIDCode($pdo, $generated_rfid, $resident_id, $email);
+            
             // Insert main registration (for census tracking)
             $sql = "INSERT INTO resident_registrations (
                 first_name, middle_name, last_name, birth_date, age, 
@@ -230,6 +233,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     
                                     if ($family_residents_result) {
                                         $family_users_created++;
+                                        $family_resident_id = $pdo->lastInsertId();
+                                        
+                                        // Assign the RFID code to this family member
+                                        EmailService::assignRFIDCode($pdo, $family_rfid, $family_resident_id, $family_email);
                                         
                                         // Send activation email to family member
                                         try {
@@ -353,7 +360,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $_SESSION['success'] = $success_message;
             
-            header('Location: forms.php?success=1');
+            header('Location: resident-registration.php?success=1');
             exit;
             
         } else {

@@ -895,6 +895,44 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 
+<!-- Success and Error Modals - Positioned at Top -->
+<?php if (isset($_SESSION['error'])): ?>
+  <!-- Error Modal -->
+  <div class="modal-overlay" id="errorModal">
+    <div class="modal-content modal-error">
+      <div class="modal-header">
+        <h4>❌ Error</h4>
+        <button class="modal-close" onclick="closeModal('errorModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p><?php echo htmlspecialchars($_SESSION['error']); ?></p>
+      </div>
+    </div>
+  </div>
+  <?php unset($_SESSION['error']); ?>
+<?php endif; ?>
+
+<?php if (isset($_SESSION['success'])): ?>
+  <!-- Success Modal -->
+  <div class="modal-overlay" id="successModal">
+    <div class="modal-content modal-success">
+      <div class="modal-header">
+        <h4>✅ Registration Successful!</h4>
+        <button class="modal-close" onclick="closeModal('successModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p><?php echo htmlspecialchars($_SESSION['success']); ?></p>
+      </div>
+      <div class="modal-footer">
+        <div class="auto-close-timer">
+          <span>This window will automatically close in <span id="countdown">120</span> seconds</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <?php unset($_SESSION['success']); ?>
+<?php endif; ?>
+
 <!-- Main Content Container -->
 <div class="container">
   <div class="section">
@@ -912,22 +950,6 @@ document.addEventListener('DOMContentLoaded', function() {
           <a href="../admin/view-resident-registrations.php" class="back-btn">← Back to Admin</a>
         <?php endif; ?>
       </div>
-    <?php endif; ?>
-    
-    <?php if (isset($_SESSION['error'])): ?>
-      <div class="alert alert-error">
-        <h4>Error</h4>
-        <p><?php echo htmlspecialchars($_SESSION['error']); ?></p>
-      </div>
-      <?php unset($_SESSION['error']); ?>
-    <?php endif; ?>
-    
-    <?php if (isset($_SESSION['success'])): ?>
-      <div class="alert alert-success">
-        <h4>Success</h4>
-        <p><?php echo htmlspecialchars($_SESSION['success']); ?></p>
-      </div>
-      <?php unset($_SESSION['success']); ?>
     <?php endif; ?>
     
     <form id="censusForm" class="registration-form" method="POST" action="process-census.php">
@@ -4967,6 +4989,213 @@ body:has(.privacy-overlay.show) .container {
     top: 10px;
     right: 10px;
   }
+}
+
+/* Modal Styles for Success and Error Messages */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(15px);
+  z-index: 20000; /* Higher than privacy notice (10000) */
+  display: flex;
+  align-items: flex-start; /* Align to top instead of center */
+  justify-content: center;
+  opacity: 1;
+  visibility: visible;
+  padding: 20px;
+  padding-top: 100px; /* Space below header */
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 800px; /* Increased from 600px */
+  width: 90%; /* More responsive width */
+  max-height: 80vh;
+  overflow: hidden;
+  position: relative;
+  transform: scale(1);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: modalSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalSlideIn {
+  0% {
+    transform: scale(0.8) translateY(50px);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2rem 2.5rem; /* Increased padding */
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-success .modal-header {
+  background: linear-gradient(135deg, #28a745 0%, #4caf50 50%, #2e7d32 100%);
+  color: white;
+}
+
+.modal-error .modal-header {
+  background: linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #c82333 100%);
+  color: white;
+}
+
+.modal-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, 
+    rgba(255, 255, 255, 0.1) 0%,
+    transparent 30%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 70%,
+    rgba(255, 255, 255, 0.1) 100%);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.modal-header > * {
+  position: relative;
+  z-index: 2;
+}
+
+.modal-header h4 {
+  margin: 0;
+  font-size: 1.8rem; /* Increased from 1.4rem */
+  font-weight: 900; /* Increased from 700 for bolder text */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.5px;
+}
+
+.modal-close {
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  width: 50px; /* Increased from 40px */
+  height: 50px; /* Increased from 40px */
+  border-radius: 50%;
+  font-size: 1.8rem; /* Increased from 1.4rem */
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1) rotate(90deg);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.modal-body {
+  padding: 2.5rem; /* Increased from 2rem */
+  color: #2c3e50;
+  line-height: 1.8; /* Increased from 1.6 for better readability */
+  font-size: 1.3rem; /* Increased from 1.1rem */
+  font-weight: 600; /* Added bold font weight */
+}
+
+.modal-footer {
+  padding: 2rem 2.5rem; /* Increased padding */
+  background: rgba(248, 249, 250, 0.8);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.auto-close-timer {
+  color: #6c757d;
+  font-size: 1.1rem; /* Increased from 0.95rem */
+  font-weight: 700; /* Increased from 500 for bolder text */
+}
+
+.auto-close-timer span {
+  font-weight: 900; /* Increased from 700 for extra bold countdown */
+  color: #28a745;
+  font-size: 1.2rem; /* Larger countdown number */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding-top: 80px; /* Less space on mobile */
+  }
+  
+  .modal-content {
+    margin: 15px; /* Increased margin for larger modal */
+    max-width: calc(100% - 30px); /* Adjusted for larger margin */
+    width: 95%; /* Slightly wider on mobile */
+  }
+  
+  .modal-header {
+    padding: 1.5rem 2rem; /* Adjusted padding for mobile */
+  }
+  
+  .modal-header h4 {
+    font-size: 1.5rem; /* Slightly smaller on mobile but still large */
+  }
+  
+  .modal-body {
+    padding: 2rem; /* Adjusted padding for mobile */
+    font-size: 1.2rem; /* Slightly smaller but still bold */
+  }
+  
+  .modal-footer {
+    padding: 1.5rem 2rem; /* Adjusted padding for mobile */
+  }
+  
+  .modal-close {
+    width: 45px; /* Slightly smaller on mobile */
+    height: 45px;
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    padding-top: 60px; /* Even less space on very small screens */
+  }
+  
+  .modal-content {
+    width: 98%; /* Almost full width on very small screens */
+  }
+  
+  .modal-header h4 {
+    font-size: 1.3rem; /* Smaller but still prominent */
+  }
+  
+  .modal-body {
+    font-size: 1.1rem; /* Adjusted for very small screens */
+  }
+}
+
+/* Hide privacy notice when modals are present */
+body:has(.modal-overlay) #dataPrivacyOverlay,
+.modal-overlay ~ #dataPrivacyOverlay {
+  display: none !important;
 }</style>
 
 <?php if ($readonly): ?>
@@ -5089,8 +5318,24 @@ document.addEventListener('DOMContentLoaded', function() {
   const isAdminView = <?php echo $admin_view ? 'true' : 'false'; ?>;
   console.log('Is admin view:', isAdminView);
   
-  // Reset privacy notice for testing - uncomment next line for debugging
-  sessionStorage.removeItem('privacyNoticeShown');
+  // Check if there are any success or error modals present
+  const successModal = document.getElementById('successModal');
+  const errorModal = document.getElementById('errorModal');
+  const hasActiveModals = successModal || errorModal;
+  
+  console.log('Has active modals:', hasActiveModals);
+  
+  // Don't show privacy notice if there are active modals
+  if (hasActiveModals) {
+    console.log('Not showing privacy notice - active success/error modal present');
+    overlay.style.display = 'none';
+    // Mark privacy notice as shown since user is getting feedback
+    sessionStorage.setItem('privacyNoticeShown', 'true');
+    return;
+  }
+  
+  // Reset privacy notice for testing - comment out for production
+  // sessionStorage.removeItem('privacyNoticeShown');
   
   // Check if privacy notice was already shown in this session
   const privacyShown = sessionStorage.getItem('privacyNoticeShown');
@@ -6019,6 +6264,104 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+});
+
+// Modal Management Functions
+let modalTimer;
+let modalCountdown = 120; // 2 minutes in seconds
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        // Clear timer if it exists
+        if (modalTimer) {
+            clearInterval(modalTimer);
+            modalTimer = null;
+        }
+        
+        // Add fade out animation
+        modal.style.opacity = '0';
+        modal.style.transform = 'scale(0.8)';
+        
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
+}
+
+function startModalTimer() {
+    const countdownElement = document.getElementById('countdown');
+    
+    if (!countdownElement) {
+        return;
+    }
+    
+    modalTimer = setInterval(() => {
+        modalCountdown--;
+        countdownElement.textContent = modalCountdown;
+        
+        // Change color when time is running out
+        if (modalCountdown <= 30) {
+            countdownElement.style.color = '#dc3545';
+            countdownElement.style.fontWeight = 'bold';
+        } else if (modalCountdown <= 60) {
+            countdownElement.style.color = '#fd7e14';
+        }
+        
+        if (modalCountdown <= 0) {
+            clearInterval(modalTimer);
+            closeModal('successModal');
+        }
+    }, 1000);
+}
+
+// Initialize modal functionality when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if success modal exists and start timer
+    const successModal = document.getElementById('successModal');
+    if (successModal) {
+        startModalTimer();
+        
+        // Hide privacy notice if it's showing
+        const privacyOverlay = document.getElementById('dataPrivacyOverlay');
+        if (privacyOverlay) {
+            privacyOverlay.style.display = 'none';
+            sessionStorage.setItem('privacyNoticeShown', 'true');
+        }
+    }
+    
+    // Check if error modal exists
+    const errorModal = document.getElementById('errorModal');
+    if (errorModal) {
+        // Hide privacy notice if it's showing
+        const privacyOverlay = document.getElementById('dataPrivacyOverlay');
+        if (privacyOverlay) {
+            privacyOverlay.style.display = 'none';
+            sessionStorage.setItem('privacyNoticeShown', 'true');
+        }
+    }
+    
+    // Add click outside to close functionality
+    const modals = document.querySelectorAll('.modal-overlay');
+    modals.forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeModal(modal.id);
+            }
+        });
+    });
+    
+    // Add escape key to close functionality
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const openModals = document.querySelectorAll('.modal-overlay[style*="display: flex"], .modal-overlay:not([style*="display: none"])');
+            openModals.forEach(modal => {
+                if (modal.style.display !== 'none') {
+                    closeModal(modal.id);
+                }
+            });
+        }
+    });
 });
 
 </script>

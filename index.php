@@ -134,9 +134,12 @@ try {
 <!-- Services Overview -->
 <div class="container">
   <div class="section">
-    <div class="section-header">
-      <h2>Our Digital Services</h2>
-      <p>Comprehensive solutions designed for your convenience</p>
+    <div class="section-header section-header-card">
+      <div class="section-header-content">
+        <div class="section-icon">🌐</div>
+        <h2>Our Digital Services</h2>
+        <p>Comprehensive solutions designed for your convenience</p>
+      </div>
       <?php if ($is_admin): ?>
         <div class="admin-controls-section">
           <a href="admin/manage-services.php" class="admin-edit-btn">
@@ -189,9 +192,12 @@ try {
 
   <!-- Latest Updates -->
   <div class="section">
-    <div class="section-header">
-      <h2>Latest Updates</h2>
-      <p>Stay informed with the latest announcements and news</p>
+    <div class="section-header section-header-card">
+      <div class="section-header-content">
+        <div class="section-icon">📢</div>
+        <h2>Latest Updates</h2>
+        <p>Stay informed with the latest announcements and news</p>
+      </div>
       <?php if ($is_admin): ?>
         <div class="admin-controls-section">
           <a href="admin/manage-updates.php" class="admin-edit-btn">
@@ -304,6 +310,133 @@ try {
   border-radius: 20px;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(10px);
+}
+
+/* Card-style backgrounds for section headers */
+.section-header-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.section-header-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #4A90E2, #7B68EE, #9B59B6, #E74C3C, #F39C12);
+  background-size: 400% 100%;
+  animation: gradientShift 4s ease infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.section-header-content {
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.section-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+  animation: iconFloat 3s ease-in-out infinite;
+}
+
+@keyframes iconFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.section-header-card h2 {
+  color: #2c3e50;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.section-header-card p {
+  color: #6c757d;
+  font-size: 1.2rem;
+  margin-bottom: 0;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.section-header-card .admin-controls-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(108, 117, 125, 0.2);
+}
+
+/* Hover effect for card headers */
+.section-header-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+/* Responsive design for card headers */
+@media (max-width: 768px) {
+  .section-header-card {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 12px;
+  }
+  
+  .section-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.8rem;
+  }
+  
+  .section-header-card h2 {
+    font-size: 2rem;
+  }
+  
+  .section-header-card p {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .section-header-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .section-icon {
+    font-size: 2rem;
+    margin-bottom: 0.6rem;
+  }
+  
+  .section-header-card h2 {
+    font-size: 1.8rem;
+  }
+  
+  .section-header-card p {
+    font-size: 1rem;
+  }
 }
 
 .empty-icon {
