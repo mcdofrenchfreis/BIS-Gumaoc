@@ -544,7 +544,7 @@ $applications = $stmt->fetchAll();
     <script>
     function viewFormDetails(applicationId) {
         // Open the business application form in a new tab instead of popup window
-        window.open('../pages/business-application.php?admin_view=' + applicationId + '&readonly=1', '_blank');
+        window.open('../user/business-application.php?admin_view=' + applicationId + '&readonly=1', '_blank');
     }
     </script>
 </body>

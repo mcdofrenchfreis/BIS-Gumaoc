@@ -332,7 +332,7 @@ $business_types = $pdo->query("SELECT DISTINCT business_type FROM business_appli
         <script>
         function viewFormDetails(requestId) {
             // Open the business application form with pre-filled data
-            window.open('../pages/business-application.php?admin_view=' + requestId + '&readonly=1', '_blank');
+            window.open('../user/business-application.php?admin_view=' + requestId + '&readonly=1', '_blank');
         }
         </script>
         
