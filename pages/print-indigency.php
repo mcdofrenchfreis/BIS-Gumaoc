@@ -62,13 +62,29 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             @page {
                 margin: 0;
                 size: A4 portrait;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
+            
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            
             body { 
                 margin: 0; 
                 padding: 0;
                 background: white !important;
+                font-family: 'Times New Roman', serif !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
-            .no-print { display: none !important; }
+            
+            .no-print { 
+                display: none !important; 
+            }
+            
             .certificate-container { 
                 page-break-inside: avoid !important;
                 page-break-after: avoid !important;
@@ -83,13 +99,291 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                 print-color-adjust: exact !important;
                 box-shadow: none !important;
                 position: relative !important;
+                overflow: hidden !important;
             }
+            
             .certificate-content {
-    padding: 230px 60px 20px 60px !important; /* increased from 150px to 230px */
-    height: 100% !important;
-    position: relative !important;
-    z-index: 2 !important;
-  }
+                padding: 250px 60px 60px 60px !important;
+                height: 100% !important;
+                position: relative !important;
+                z-index: 2 !important;
+            }
+            
+            .main-title {
+                font-size: 32px !important;
+                margin-bottom: 20px !important;
+                letter-spacing: 3px !important;
+                color: #C2944D !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .to-whom {
+                font-weight: bold !important;
+                font-size: 14px !important;
+                margin-bottom: 15px !important;
+            }
+            
+            .content-with-photo {
+                display: flex !important;
+                align-items: flex-start !important;
+                gap: 25px !important;
+                margin-bottom: 20px !important;
+            }
+            
+            .left-content {
+                flex: 1 !important;
+            }
+            
+            .main-text {
+                font-size: 14px !important;
+                line-height: 1.4 !important;
+                text-align: justify !important;
+            }
+            
+            .certification-text {
+                margin-bottom: 18px !important;
+                text-align: justify !important;
+                font-size: 13px !important;
+                line-height: 1.4 !important;
+                max-width: 100% !important;
+            }
+            
+            .photo-placeholder {
+                width: 85px !important;
+                height: 85px !important;
+                border: 2px solid #000 !important;
+                font-size: 11px !important;
+                margin-left: 20px !important;
+            }
+            
+            .bottom-sections-container {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: flex-start !important;
+                margin-top: 15px !important;
+                page-break-inside: avoid !important;
+            }
+            
+            .left-section {
+                width: 45% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            
+            .right-section {
+                width: 50% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 12px !important;
+                align-items: center !important;
+                margin-top: 20px !important;
+            }
+            
+            .officer-section {
+                width: 100% !important;
+                margin-bottom: 15px !important;
+            }
+            
+            .officer-label {
+                font-weight: bold !important;
+                margin-bottom: 2px !important;
+                font-size: 14px !important;
+            }
+
+            .officer-name {
+                font-weight: bold !important;
+                text-decoration: underline !important;
+                margin-bottom: 2px !important;
+                font-size: 14px !important;
+            }
+
+            .officer-sub-label {
+                font-size: 13px !important;
+                margin-bottom: 0 !important;
+            }
+            
+            .signature-applicant-section {
+                width: 100% !important;
+                text-align: center !important;
+                position: relative !important;
+                margin-bottom: 15px !important;
+                margin-top: 15px !important;
+            }
+            
+            .signature-line-applicant {
+                border-bottom: 2px solid #000 !important;
+                width: 210px !important;
+                height: 1px !important;
+                margin: 0 auto 7px auto !important;
+            }
+
+            .signature-applicant {
+                font-weight: bold !important;
+                font-size: 13px !important;
+            }
+            
+            .thumb-mark-circle {
+                width: 78px !important;
+                height: 78px !important;
+                font-size: 10px !important;
+            }
+            
+            .ctc-details-section {
+                width: 140% !important;
+                page-break-inside: avoid !important;
+            }
+            
+            .ctc-detail-item {
+                display: flex !important;
+                align-items: center !important;
+                margin-bottom: 5px !important;
+                page-break-inside: avoid !important;
+            }
+            
+            .ctc-detail-label {
+                font-weight: bold !important;
+                margin-right: 6px !important;
+                min-width: 80px !important;
+                font-size: 12px !important;
+                white-space: nowrap !important;
+            }
+            
+            .ctc-detail-value {
+                flex: 1 !important;
+                padding-bottom: 1px !important;
+                height: 17px !important;
+                min-width: 280px !important;
+                white-space: nowrap !important;
+                overflow: visible !important;
+                font-size: 11px !important;
+            }
+            
+            .main-title {
+                font-size: 32px !important;
+                margin-bottom: 20px !important;
+                letter-spacing: 3px !important;
+                color: #C2944D !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .signature-line,
+            .signature-line-applicant,
+            .thumb-mark-circle {
+                border-color: #000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .photo-placeholder {
+                border: 2px solid #000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .signature-section {
+                page-break-inside: avoid !important;
+            }
+            
+            .thumb-marks-section {
+                page-break-inside: avoid !important;
+            }
+            
+            .signature-box {
+                page-break-inside: avoid !important;
+            }
+            
+            .date-validity-thumb-section {
+                display: block !important;
+                margin: 0 !important;
+                position: relative !important;
+            }
+            
+            .date-validity-row {
+                width: 100% !important;
+                font-size: 12px !important;
+                font-weight: bold !important;
+                margin-top: 3px !important;
+                position: relative !important;
+                top: -2px !important;
+            }
+            
+            .date-validity-row div {
+                margin-bottom: 4px !important;
+            }
+            
+            .thumb-marks-section {
+                width: 100% !important;
+                display: flex !important;
+                flex-direction: row !important;
+                gap: 28px !important;
+                justify-content: center !important;
+                align-items: center !important;
+            }
+            
+            .thumb-mark-box {
+                text-align: center;
+                width: 105px;
+                flex-shrink: 0;
+            }
+            
+            .thumb-mark-circle {
+                width: 95px;
+                height: 95px;
+                border: 2px solid #000;
+                margin: 0 auto 7px auto;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 11px;
+                font-weight: bold;
+                line-height: 1.1;
+            }
+            
+            .thumb-mark-label {
+                font-size: 11px;
+                font-weight: bold;
+            }
+            
+            .signature-section {
+                margin-top: 0 !important;
+                display: block !important;
+                width: 100% !important;
+                position: relative !important;
+                top: -3px !important;
+            }
+            
+            .ctc-details-section {
+                width: 100% !important;
+            }
+            
+            .ctc-detail-item {
+                display: flex !important;
+                align-items: center !important;
+                margin-bottom: 5px !important;
+            }
+            
+            .ctc-detail-label {
+                font-weight: bold;
+                margin-right: 6px;
+                min-width: 80px;
+                font-size: 12px;
+            }
+            
+            .ctc-detail-value {
+                flex: 1 !important;
+                padding-bottom: 1px !important;
+                height: 17px !important;
+                font-size: 11px !important;
+            }
+            
+            .signature-line {
+                border-bottom: 2px solid #000 !important;
+                margin-bottom: 4px !important;
+                height: 1px !important;
+            }
         }
         
         * {
@@ -123,10 +417,8 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         .certificate-content {
   position: relative;
   z-index: 2;
-  padding: 230px 60px 20px 60px; /* increased from 150px to 230px */
+  padding: 250px 60px 60px 60px; /* matching barangay clearance exactly */
   height: 100%;
-  display: flex;
-  flex-direction: column;
 }
         
         .header {
@@ -173,13 +465,12 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         }
         
         .main-title {
-            font-size: 28px;
+            font-size: 32px;
             font-weight: bold;
             text-transform: uppercase;
-            margin-top: 6px;      /* small space under the letterhead */
             margin-bottom: 20px;
             color: #C2944D;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             text-align: center;
         }
         
@@ -194,41 +485,56 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
     flex: 1;
     font-size: 14px;
     line-height: 1.6;
-    padding-top: 0; /* remove extra padding pushing it down */
+    padding-top: 0;
+    margin-bottom: 15px; /* add bottom margin for better spacing */
 }
         
-        .to-whom {
-            display: justify;
-            margin-bottom: 12px;
-            font-weight: bold;
-        }
-        
-        .main-content {
-            margin-bottom: 15px;
-        }
-        
-        .main-content p {
-            display: justify;
-            margin-bottom: 10px;
-            text-indent: 0;
-        }
-
-        .main-content-with-photo {
+        .content-with-photo {
             display: flex;
             align-items: flex-start;
-            gap: 20px; /* space between text and image */
+            gap: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .left-content {
+            flex: 1;
+        }
+        
+        .main-text {
+            font-size: 14px;
+            line-height: 1.4;
+            text-align: justify;
+        }
+        
+        .certification-text {
+            margin-bottom: 18px;
+            text-align: justify;
+            font-size: 13px;
+            line-height: 1.4;
+            max-width: 100%; /* changed from 500px to 100% to match main-text width */
+        }
+        
+        .to-whom {
+            font-weight: bold;
+            font-size: 14px;
             margin-bottom: 15px;
         }
 
-        .main-content-with-photo .main-text {
-            flex: 1; /* let text take remaining space */
-        }
-
-        .photo-placeholder img {
-            width: 1in;   /* exactly 1 inch */
-            height: 1in;  /* exactly 1 inch */
-            border: 1px solid #000;
-            object-fit: cover;
+        .photo-placeholder {
+            width: 85px;
+            height: 85px;
+            border: 2px solid #000;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            color: #000;
+            flex-shrink: 0;
+            float: right;
+            margin: 0 0 10px 20px;
         }
 
 
@@ -248,155 +554,203 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             justify-content: space-between;
             align-items: flex-start;
         }
-        .lower-section {
-            margin-bottom: 175px;
-        }
-        .signature-row {
+        
+        .bottom-sections-container {
             display: flex;
             justify-content: space-between;
+            align-items: flex-start;
+            margin-top: 15px; /* reduced from 20px to 15px */
+        }
+        
+        .left-section {
+            width: 45%; /* back to barangay clearance proportions */
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .right-section {
+            width: 50%; /* back to barangay clearance proportions */
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
             align-items: center;
-            margin-bottom: -20px;
+            margin-top: 20px; /* reduced from 33px to 20px */
         }
         
         .officer-section {
-            text-align: justify;
-            width: 45%;
-            margin-left: -10px; /* moves it 30px left, adjust as needed */
+            width: 100%;
+            margin-bottom: 15px;
         }
-
-        
-        .signature-applicant {
-            text-align: center;
-            width: 45%;
-            font-weight: bold;
-            position: relative;
-            margin-left: -20px; /* pulls it closer to the boxes */
-            margin-top: -10px;  /* raises it closer vertically */
-        }
-
         
         .officer-label {
             font-weight: bold;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
+            font-size: 14px; /* increased from 13px to 14px */
         }
-
+        
+        .officer-name {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-bottom: 2px;
+            font-size: 14px; /* increased from 13px to 14px */
+        }
+        
         .officer-sub-label {
-            font-size: 14px;
-            margin-top: -4px; /* pulls it closer to 'Verified by' */
+            font-size: 13px; /* increased from 12px to 13px */
+            margin-bottom: 0;
         }
-
-        .signature-applicant::before {
-            content: '';
-            position: absolute;
-            top: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 180px;   /* was 120px — longer line */
+        
+        .signature-applicant-section {
+            width: 100%;
+            text-align: center;
+            position: relative;
+            margin-bottom: 15px;
+            margin-top: 15px;
+        }
+        
+        .signature-line-applicant {
+            border-bottom: 2px solid #000;
+            width: 210px;
             height: 1px;
-            background-color: #000;
+            margin: 0 auto 7px auto;
+        }
+        
+        .signature-applicant {
+            font-weight: bold;
+            font-size: 13px; /* increased from 12px to 13px */
+        }
+        
+        .date-validity-thumb-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin: 5px 0; /* reduced from 15px to 5px */
+            position: relative;
+        }
+        
+        .date-validity-row {
+            width: 60%; /* increased from 41% to 60% */
+            font-size: 13px; /* increased from 12px to 13px */
+            font-weight: bold;
+            margin-top: 3px; /* reduced from 8px to 3px */
+            position: relative;
+            top: 0px;
+        }
+        
+        .date-validity-row div {
+            margin-bottom: 3px; /* reduced from 5px to 3px */
+        }
+        
+        .thumb-marks-section {
+            width: 38%; /* reduced from 56% to 38% to accommodate larger date section */
+            display: flex;
+            flex-direction: row;
+            gap: 28px;
+            justify-content: center;
+            align-items: center;
         }
         
         .thumb-mark-box {
             text-align: center;
-            width: 120px;
-        }
-        
-        .thumb-marks-right {
-            display: flex;
-            gap: 20px;
+            width: 105px;
+            flex-shrink: 0;
         }
         
         .thumb-mark-circle {
-            width: 110px;      /* was 80px */
-            height: 110px;     /* was 80px */
+            width: 95px;
+            height: 95px;
             border: 2px solid #000;
-            margin: 0 auto 10px;
+            margin: 0 auto 7px auto;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;   /* slightly larger text inside */
+            font-size: 11px;
             font-weight: bold;
+            line-height: 1.1;
         }
-
         
         .thumb-mark-label {
-            display: none;
-        }
-        
-        .certificate-details {
-            margin: 15px 0;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .detail-item {
-            width: 100%;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .detail-label {
+            font-size: 11px;
             font-weight: bold;
-            margin-right: 10px;
-            min-width: 80px;
-        }
-        
-        .detail-value {
-            border-bottom: 1px solid #000;
-            flex: 1;
-            padding-bottom: 2px;
-            min-width: 100px;
         }
         
         .signature-section {
-            margin-top: 25px;
+            margin-top: 5px; /* reduced from 15px to 5px */
             display: flex;
-            justify-content: flex-end; /* pushes content to the right */
-            align-items: flex-end;    /* aligns vertically at the bottom */
+            justify-content: space-between;
+            align-items: flex-end;
+            position: relative;
+            top: 0px;
         }
-
+        
+        .ctc-details-section {
+            width: 46%;
+        }
+        
+        .ctc-detail-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .ctc-detail-label {
+            font-weight: bold;
+            margin-right: 12px;
+            min-width: 92px;
+            font-size: 13px; /* increased from 12px to 13px */
+        }
+        
+        .ctc-detail-value {
+            flex: 1;
+            padding-bottom: 1px;
+            height: 17px;
+        }
+        
         .signature-box {
             text-align: center;
-            width: 180px;
+            width: 235px;
         }
         
         .signature-line {
-            border-bottom: 1px solid #000;
-            margin-bottom: 8px;
-            height: 30px;
+            border-bottom: 2px solid #000;
+            margin-bottom: 4px;
+            height: 1px;
         }
         
         .signature-name {
             font-weight: bold;
-            font-size: 12px;
+            font-size: 13px;
+            text-decoration: underline;
         }
         
         .signature-title {
-            font-size: 10px;
-            color: #666;
-        }
-        
-        .date-section {
-            text-align: center;
-            margin-top: 10px;
             font-size: 12px;
+            margin-top: 2px;
         }
         
-        .date-label {
-            font-weight: bold;
-            margin-bottom: 5px;
+        .signature-box {
+            margin-top: 30px !important;
         }
         
-        .validity-section {
-            margin-top: 10px;
-            text-align: center;
-            font-size: 12px;
+        .signature-name {
+            text-decoration: none !important;
         }
         
-        .validity-label {
-            font-weight: bold;
-            margin-bottom: 5px;
+        .signature-box {
+            width: 280px !important;
+        }
+        
+        .signature-line {
+            width: 250px !important;
+        }
+        
+        .signature-name {
+            font-size: 14px !important;
+        }
+        
+        .signature-line {
+            width: 250px !important;
         }
         
         .print-controls {
@@ -493,95 +847,90 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         <div class="certificate-content">
 
             
-            <div class="content">
-                <div class="main-title">
-                    CERTIFICATION OF INDIGENCY
-                </div>
-                
-                <div class="to-whom">
-                    TO WHOM IT MAY CONCERN:
-                </div>
-                
-                <div class="main-content-with-photo">
-                        <div class="main-text">
-                            <p>This is to certify that <strong><?php echo htmlspecialchars($certificate_data['full_name']); ?></strong>, 
-                            <?php echo $age; ?> years old, with Address no. <?php echo htmlspecialchars($certificate_data['address']); ?>, 
-                            Gumaoc East, City of San Jose Del Monte, Bulacan, is belonging to the Indigent Family in our Barangay.</p>
-                        </div>
-                        <div class="photo-placeholder">
-                            <img src="../assets/images/forms/photo-placeholder.png" alt="Photo" />
-                        </div>
+            <div class="main-title">
+                CERTIFICATION OF INDIGENCY
+            </div>
+            
+            <div class="content-with-photo">
+                <div class="left-content">
+                    <div class="to-whom">
+                        TO WHOM IT MAY CONCERN:
                     </div>
-
-                    <p>This certification is issued upon the request of the above person to be used for his/her 
-                    <strong><?php echo htmlspecialchars($certificate_data['purpose']); ?></strong>.</p>
-
-                    <p>Given this <?php echo date('jS'); ?> day of <?php echo date('F Y'); ?>  at Gumaoc East, City of San Jose Del Monte, Bulacan. </p>
-
+                    
+                    <div class="main-text">
+                        <p>This is to certify that <strong><?php echo htmlspecialchars($certificate_data['full_name']); ?></strong>, 
+                        <?php echo $age; ?> years old, with Address no. <?php echo htmlspecialchars($certificate_data['address']); ?>, 
+                        Gumaoc East, City of San Jose Del Monte, Bulacan, is belonging to the Indigent Family in our Barangay.</p>
+                    </div>
                 </div>
-                    <div class="lower-section">
-                <div class="signature-row">
+                <div class="photo-placeholder">
+                    IMAGE
+                </div>
+            </div>
+
+            <div class="certification-text">
+                <p>This certification is issued upon the request of the above person to be used for his/her 
+                <strong><?php echo htmlspecialchars($certificate_data['purpose']); ?></strong>. 
+                
+                <p>Given this <?php echo date('jS'); ?> day of <?php echo date('F Y'); ?> at Gumaoc East, City of San Jose Del Monte, Bulacan, 
+                Philippines. This certification is valid for official and legal purposes as may be required by the requesting party.</p>
+            </div>
+                    <div class="bottom-sections-container">
+                <div class="left-section">
                     <div class="officer-section">
                         <div class="officer-label">Verified by</div>
+                        <div class="officer-name">HON. MARITESS O. SY</div>
                         <div class="officer-sub-label">Officer of the Day</div>
-                        <div class="date-section">
-                            <div class="date-label">Given this: <?php echo strtoupper(date('d F Y')); ?></div>
-                        </div>
-                        <div class="validity-section">
-                            <div class="validity-label">Valid until: <?php echo strtoupper(date('d F Y', strtotime('+1 year'))); ?></div>
+                    </div>
+                    
+                    <div class="date-validity-thumb-section">
+                        <div class="date-validity-row">
+                            <div><strong>Given this:</strong> <?php echo strtoupper(date('d F Y')); ?></div>
+                            <div><strong>Valid until:</strong> <?php echo strtoupper(date('d F Y', strtotime('+1 year'))); ?></div>
                         </div>
                     </div>
-
                     
-                    <div class="signature-applicant">
-                        Signature of Applicant
+                    <div class="signature-section">
+                        <div class="ctc-details-section">
+                            <div class="ctc-detail-item">
+                                <span class="ctc-detail-label">CTC NO</span>
+                                <span class="ctc-detail-value"></span>
+                            </div>
+                            <div class="ctc-detail-item">
+                                <span class="ctc-detail-label">ISSUED AT</span>
+                                <span class="ctc-detail-value">BRGY. GUMAOC EAST, CSJDM, BULACAN</span>
+                            </div>
+                            <div class="ctc-detail-item">
+                                <span class="ctc-detail-label">ISSUED ON</span>
+                                <span class="ctc-detail-value"><?php echo strtoupper(date('d F Y')); ?></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="thumb-marks-section">
-                    <div class="certificate-details">
-                        <div class="detail-item">
-                            <span class="detail-label">CTC NO:</span>
-                            <span class="detail-value"></span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">ISSUED AT:</span>
-                            <span class="detail-value"></span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">ISSUED ON:</span>
-                            <span class="detail-value"></span>
-                        </div>
-                        <div class="detail-item">
-                            <span class="detail-label">O.R. NO:</span>
-                            <span class="detail-value"></span>
-                        </div>
+                <div class="right-section">
+                    <div class="signature-applicant-section">
+                        <div class="signature-line-applicant"></div>
+                        <div class="signature-applicant">Signature of Applicant</div>
                     </div>
                     
-                    <div class="thumb-marks-right">
+                    <div class="thumb-marks-section">
                         <div class="thumb-mark-box">
                             <div class="thumb-mark-circle">LEFT<br>THUMB<br>MARK</div>
-                            <div class="thumb-mark-label">LEFT THUMB MARK</div>
                         </div>
                         
                         <div class="thumb-mark-box">
                             <div class="thumb-mark-circle">RIGHT<br>THUMB<br>MARK</div>
-                            <div class="thumb-mark-label">RIGHT THUMB MARK</div>
                         </div>
                     </div>
-                </div>
-                
-
-                
-                <div class="signature-section">
                     
                     <div class="signature-box">
-                        <div class="signature-line"></div>
                         <div class="signature-name">HON. ROMMEL B. PITALBO</div>
+                        <div class="signature-line"></div>
                         <div class="signature-title">Punong Barangay</div>
                     </div>
                 </div>
-                </div>
+            </div>
 
                 
                 <div class="not-valid-notice">

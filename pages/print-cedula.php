@@ -451,12 +451,14 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                 <div class="form-row">
                     <span class="form-label">CITIZENSHIP</span>
                     <span class="form-value"><?php echo htmlspecialchars($citizenship); ?></span>
-                    <span class="form-label">OR NO. (if an Alien)</span>
+                    <span class="form-label">ICR NO. (if an Alien)</span>
                     <span class="form-value"></span>
                     <span class="form-label">PLACE OF BIRTH</span>
                     <span class="form-value wide-value"><?php echo htmlspecialchars($place_of_birth); ?></span>
-                    <span class="form-label">HEIGHT</span>
-                    <span class="form-value"><?php echo $height ? $height . ' cm' : ''; ?></span>
+                    <div style="display: flex; align-items: center; gap: 3px; margin-left: auto;">
+                        <span class="form-label">HEIGHT</span>
+                        <span class="form-value"><?php echo $height ? $height . ' cm' : ''; ?></span>
+                    </div>
                 </div>
                 
                 <div class="form-row">
@@ -487,10 +489,16 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                             <span>4. Divorced</span>
                         </div>
                     </div>
-                    <span class="form-label">DATE OF BIRTH</span>
-                    <span class="form-value"><?php echo $formatted_birth_date; ?></span>
-                    <span class="form-label">WEIGHT</span>
-                    <span class="form-value"><?php echo $weight ? $weight . ' kg' : ''; ?></span>
+                    <div style="display: flex; gap: 15px; margin-left: auto;">
+                        <div style="display: flex; align-items: center; gap: 3px;">
+                            <span class="form-label">DATE OF BIRTH</span>
+                            <span class="form-value"><?php echo $formatted_birth_date; ?></span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 3px;">
+                            <span class="form-label">WEIGHT</span>
+                            <span class="form-value"><?php echo $weight ? $weight . ' kg' : ''; ?></span>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="form-row">
