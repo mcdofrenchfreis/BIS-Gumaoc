@@ -24,7 +24,8 @@ $debug_filename = basename($_SERVER['PHP_SELF'], '.php');
 // Navigation items
 $nav_items = [
     'dashboard' => ['icon' => 'fas fa-tachometer-alt', 'label' => 'Dashboard', 'url' => 'dashboard.php'],
-    'e-services' => ['icon' => 'fas fa-desktop', 'label' => 'E-Services', 'url' => 'e-services.php']
+    'e-services' => ['icon' => 'fas fa-desktop', 'label' => 'E-Services', 'url' => 'e-services.php'],
+    'settings' => ['icon' => 'fas fa-cog', 'label' => 'Settings', 'url' => 'settings.php']
 ];
 ?>
 
@@ -76,7 +77,7 @@ $nav_items = [
                     <i class="fas fa-user"></i>
                     Profile
                 </a>
-                <a href="#" class="dropdown-item">
+                <a href="settings.php" class="dropdown-item">
                     <i class="fas fa-cog"></i>
                     Settings
                 </a>

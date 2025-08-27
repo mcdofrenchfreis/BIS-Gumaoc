@@ -887,9 +887,6 @@ $display_phone = $user['phone'] ?? 'No phone';
                         <?php if ($display_phone && $display_phone !== 'No phone'): ?>
                             <p>📱 <?php echo htmlspecialchars($display_phone); ?></p>
                         <?php endif; ?>
-                        <?php if ($user['rfid_code']): ?>
-                            <p>🏷️ RFID: <?php echo htmlspecialchars($user['rfid_code']); ?></p>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>

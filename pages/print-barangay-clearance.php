@@ -62,13 +62,29 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             @page {
                 margin: 0;
                 size: A4 portrait;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
+            
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            
             body { 
                 margin: 0; 
                 padding: 0;
                 background: white !important;
+                font-family: 'Times New Roman', serif !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
-            .no-print { display: none !important; }
+            
+            .no-print { 
+                display: none !important; 
+            }
+            
             .certificate-container { 
                 page-break-inside: avoid !important;
                 page-break-after: avoid !important;
@@ -83,6 +99,7 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                 print-color-adjust: exact !important;
                 box-shadow: none !important;
                 position: relative !important;
+                overflow: hidden !important;
             }
             .certificate-content {
                 padding: 250px 60px 60px 60px !important;
@@ -198,21 +215,104 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                 font-size: 10px !important;
             }
             
-            .thumb-mark-box {
-                flex: 1 !important;
-                max-width: 88px !important;
+            .bottom-sections-container {
+                display: flex !important;
+                justify-content: space-between !important;
+                align-items: flex-start !important;
+                margin-top: 20px !important;
+                page-break-inside: avoid !important;
             }
             
-            .thumb-mark-label {
+            .left-section {
+                width: 45% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            
+            .right-section {
+                width: 50% !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 12px !important;
+                align-items: center !important;
+                margin-top: 33px !important;
+            }
+            
+            .ctc-details-section {
+                width: 140% !important;
+                page-break-inside: avoid !important;
+            }
+            
+            .ctc-detail-item {
+                display: flex !important;
+                align-items: center !important;
+                margin-bottom: 5px !important;
+                page-break-inside: avoid !important;
+            }
+            
+            .ctc-detail-label {
+                font-weight: bold !important;
+                margin-right: 6px !important;
+                min-width: 80px !important;
+                font-size: 12px !important;
+                white-space: nowrap !important;
+            }
+            
+            .ctc-detail-value {
+                flex: 1 !important;
+                padding-bottom: 1px !important;
+                height: 17px !important;
+                min-width: 280px !important;
+                white-space: nowrap !important;
+                overflow: visible !important;
                 font-size: 11px !important;
             }
             
-            .signature-box {
-                width: 235px !important;
+            
+            /* Text and Border Print Optimization */
+            .main-title {
+                font-size: 32px !important;
+                margin-bottom: 20px !important;
+                letter-spacing: 3px !important;
+                color: #C2944D !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             
-            .signature-name {
-                font-size: 13px !important;
+            .signature-line,
+            .signature-line-applicant,
+            .thumb-mark-circle {
+                border-color: #000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            .photo-placeholder {
+                border: 2px solid #000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            /* Prevent text breaking and improve readability */
+            .certification-text,
+            .person-details {
+                orphans: 3;
+                widows: 3;
+                page-break-inside: avoid;
+            }
+            
+            /* Ensure signature section stays together */
+            .signature-section {
+                page-break-inside: avoid !important;
+            }
+            
+            .thumb-marks-section {
+                page-break-inside: avoid !important;
+            }
+            
+            .signature-box {
+                page-break-inside: avoid !important;
             }
             
             .bottom-sections-container {
@@ -310,16 +410,16 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             
             .ctc-detail-label {
                 font-weight: bold;
-                margin-right: 12px;
-                min-width: 92px;
+                margin-right: 6px;
+                min-width: 80px;
                 font-size: 12px;
             }
             
             .ctc-detail-value {
-                border-bottom: 1px solid #000 !important;
                 flex: 1 !important;
                 padding-bottom: 1px !important;
                 height: 17px !important;
+                font-size: 11px !important;
             }
             
             .signature-line {
@@ -571,7 +671,6 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         }
         
         .ctc-detail-value {
-            border-bottom: 1px solid #000;
             flex: 1;
             padding-bottom: 1px;
             height: 17px;
@@ -752,7 +851,7 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         }
 
         .ctc-details-section {
-            width: 100%;
+            width: 140%;
         }
         
         .ctc-detail-item {
@@ -763,16 +862,17 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         
         .ctc-detail-label {
             font-weight: bold;
-            margin-right: 12px;
-            min-width: 92px;
+            margin-right: 6px;
+            min-width: 80px;
             font-size: 12px;
         }
         
         .ctc-detail-value {
-            border-bottom: 1px solid #000;
             flex: 1;
             padding-bottom: 1px;
             height: 17px;
+            min-width: 280px;
+            font-size: 11px;
         }
 
         .signature-box {
@@ -782,8 +882,9 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         
         .signature-line {
             border-bottom: 2px solid #000;
-            margin-bottom: 4px;
+            margin: 8px auto 8px auto;
             height: 1px;
+            width: 200px;
         }
         
         .signature-name {
@@ -869,19 +970,11 @@ criminal Record found in our Barangay Records.</p>
                             </div>
                             <div class="ctc-detail-item">
                                 <span class="ctc-detail-label">ISSUED AT</span>
-                                <span class="ctc-detail-value"></span>
+                                <span class="ctc-detail-value">BRGY. GUMAOC EAST, CSJDM, BULACAN</span>
                             </div>
                             <div class="ctc-detail-item">
                                 <span class="ctc-detail-label">ISSUED ON</span>
-                                <span class="ctc-detail-value"></span>
-                            </div>
-                            <div class="ctc-detail-item">
-                                <span class="ctc-detail-label">O.R. NO.</span>
-                                <span class="ctc-detail-value"></span>
-                            </div>
-                            <div class="ctc-detail-item">
-                                <span class="ctc-detail-label">PREPARED BY</span>
-                                <span class="ctc-detail-value"></span>
+                                <span class="ctc-detail-value"><?php echo strtoupper(date('d F Y')); ?></span>
                             </div>
                         </div>
                     </div>

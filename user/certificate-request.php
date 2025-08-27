@@ -74,6 +74,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
             }
         }
         
+        // Handle 2x2 photo upload for specific certificate types
+        $photo_2x2 = null;
+        $certificates_requiring_photo = ['BRGY. INDIGENCY', 'TRICYCLE PERMIT', 'BRGY. CLEARANCE', 'PROOF OF RESIDENCY'];
+        if (in_array($certificate_type, $certificates_requiring_photo) && isset($_FILES['photo2x2']) && $_FILES['photo2x2']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../uploads/certificate_photos/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            
+            $file_extension = strtolower(pathinfo($_FILES['photo2x2']['name'], PATHINFO_EXTENSION));
+            $allowed_extensions = ['jpg', 'jpeg', 'png'];
+            
+            if (in_array($file_extension, $allowed_extensions) && $_FILES['photo2x2']['size'] <= 3 * 1024 * 1024) {
+                $filename = 'photo_' . $_SESSION['user_id'] . '_' . time() . '.' . $file_extension;
+                $filepath = $upload_dir . $filename;
+                
+                if (move_uploaded_file($_FILES['photo2x2']['tmp_name'], $filepath)) {
+                    $photo_2x2 = $filename;
+                }
+            }
+        }
+        
         // Handle certificate-specific data
         $additional_data = [];
         
@@ -111,8 +133,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
         $sql = "INSERT INTO certificate_requests (
             user_id, certificate_type, full_name, address, mobile_number, 
             civil_status, gender, birth_date, birth_place, citizenship, 
-            years_of_residence, purpose, additional_data, proof_image, status, submitted_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())";
+            years_of_residence, purpose, additional_data, proof_image, photo_2x2, status, submitted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
@@ -129,7 +151,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
             $years_of_residence,
             $purpose,
             json_encode($additional_data),
-            $proof_image
+            $proof_image,
+            $photo_2x2
         ]);
         
         $_SESSION['success'] = "Certificate request submitted successfully! You will be notified when it's ready.";
@@ -556,6 +579,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
             transition: all 0.3s ease;
             cursor: pointer;
         }
+        
+        .file-upload-container.photo-upload {
+            border-color: #007bff;
+            background: rgba(0, 123, 255, 0.05);
+        }
+        
+        .file-upload-container.photo-upload:hover {
+            border-color: #0056b3;
+            background: rgba(0, 123, 255, 0.1);
+        }
+        
+        .file-upload-container.photo-upload .file-upload-icon {
+            color: #007bff;
+        }
+        
+        .file-upload-container.photo-upload:hover .file-upload-icon {
+            color: #0056b3;
+        }
 
         .file-upload-container:hover {
             border-color: #28a745;
@@ -774,6 +815,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
             .tax-section {
                 padding: 15px;
             }
+        }
 
         @media (max-width: 768px) {
             .container {
@@ -1235,8 +1277,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
                         </div>
                     </div>
                     
-                    <!-- Optional Proof Image Section -->
-                    <div class="form-section">
+                    <!-- 2x2 Photo Upload Section (for specific certificates) -->
+                    <div class="form-section" id="photo2x2Section" style="display: none;">
+                        <h3><i class="fas fa-portrait"></i> 2x2 Photo (Optional)</h3>
+                        <p class="section-description">Upload a recent 2x2 passport-style photo for your certificate (optional)</p>
+                        
+                        <div class="file-upload-container photo-upload">
+                            <input type="file" id="photo2x2" name="photo2x2" 
+                                   accept="image/jpeg,image/png,image/jpg" class="file-input">
+                            <div class="file-upload-display">
+                                <div class="file-upload-icon">
+                                    <i class="fas fa-user-circle"></i>
+                                </div>
+                                <div class="file-upload-text">
+                                    <span class="file-upload-label">Click to upload 2x2 photo</span>
+                                    <span class="file-upload-hint">JPG, PNG up to 3MB • Passport-style photo recommended</span>
+                                </div>
+                            </div>
+                            <div class="file-preview" id="photo2x2Preview" style="display: none;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Optional Proof Image Section (hidden for certificates with 2x2 photo) -->
+                    <div class="form-section" id="proofImageSection">
                         <h3><i class="fas fa-camera"></i> Optional Proof Image</h3>
                         <p class="section-description">Upload supporting documents or proof (optional)</p>
                         
@@ -1272,26 +1335,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
         const isAdminView = <?php echo $is_admin_view ? 'true' : 'false'; ?>;
         
         document.addEventListener('DOMContentLoaded', function() {
-            // Only initialize form components if not in admin view
-            if (!isAdminView) {
-                // Initialize all components
-                setupCertificateSelection();
-                setupMobileValidation();
-                setupTaxCalculation();
-                setupFileUpload();
-                setupNameValidation(); // Add blotter detection
-                
-                // Ensure all certificate sections are hidden initially
-                hideCertificateSections();
-                
-                // Debug: Log available certificate sections
-                console.log('Certificate sections initialized:', {
-                    tricycle: !!document.getElementById('tricycleSection'),
-                    cedula: !!document.getElementById('cedulaSection')
-                });
-            } else {
-                console.log('Admin view mode - form functionality disabled');
-            }
+            // Initialize all components
+            setupCertificateSelection();
+            setupMobileValidation();
+            setupTaxCalculation();
+            setupFileUpload();
+            setupPhoto2x2Upload();
+            setupNameValidation(); // Add blotter detection
+            
+            // Ensure all certificate sections are hidden initially
+            hideCertificateSections();
+            
+            // Debug: Log available certificate sections
+            console.log('Certificate sections initialized:', {
+                tricycle: !!document.getElementById('tricycleSection'),
+                cedula: !!document.getElementById('cedulaSection')
+            });
         });
 
         function setupCertificateSelection() {
@@ -1355,6 +1414,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
                     console.log('Standard certificate type, no additional section needed');
                 }
                 
+                // Show 2x2 photo upload for specific certificate types
+                show2x2PhotoSection(certificateType);
+                
                 // Debug: Log current section visibility
                 logSectionVisibility();
             }, 100);
@@ -1363,10 +1425,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
         function logSectionVisibility() {
             const tricycleSection = document.getElementById('tricycleSection');
             const cedulaSection = document.getElementById('cedulaSection');
+            const photo2x2Section = document.getElementById('photo2x2Section');
+            const proofImageSection = document.getElementById('proofImageSection');
             
             console.log('Section visibility:', {
                 tricycle: tricycleSection ? tricycleSection.style.display : 'not found',
-                cedula: cedulaSection ? cedulaSection.style.display : 'not found'
+                cedula: cedulaSection ? cedulaSection.style.display : 'not found',
+                photo2x2: photo2x2Section ? photo2x2Section.style.display : 'not found',
+                proofImage: proofImageSection ? proofImageSection.style.display : 'not found'
             });
         }
 
@@ -1376,6 +1442,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
             // Force hide all certificate-specific sections
             const tricycleSection = document.getElementById('tricycleSection');
             const cedulaSection = document.getElementById('cedulaSection');
+            const photo2x2Section = document.getElementById('photo2x2Section');
+            const proofImageSection = document.getElementById('proofImageSection');
             
             if (tricycleSection) {
                 tricycleSection.style.display = 'none';
@@ -1384,6 +1452,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
             if (cedulaSection) {
                 cedulaSection.style.display = 'none';
                 console.log('Cedula section hidden');
+            }
+            if (photo2x2Section) {
+                photo2x2Section.style.display = 'none';
+                console.log('2x2 Photo section hidden');
+            }
+            if (proofImageSection) {
+                proofImageSection.style.display = 'block'; // Default to show
+                console.log('Proof image section shown (default)');
             }
             
             // Remove required attributes from all certificate-specific fields
@@ -1706,14 +1782,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
 
         function setupFileUpload() {
             const fileInput = document.getElementById('proofImage');
-            const fileContainer = document.querySelector('.file-upload-container');
+            const fileContainer = document.querySelector('#proofImageSection .file-upload-container:not(.photo-upload)');
             const filePreview = document.getElementById('filePreview');
+            
+            if (!fileInput || !fileContainer) return;
             
             // Handle file selection
             fileInput.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
-                    showFilePreview(file);
+                    showFilePreview(file, 'filePreview');
                 }
             });
             
@@ -1735,27 +1813,119 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
                 const files = e.dataTransfer.files;
                 if (files.length > 0) {
                     fileInput.files = files;
-                    showFilePreview(files[0]);
+                    showFilePreview(files[0], 'filePreview');
                 }
             });
         }
+        
+        function setupPhoto2x2Upload() {
+            const photoInput = document.getElementById('photo2x2');
+            const photoContainer = document.querySelector('.file-upload-container.photo-upload');
+            const photoPreview = document.getElementById('photo2x2Preview');
+            
+            if (!photoInput || !photoContainer) return;
+            
+            // Handle file selection
+            photoInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    if (validatePhotoFile(file)) {
+                        showFilePreview(file, 'photo2x2Preview');
+                    } else {
+                        this.value = ''; // Clear invalid file
+                    }
+                }
+            });
+            
+            // Handle drag and drop
+            photoContainer.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.classList.add('drag-over');
+            });
+            
+            photoContainer.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+            });
+            
+            photoContainer.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && validatePhotoFile(files[0])) {
+                    photoInput.files = files;
+                    showFilePreview(files[0], 'photo2x2Preview');
+                }
+            });
+        }
+        
+        function validatePhotoFile(file) {
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            const maxSize = 3 * 1024 * 1024; // 3MB
+            
+            if (!allowedTypes.includes(file.type)) {
+                showToastNotification('Please upload only JPG or PNG image files for the 2x2 photo.', 'error');
+                return false;
+            }
+            
+            if (file.size > maxSize) {
+                showToastNotification('Photo file size should not exceed 3MB.', 'error');
+                return false;
+            }
+            
+            return true;
+        }
+        
+        function show2x2PhotoSection(certificateType) {
+            const photo2x2Section = document.getElementById('photo2x2Section');
+            const proofImageSection = document.getElementById('proofImageSection');
+            const certificatesRequiringPhoto = ['BRGY. CLEARANCE', 'BRGY. INDIGENCY', 'TRICYCLE PERMIT', 'PROOF OF RESIDENCY'];
+            
+            if (certificatesRequiringPhoto.includes(certificateType)) {
+                // Show 2x2 photo section and hide proof image section
+                if (photo2x2Section) {
+                    photo2x2Section.style.display = 'block';
+                    console.log('2x2 Photo section shown for:', certificateType);
+                }
+                if (proofImageSection) {
+                    proofImageSection.style.display = 'none';
+                    console.log('Proof image section hidden for:', certificateType);
+                }
+            } else {
+                // Hide 2x2 photo section and show proof image section
+                if (photo2x2Section) {
+                    photo2x2Section.style.display = 'none';
+                    console.log('2x2 Photo section hidden for:', certificateType);
+                }
+                if (proofImageSection) {
+                    proofImageSection.style.display = 'block';
+                    console.log('Proof image section shown for:', certificateType);
+                }
+            }
+        }
 
-        function showFilePreview(file) {
-            const preview = document.getElementById('filePreview');
+        function showFilePreview(file, previewId) {
+            const preview = document.getElementById(previewId);
             const fileSize = formatFileSize(file.size);
+            const isPhoto2x2 = previewId === 'photo2x2Preview';
             
             if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
+                    const imageClass = isPhoto2x2 ? 'style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 2px solid #007bff;"' : '';
+                    const removeFunction = isPhoto2x2 ? 'removePhoto2x2()' : 'removeFile()';
+                    const icon = isPhoto2x2 ? '👤' : '🖼️';
+                    
                     preview.innerHTML = `
-                        <img src="${e.target.result}" alt="Preview">
+                        <img src="${e.target.result}" alt="Preview" ${imageClass}>
                         <div class="file-preview-info">
-                            <div class="file-preview-icon">🖼️</div>
+                            <div class="file-preview-icon">${icon}</div>
                             <div class="file-preview-details">
                                 <div class="file-preview-name">${file.name}</div>
                                 <div class="file-preview-size">${fileSize}</div>
                             </div>
-                            <button type="button" class="file-remove-btn" onclick="removeFile()">
+                            <button type="button" class="file-remove-btn" onclick="${removeFunction}">
                                 ×
                             </button>
                         </div>
@@ -1764,6 +1934,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
                 };
                 reader.readAsDataURL(file);
             } else {
+                const removeFunction = isPhoto2x2 ? 'removePhoto2x2()' : 'removeFile()';
                 preview.innerHTML = `
                     <div class="file-preview-info">
                         <div class="file-preview-icon">📄</div>
@@ -1771,7 +1942,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
                             <div class="file-preview-name">${file.name}</div>
                             <div class="file-preview-size">${fileSize}</div>
                         </div>
-                        <button type="button" class="file-remove-btn" onclick="removeFile()">
+                        <button type="button" class="file-remove-btn" onclick="${removeFunction}">
                             ×
                         </button>
                     </div>
@@ -1784,6 +1955,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION[
             document.getElementById('proofImage').value = '';
             document.getElementById('filePreview').style.display = 'none';
             document.getElementById('filePreview').innerHTML = '';
+        }
+        
+        function removePhoto2x2() {
+            document.getElementById('photo2x2').value = '';
+            document.getElementById('photo2x2Preview').style.display = 'none';
+            document.getElementById('photo2x2Preview').innerHTML = '';
         }
 
         function formatFileSize(bytes) {
