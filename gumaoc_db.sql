@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 27, 2025 at 12:14 PM
+-- Generation Time: Aug 27, 2025 at 02:35 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -201,7 +201,11 @@ INSERT INTO `admin_logs` (`id`, `admin_id`, `action_type`, `target_type`, `targe
 (66, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 08:33:42'),
 (67, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 09:25:32'),
 (68, 'admin', 'admin_logout', 'admin_auth', NULL, 'Admin logout for username: admin', '{\"username\":\"admin\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 09:42:59'),
-(69, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 10:12:59');
+(69, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 10:12:59'),
+(70, 'admin', 'admin_logout', 'admin_auth', NULL, 'Admin logout for username: admin', '{\"username\":\"admin\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 10:32:57'),
+(71, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 10:33:02'),
+(72, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed manage updates admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 10:33:04'),
+(73, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 10:33:08');
 
 -- --------------------------------------------------------
 
@@ -260,6 +264,13 @@ CREATE TABLE `barangay_blotter` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `barangay_blotter`
+--
+
+INSERT INTO `barangay_blotter` (`id`, `blotter_number`, `incident_type`, `complainant_id`, `complainant_name`, `complainant_address`, `complainant_contact`, `respondent_id`, `respondent_name`, `respondent_address`, `respondent_contact`, `incident_date`, `reported_date`, `location`, `description`, `classification`, `status`, `investigating_officer`, `settlement_details`, `action_taken`, `case_disposition`, `created_by`, `created_at`, `updated_at`) VALUES
+(2, 'BLT-2024-001', 'complaint', NULL, 'Mar Yvan Sagun Dela Cruz', 'Block 1, Lot 15, Gumaoc East', NULL, NULL, 'John Doe', 'Block 2, Lot 20, Gumaoc East', NULL, '2024-01-15 14:30:00', '2025-08-27 18:51:14', 'Barangay Gumaoc East', 'Noise complaint regarding loud music during late hours', 'minor', 'under_investigation', NULL, NULL, NULL, NULL, 'admin', '2025-08-27 10:51:14', '2025-08-27 10:51:14');
 
 --
 -- Triggers `barangay_blotter`
@@ -653,13 +664,6 @@ CREATE TABLE `residents` (
   `created_by` int(11) DEFAULT NULL COMMENT 'ID of user who registered this family member',
   `relationship_to_head` varchar(100) DEFAULT NULL COMMENT 'Relationship to head of family'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `residents`
---
-
-INSERT INTO `residents` (`id`, `first_name`, `middle_name`, `last_name`, `email`, `phone`, `password`, `address`, `house_number`, `barangay`, `sitio`, `interviewer`, `interviewer_title`, `birthdate`, `birth_place`, `gender`, `civil_status`, `rfid_code`, `rfid`, `status`, `reset_otp`, `otp_expiry`, `created_at`, `updated_at`, `profile_complete`, `created_by`, `relationship_to_head`) VALUES
-(15, 'Mar Yvan', 'Sagun', 'Dela Cruz', 'biofrostyv@gmail.com', '09162291763', '$2y$10$V3RI1ldznE2mre3TGxu1R.0DsG30EvCssJNMpX2kU5BfmBkGXNbH6', 'House 101, Barangay Gumaoc East, San Jose del Monte, Bulacan, Philippines', '101', 'Gumaoc East', 'BLOCK', 'TEST ME PLEASE', 'TEST ME PLEASE', '2004-07-08', 'Caloocan City', '', '', '0005805639', '0005805639', 'active', NULL, NULL, '2025-08-27 04:25:22', '2025-08-27 04:25:22', 1, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1152,7 +1156,7 @@ ALTER TABLE `access_logs`
 -- AUTO_INCREMENT for table `admin_logs`
 --
 ALTER TABLE `admin_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
 
 --
 -- AUTO_INCREMENT for table `admin_users`
@@ -1164,7 +1168,7 @@ ALTER TABLE `admin_users`
 -- AUTO_INCREMENT for table `barangay_blotter`
 --
 ALTER TABLE `barangay_blotter`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `blotter_attachments`
