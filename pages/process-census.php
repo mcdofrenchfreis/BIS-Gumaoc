@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $birthday = trim($_POST['birthday'] ?? '');
         $birth_place = trim($_POST['birthPlace'] ?? '');
         $house_number = trim($_POST['houseNumber'] ?? '');
+        $street_address = trim($_POST['streetAddress'] ?? '');
         $interviewer = trim($_POST['interviewer'] ?? '');
         $interviewer_title = trim($_POST['interviewerTitle'] ?? '');
         
@@ -85,8 +86,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $birth_date = "$estimated_birth_year-01-01";
         }
         
-        $civil_status = 'Unknown';
-        $gender = 'Not Specified';
+        $civil_status = trim($_POST['civilStatus'] ?? 'Unknown');
+        $gender = trim($_POST['gender'] ?? 'Not Specified');
         
         // Validation - Updated for separate name fields
         $errors = [];
@@ -94,7 +95,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($last_name)) $errors[] = "Last name is required";
         if (empty($birthday)) $errors[] = "Date of birth is required";
         if (empty($birth_place)) $errors[] = "Place of birth is required";
+        if (empty($gender) || $gender === 'Not Specified') $errors[] = "Gender is required";
+        if (empty($civil_status) || $civil_status === 'Unknown') $errors[] = "Civil status is required";
         if (empty($house_number)) $errors[] = "House number is required";
+        if (empty($street_address)) $errors[] = "Street address is required";
         if (empty($interviewer)) $errors[] = "Interviewer name is required";
         
         if (empty($errors)) {
@@ -106,8 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $temp_password = EmailService::generateTempPassword();
             $hashed_password = password_hash($temp_password, PASSWORD_DEFAULT);
             
-            // Create a full address
-            $full_address = "House $house_number, Barangay Gumaoc East, San Jose del Monte, Bulacan, Philippines";
+            // Create a full address from street address and house number
+            $full_address = "House $house_number, $street_address, Barangay Gumaoc East, San Jose del Monte, Bulacan, Philippines";
             
             // Estimate birthdate from age (current year - age)
             $estimated_birth_year = date('Y') - $age;
@@ -139,19 +143,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Insert main registration (for census tracking)
             $sql = "INSERT INTO resident_registrations (
-                first_name, middle_name, last_name, birth_date, age, 
-                civil_status, gender, contact_number, email, house_number, pangkabuhayan,
+                first_name, middle_name, last_name, birth_date, birth_place, age, 
+                civil_status, gender, contact_number, email, house_number, address, pangkabuhayan,
                 land_ownership, land_ownership_other, house_ownership, house_ownership_other,
                 farmland, cooking_energy, cooking_energy_other, toilet_type, toilet_type_other,
                 electricity_source, electricity_source_other, water_source, water_source_other,
                 waste_disposal, waste_disposal_other, appliances, transportation, transportation_other,
                 business, business_other, contraceptive, interviewer, interviewer_title
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $stmt = $pdo->prepare($sql);
             $result = $stmt->execute([
-                $first_name, $middle_name, $last_name, $birth_date, $age,
-                $civil_status, $gender, $contact_number, $email, $house_number, $pangkabuhayan,
+                $first_name, $middle_name, $last_name, $birth_date, $birth_place, $age,
+                $civil_status, $gender, $contact_number, $email, $house_number, $street_address, $pangkabuhayan,
                 $land_ownership, $land_ownership_other, $house_ownership, $house_ownership_other,
                 $farmland, $cooking_energy, $cooking_energy_other, $toilet_type, $toilet_type_other,
                 $electricity_source, $electricity_source_other, $water_source, $water_source_other,
@@ -170,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $family_email_success = 0;
             $family_users_created = 0;
             if (isset($_POST['familyName']) && is_array($_POST['familyName'])) {
-                $family_stmt = $pdo->prepare("INSERT INTO family_members (registration_id, full_name, relationship, age, gender, civil_status, email, occupation) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $family_stmt = $pdo->prepare("INSERT INTO family_members (registration_id, full_name, relationship, birth_date, age, gender, civil_status, email, occupation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 
                 // Get registrant's full name for email notifications
                 $registrant_full_name = trim($first_name . ' ' . $middle_name . ' ' . $last_name);
@@ -178,14 +182,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach ($_POST['familyName'] as $index => $name) {
                     if (!empty(trim($name))) {
                         $relationship = $_POST['familyRelation'][$index] ?? '';
+                        $family_birth_date = $_POST['familyBirthDate'][$index] ?? null;
                         $family_age = !empty($_POST['familyAge'][$index]) ? (int)$_POST['familyAge'][$index] : null;
                         $family_gender = $_POST['familyGender'][$index] ?? '';
+                        // Gender values are already in Filipino (Lalaki/Babae) from the form
                         $family_civil_status = $_POST['familyCivilStatus'][$index] ?? '';
                         $family_email = trim($_POST['familyEmail'][$index] ?? '');
                         $occupation = $_POST['familyOccupation'][$index] ?? '';
                         
+                        // Convert empty birth date to null
+                        if (empty($family_birth_date)) {
+                            $family_birth_date = null;
+                        }
+                        
                         // Insert family member into database
-                        $family_stmt->execute([$registration_id, trim($name), $relationship, $family_age, $family_gender, $family_civil_status, $family_email, $occupation]);
+                        $family_stmt->execute([$registration_id, trim($name), $relationship, $family_birth_date, $family_age, $family_gender, $family_civil_status, $family_email, $occupation]);
                         
                         // Create family member as user in residents table if they have an email
                         if (!empty($family_email) && filter_var($family_email, FILTER_VALIDATE_EMAIL)) {
@@ -207,12 +218,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     $family_temp_password = EmailService::generateTempPassword();
                                     $family_hashed_password = password_hash($family_temp_password, PASSWORD_DEFAULT);
                                     
-                                    // Estimate birth date from age
-                                    $family_birth_year = date('Y') - ($family_age ?: 25);
-                                    $family_birth_date = "$family_birth_year-01-01";
+                                    // Use provided birth date or estimate from age
+                                    if (!empty($family_birth_date)) {
+                                        $family_birth_date_for_user = $family_birth_date;
+                                    } else {
+                                        // Estimate birth date from age
+                                        $family_birth_year = date('Y') - ($family_age ?: 25);
+                                        $family_birth_date_for_user = "$family_birth_year-01-01";
+                                    }
                                     
                                     // Set default values for incomplete profile
-                                    $family_gender_standard = ($family_gender === 'Male' || $family_gender === 'Female') ? $family_gender : 'Male';
+                                    // Convert Filipino gender values to English for residents table (which uses English enum)
+                                    if ($family_gender === 'Lalaki') {
+                                        $family_gender_standard = 'Male';
+                                    } elseif ($family_gender === 'Babae') {
+                                        $family_gender_standard = 'Female';
+                                    } else {
+                                        $family_gender_standard = 'Male'; // Default
+                                    }
                                     $family_civil_status_standard = in_array($family_civil_status, ['Single', 'Married', 'Widowed', 'Separated', 'Divorced']) ? $family_civil_status : 'Single';
                                     
                                     // Insert family member as resident user with incomplete profile
@@ -227,7 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     $family_residents_result = $family_residents_stmt->execute([
                                         $family_first_name, $family_middle_name, $family_last_name, $family_email, '', $family_hashed_password,
                                         $full_address, $house_number, 'Gumaoc East', 'BLOCK', $interviewer, $interviewer_title,
-                                        $family_birth_date, 'Unknown', $family_gender_standard, $family_civil_status_standard, $family_rfid, $family_rfid,
+                                        $family_birth_date_for_user, 'Unknown', $family_gender_standard, $family_civil_status_standard, $family_rfid, $family_rfid,
                                         $resident_id, $relationship
                                     ]);
                                     

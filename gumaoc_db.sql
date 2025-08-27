@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 27, 2025 at 02:35 PM
+-- Generation Time: Aug 27, 2025 at 04:35 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -205,7 +205,18 @@ INSERT INTO `admin_logs` (`id`, `admin_id`, `action_type`, `target_type`, `targe
 (70, 'admin', 'admin_logout', 'admin_auth', NULL, 'Admin logout for username: admin', '{\"username\":\"admin\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 10:32:57'),
 (71, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 10:33:02'),
 (72, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed manage updates admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 10:33:04'),
-(73, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 10:33:08');
+(73, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 10:33:08'),
+(74, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 13:20:09'),
+(75, 'admin', 'form_view', 'resident_registration', 218, 'Viewed resident registration form ID #218', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 13:22:05'),
+(76, 'admin', 'status_update', 'resident_registration', 218, 'Updated resident_registration ID #218 status from \'pending\' to \'approved\'', '{\"old_status\":\"pending\",\"new_status\":\"approved\",\"timestamp\":\"2025-08-27 15:27:44\",\"applicant_name\":\"Mar Yvan Dela Cruz\",\"registration_type\":\"resident_registration\",\"processing_time\":\"2025-08-27 15:27:44\",\"admin_action\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 13:27:44'),
+(77, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 14:03:34'),
+(78, 'admin', 'form_view', 'resident_registration', 219, 'Viewed resident registration form ID #219', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 14:03:43'),
+(79, 'admin', 'form_view', 'resident_registration', 219, 'Viewed resident registration form ID #219', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 14:08:06'),
+(80, 'admin', 'form_view', 'resident_registration', 219, 'Viewed resident registration form ID #219', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 14:12:38'),
+(81, 'admin', 'form_view', 'resident_registration', 219, 'Viewed resident registration form ID #219', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 14:13:46'),
+(82, 'admin', 'form_view', 'resident_registration', 219, 'Viewed resident registration form ID #219', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 14:20:49'),
+(83, 'admin', 'form_view', 'resident_registration', 219, 'Viewed resident registration form ID #219', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 14:25:07'),
+(84, 'admin', 'form_view', 'resident_registration', 220, 'Viewed resident registration form ID #220', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 14:29:03');
 
 -- --------------------------------------------------------
 
@@ -264,13 +275,6 @@ CREATE TABLE `barangay_blotter` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `barangay_blotter`
---
-
-INSERT INTO `barangay_blotter` (`id`, `blotter_number`, `incident_type`, `complainant_id`, `complainant_name`, `complainant_address`, `complainant_contact`, `respondent_id`, `respondent_name`, `respondent_address`, `respondent_contact`, `incident_date`, `reported_date`, `location`, `description`, `classification`, `status`, `investigating_officer`, `settlement_details`, `action_taken`, `case_disposition`, `created_by`, `created_at`, `updated_at`) VALUES
-(2, 'BLT-2024-001', 'complaint', NULL, 'Mar Yvan Sagun Dela Cruz', 'Block 1, Lot 15, Gumaoc East', NULL, NULL, 'John Doe', 'Block 2, Lot 20, Gumaoc East', NULL, '2024-01-15 14:30:00', '2025-08-27 18:51:14', 'Barangay Gumaoc East', 'Noise complaint regarding loud music during late hours', 'minor', 'under_investigation', NULL, NULL, NULL, NULL, 'admin', '2025-08-27 10:51:14', '2025-08-27 10:51:14');
 
 --
 -- Triggers `barangay_blotter`
@@ -434,6 +438,13 @@ CREATE TABLE `family_disabilities` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `family_disabilities`
+--
+
+INSERT INTO `family_disabilities` (`id`, `registration_id`, `name`, `disability_type`, `created_at`) VALUES
+(80, 220, 'TEST ME PLEASE', 'TEST ME PLEASE', '2025-08-27 14:28:52');
+
 -- --------------------------------------------------------
 
 --
@@ -457,6 +468,13 @@ CREATE TABLE `family_members` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `family_members`
+--
+
+INSERT INTO `family_members` (`id`, `registration_id`, `full_name`, `relationship`, `birth_date`, `age`, `gender`, `civil_status`, `email`, `education`, `occupation`, `skills`, `monthly_income`, `created_at`) VALUES
+(243, 220, 'TEST ME PLEASE', 'Anak', '2014-07-08', 11, 'Lalaki', 'Single', 'testmeplease@test.com', NULL, 'TEST ME PLEASE', NULL, NULL, '2025-08-27 14:28:45');
+
 -- --------------------------------------------------------
 
 --
@@ -470,6 +488,13 @@ CREATE TABLE `family_organizations` (
   `organization_type` varchar(255) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `family_organizations`
+--
+
+INSERT INTO `family_organizations` (`id`, `registration_id`, `name`, `organization_type`, `created_at`) VALUES
+(219, 220, 'TEST ME PLEASE', 'TEST ME PLEASE', '2025-08-27 14:28:52');
 
 -- --------------------------------------------------------
 
@@ -599,7 +624,10 @@ INSERT INTO `queue_tickets` (`id`, `ticket_number`, `service_id`, `customer_name
 (104, 'BC-20250827-001', 1, 'Ana Torres', '09169580701', NULL, 'Complaint Filing', 'priority', 'waiting', 1, '2025-08-27 11:39:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
 (105, 'PR-20250827-002', 4, 'Antonio Mendoza', '09607725434', NULL, 'Complaint Filing', 'normal', 'waiting', 2, '2025-08-27 11:49:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
 (106, 'GS-20250827-010', 5, 'Juan Flores', '09498584063', NULL, 'Registration Update', 'normal', 'waiting', 10, '2025-08-27 14:39:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
-(107, 'TP-20250827-003', 3, 'Ana Fernandez', '09200638114', NULL, 'Document Verification', 'normal', 'waiting', 3, '2025-08-27 12:29:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12');
+(107, 'TP-20250827-003', 3, 'Ana Fernandez', '09200638114', NULL, 'Document Verification', 'normal', 'waiting', 3, '2025-08-27 12:29:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(108, 'GS-20250827-011', 5, 'Mar Yvan Sagun Dela Cruz', '09162291763', NULL, 'resident_registration: Resident Census Registration Processing', 'normal', 'waiting', 10, '2025-08-27 18:16:23', NULL, NULL, NULL, NULL, NULL, '2025-08-27 13:16:23', '2025-08-27 13:16:23'),
+(109, 'GS-20250827-012', 5, 'Mar Yvan Sagun Dela Cruz', '09162291763', NULL, 'resident_registration: Resident Census Registration Processing', 'normal', 'waiting', 11, '2025-08-27 19:23:17', NULL, NULL, NULL, NULL, NULL, '2025-08-27 14:03:17', '2025-08-27 14:03:17'),
+(110, 'GS-20250827-013', 5, 'Mar Yvan Sagun Dela Cruz', '09162291763', NULL, 'resident_registration: Resident Census Registration Processing', 'normal', 'waiting', 12, '2025-08-27 20:08:52', NULL, NULL, NULL, NULL, NULL, '2025-08-27 14:28:52', '2025-08-27 14:28:52');
 
 -- --------------------------------------------------------
 
@@ -665,6 +693,14 @@ CREATE TABLE `residents` (
   `relationship_to_head` varchar(100) DEFAULT NULL COMMENT 'Relationship to head of family'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `residents`
+--
+
+INSERT INTO `residents` (`id`, `first_name`, `middle_name`, `last_name`, `email`, `phone`, `password`, `address`, `house_number`, `barangay`, `sitio`, `interviewer`, `interviewer_title`, `birthdate`, `birth_place`, `gender`, `civil_status`, `rfid_code`, `rfid`, `status`, `reset_otp`, `otp_expiry`, `created_at`, `updated_at`, `profile_complete`, `created_by`, `relationship_to_head`) VALUES
+(19, 'Mar Yvan', 'Sagun', 'Dela Cruz', 'biofrostyv@gmail.com', '09162291763', '$2y$10$Jfq4WZ.F1xkWLrsJ6QP0Ie0A7Ly9R0DcDXC4aZOaoBdWW52ZPejZq', 'House 101, TEST ME PLEASE, Barangay Gumaoc East, San Jose del Monte, Bulacan, Philippines', '101', 'Gumaoc East', 'BLOCK', 'TEST ME PLEASE', 'TEST ME PLEASE', '2004-07-08', 'Caloocan City', 'Male', 'Single', '0006894001', '0006894001', 'active', NULL, NULL, '2025-08-27 14:28:45', '2025-08-27 14:28:45', 1, NULL, NULL),
+(20, 'TEST', 'ME', 'PLEASE', 'testmeplease@test.com', '', '$2y$10$upbHol3uSqFdCnhTisj5TOr9MlGjvMAuaZLiBbkoz1mFkoxLtu9Mq', 'House 101, TEST ME PLEASE, Barangay Gumaoc East, San Jose del Monte, Bulacan, Philippines', '101', 'Gumaoc East', 'BLOCK', 'TEST ME PLEASE', 'TEST ME PLEASE', '2014-07-08', 'Unknown', 'Male', 'Single', '0005810785', '0005810785', 'active', NULL, NULL, '2025-08-27 14:28:45', '2025-08-27 14:28:45', 0, 19, 'Anak');
+
 -- --------------------------------------------------------
 
 --
@@ -677,12 +713,14 @@ CREATE TABLE `resident_registrations` (
   `middle_name` varchar(100) DEFAULT NULL,
   `last_name` varchar(100) NOT NULL,
   `birth_date` date NOT NULL,
+  `birth_place` varchar(255) DEFAULT NULL,
   `age` int(11) NOT NULL,
   `civil_status` varchar(50) NOT NULL,
   `gender` varchar(20) NOT NULL,
   `contact_number` varchar(20) DEFAULT NULL,
   `email` varchar(255) DEFAULT NULL,
   `house_number` varchar(20) DEFAULT NULL,
+  `address` text DEFAULT NULL,
   `pangkabuhayan` varchar(100) DEFAULT NULL,
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `status` enum('pending','approved','rejected') DEFAULT 'pending',
@@ -715,8 +753,8 @@ CREATE TABLE `resident_registrations` (
 -- Dumping data for table `resident_registrations`
 --
 
-INSERT INTO `resident_registrations` (`id`, `first_name`, `middle_name`, `last_name`, `birth_date`, `age`, `civil_status`, `gender`, `contact_number`, `email`, `house_number`, `pangkabuhayan`, `submitted_at`, `status`, `land_ownership`, `land_ownership_other`, `house_ownership`, `house_ownership_other`, `farmland`, `cooking_energy`, `cooking_energy_other`, `toilet_type`, `toilet_type_other`, `electricity_source`, `electricity_source_other`, `water_source`, `water_source_other`, `waste_disposal`, `waste_disposal_other`, `appliances`, `transportation`, `transportation_other`, `business`, `business_other`, `contraceptive`, `interviewer`, `interviewer_title`) VALUES
-(217, 'Mar Yvan', 'Sagun', 'Dela Cruz', '2004-07-08', 21, 'Unknown', 'Not Specified', '09162291763', 'biofrostyv@gmail.com', '101', 'Iba pa', '2025-08-27 04:25:22', 'pending', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Muwebles', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'TEST ME PLEASE', 'TEST ME PLEASE');
+INSERT INTO `resident_registrations` (`id`, `first_name`, `middle_name`, `last_name`, `birth_date`, `birth_place`, `age`, `civil_status`, `gender`, `contact_number`, `email`, `house_number`, `address`, `pangkabuhayan`, `submitted_at`, `status`, `land_ownership`, `land_ownership_other`, `house_ownership`, `house_ownership_other`, `farmland`, `cooking_energy`, `cooking_energy_other`, `toilet_type`, `toilet_type_other`, `electricity_source`, `electricity_source_other`, `water_source`, `water_source_other`, `waste_disposal`, `waste_disposal_other`, `appliances`, `transportation`, `transportation_other`, `business`, `business_other`, `contraceptive`, `interviewer`, `interviewer_title`) VALUES
+(220, 'Mar Yvan', 'Sagun', 'Dela Cruz', '2004-07-08', 'Caloocan City', 21, 'Single', 'Male', '09162291763', 'biofrostyv@gmail.com', '101', 'TEST ME PLEASE', 'Iba pa', '2025-08-27 14:28:45', 'pending', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Muwebles', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'TEST ME PLEASE', 'TEST ME PLEASE');
 
 -- --------------------------------------------------------
 
@@ -830,11 +868,11 @@ INSERT INTO `scanned_rfid_codes` (`id`, `rfid_code`, `status`, `scanned_at`, `as
 (3, 'TEST003', 'archived', '2025-08-26 11:53:26', NULL, NULL, NULL, NULL, 'Test RFID code for development', '2025-08-26 11:53:26', '2025-08-26 13:05:32'),
 (4, '0006954375', 'assigned', '2025-08-26 13:05:56', '2025-08-26 13:09:35', 10, 'biofrostyv@gmail.com', 1, '', '2025-08-26 13:05:56', '2025-08-26 13:09:35'),
 (5, '0005805639', 'assigned', '2025-08-26 13:06:46', '2025-08-27 04:25:22', 15, 'biofrostyv@gmail.com', 1, '', '2025-08-26 13:06:46', '2025-08-27 04:25:22'),
-(6, '0006909504', 'available', '2025-08-26 13:07:29', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:29', '2025-08-26 13:07:29'),
-(7, '0006892606', 'available', '2025-08-26 13:07:31', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:31', '2025-08-26 13:07:31'),
-(8, '0005794103', 'available', '2025-08-26 13:07:38', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:38', '2025-08-26 13:07:38'),
-(9, '0006894001', 'available', '2025-08-26 13:07:41', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:41', '2025-08-26 13:07:41'),
-(10, '0005810785', 'available', '2025-08-26 13:07:44', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:44', '2025-08-26 13:07:44'),
+(6, '0006909504', 'assigned', '2025-08-26 13:07:29', '2025-08-27 13:16:23', 16, 'biofrostyv@gmail.com', 1, '', '2025-08-26 13:07:29', '2025-08-27 13:16:23'),
+(7, '0006892606', 'assigned', '2025-08-26 13:07:31', '2025-08-27 14:03:10', 17, 'biofrostyv@gmail.com', 1, '', '2025-08-26 13:07:31', '2025-08-27 14:03:10'),
+(8, '0005794103', 'assigned', '2025-08-26 13:07:38', '2025-08-27 14:03:10', 18, 'testmeplease@test.com', 1, '', '2025-08-26 13:07:38', '2025-08-27 14:03:10'),
+(9, '0006894001', 'assigned', '2025-08-26 13:07:41', '2025-08-27 14:28:45', 19, 'biofrostyv@gmail.com', 1, '', '2025-08-26 13:07:41', '2025-08-27 14:28:45'),
+(10, '0005810785', 'assigned', '2025-08-26 13:07:44', '2025-08-27 14:28:45', 20, 'testmeplease@test.com', 1, '', '2025-08-26 13:07:44', '2025-08-27 14:28:45'),
 (11, '0005797452', 'available', '2025-08-26 13:07:46', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:46', '2025-08-26 13:07:46'),
 (12, '0005845889', 'available', '2025-08-26 13:07:48', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:48', '2025-08-26 13:07:48'),
 (13, '0005786280', 'available', '2025-08-26 13:07:50', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:50', '2025-08-26 13:07:50');
@@ -1156,7 +1194,7 @@ ALTER TABLE `access_logs`
 -- AUTO_INCREMENT for table `admin_logs`
 --
 ALTER TABLE `admin_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=85;
 
 --
 -- AUTO_INCREMENT for table `admin_users`
@@ -1198,19 +1236,19 @@ ALTER TABLE `certificate_requests`
 -- AUTO_INCREMENT for table `family_disabilities`
 --
 ALTER TABLE `family_disabilities`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=79;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=81;
 
 --
 -- AUTO_INCREMENT for table `family_members`
 --
 ALTER TABLE `family_members`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=242;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=244;
 
 --
 -- AUTO_INCREMENT for table `family_organizations`
 --
 ALTER TABLE `family_organizations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=218;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=220;
 
 --
 -- AUTO_INCREMENT for table `notifications`
@@ -1234,7 +1272,7 @@ ALTER TABLE `queue_services`
 -- AUTO_INCREMENT for table `queue_tickets`
 --
 ALTER TABLE `queue_tickets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=108;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=111;
 
 --
 -- AUTO_INCREMENT for table `queue_windows`
@@ -1246,13 +1284,13 @@ ALTER TABLE `queue_windows`
 -- AUTO_INCREMENT for table `residents`
 --
 ALTER TABLE `residents`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `resident_registrations`
 --
 ALTER TABLE `resident_registrations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=218;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=221;
 
 --
 -- AUTO_INCREMENT for table `resident_status`

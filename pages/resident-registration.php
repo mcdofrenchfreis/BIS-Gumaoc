@@ -403,6 +403,21 @@ body #tab-content-3 .checkbox-group label {
   cursor: default !important;
 }
 
+/* Age Display Styling - Auto-calculated readonly field */
+.age-display {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  cursor: not-allowed !important;
+  opacity: 0.8 !important;
+  font-style: italic !important;
+  border-color: #dee2e6 !important;
+}
+
+.age-display:focus {
+  box-shadow: none !important;
+  border-color: #dee2e6 !important;
+}
+
 /* RESPONSIVE TABLE SCROLLING */
 #tab-content-2 .table-responsive::-webkit-scrollbar {
   width: 8px !important;
@@ -1071,9 +1086,39 @@ function debugShowPrivacyNotice() {
 
         <div class="form-grid">
           <div class="form-group">
+            <label for="gender">Gender *<br><small>Kasarian *</small></label>
+            <select id="gender" name="gender" required <?php echo $readonly ? 'disabled' : ''; ?>>
+              <option value="">Piliin ang Kasarian</option>
+              <option value="Male" <?php echo ($registration_data && $registration_data['gender'] === 'Male') ? 'selected' : ''; ?>>Lalaki (Male)</option>
+              <option value="Female" <?php echo ($registration_data && $registration_data['gender'] === 'Female') ? 'selected' : ''; ?>>Babae (Female)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="civilStatus">Civil Status *<br><small>Katayuang Sibil *</small></label>
+            <select id="civilStatus" name="civilStatus" required <?php echo $readonly ? 'disabled' : ''; ?>>
+              <option value="">Piliin ang Civil Status</option>
+              <option value="Single" <?php echo ($registration_data && $registration_data['civil_status'] === 'Single') ? 'selected' : ''; ?>>Single</option>
+              <option value="Married" <?php echo ($registration_data && $registration_data['civil_status'] === 'Married') ? 'selected' : ''; ?>>Married</option>
+              <option value="Widowed" <?php echo ($registration_data && $registration_data['civil_status'] === 'Widowed') ? 'selected' : ''; ?>>Widowed</option>
+              <option value="Separated" <?php echo ($registration_data && $registration_data['civil_status'] === 'Separated') ? 'selected' : ''; ?>>Separated</option>
+              <option value="Divorced" <?php echo ($registration_data && $registration_data['civil_status'] === 'Divorced') ? 'selected' : ''; ?>>Divorced</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
             <label for="houseNumber">House Number *<br><small>Numero ng Bahay *</small></label>
             <input type="text" id="houseNumber" name="houseNumber" required placeholder="Numero ng bahay" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['house_number']) : ''; ?>"
+                   <?php echo $readonly ? 'readonly' : ''; ?>>
+          </div>
+
+          <div class="form-group">
+            <label for="streetAddress">Street/Address Line 1 *<br><small>Kalye/Address *</small></label>
+            <input type="text" id="streetAddress" name="streetAddress" required placeholder="Street name, subdivision, etc."
+                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['address'] ?? '') : ''; ?>"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
         </div>
@@ -1109,6 +1154,7 @@ function debugShowPrivacyNotice() {
                   <tr>
                     <th>Name<br><small>Pangalan</small></th>
                     <th>Relationship to Head<br><small>Relasyon sa Puno</small></th>
+                    <th>Birth Date<br><small>Petsa ng Kapanganakan</small></th>
                     <th>Age<br><small>Edad</small></th>
                     <th>Gender<br><small>Kasarian</small></th>
                     <th>Civil Status<br><small>Katayuang Sibil</small></th>
@@ -1149,12 +1195,13 @@ function debugShowPrivacyNotice() {
                           <option value="Iba pa" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Iba pa') ? 'selected' : ''; ?>>Iba pa (Others)</option>
                         </select>
                       </td>
-                      <td data-label="Age"><input type="number" name="familyAge[]" class="table-input" placeholder="Edad" min="0" max="120" value="<?php echo $member['age']; ?>" <?php echo $readonly ? 'readonly' : ''; ?>></td>
+                      <td data-label="Birth Date"><input type="date" name="familyBirthDate[]" class="table-input" onchange="calculateAge(this)" value="<?php echo isset($member['birth_date']) ? htmlspecialchars($member['birth_date']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>></td>
+                      <td data-label="Age"><input type="number" name="familyAge[]" class="table-input age-display" placeholder="Edad" min="0" max="120" value="<?php echo $member['age']; ?>" readonly></td>
                       <td data-label="Gender">
                         <select name="familyGender[]" class="table-input" <?php echo $readonly ? 'disabled' : ''; ?>>
                           <option value="">Piliin</option>
-                          <option value="Male" <?php echo (isset($member['gender']) && ($member['gender'] === 'Male' || $member['gender'] === 'Lalaki')) ? 'selected' : ''; ?>>Lalaki (Male)</option>
-                          <option value="Female" <?php echo (isset($member['gender']) && ($member['gender'] === 'Female' || $member['gender'] === 'Babae')) ? 'selected' : ''; ?>>Babae (Female)</option>
+                          <option value="Lalaki" <?php echo (isset($member['gender']) && $member['gender'] === 'Lalaki') ? 'selected' : ''; ?>>Lalaki</option>
+                          <option value="Babae" <?php echo (isset($member['gender']) && $member['gender'] === 'Babae') ? 'selected' : ''; ?>>Babae</option>
                         </select>
                       </td>
                       <td data-label="Civil Status">
@@ -1201,12 +1248,13 @@ function debugShowPrivacyNotice() {
                         <option value="Iba pa">Iba pa (Others)</option>
                       </select>
                     </td>
-                    <td data-label="Age"><input type="number" name="familyAge[]" class="table-input" placeholder="Edad" min="0" max="120" <?php echo $readonly ? 'readonly' : ''; ?>></td>
+                    <td data-label="Birth Date"><input type="date" name="familyBirthDate[]" class="table-input" onchange="calculateAge(this)" <?php echo $readonly ? 'readonly' : ''; ?>></td>
+                    <td data-label="Age"><input type="number" name="familyAge[]" class="table-input age-display" placeholder="Edad" min="0" max="120" readonly></td>
                     <td data-label="Gender">
                       <select name="familyGender[]" class="table-input" <?php echo $readonly ? 'disabled' : ''; ?>>
                         <option value="">Piliin</option>
-                        <option value="Male">Lalaki (Male)</option>
-                        <option value="Female">Babae (Female)</option>
+                        <option value="Lalaki">Lalaki</option>
+                        <option value="Babae">Babae</option>
                       </select>
                     </td>
                     <td data-label="Civil Status">
@@ -5891,6 +5939,35 @@ function toggleCheckboxOther(checkboxName, otherId) {
     }
 }
 
+// Age Calculation Function
+function calculateAge(dateInput) {
+    const birthDate = new Date(dateInput.value);
+    const today = new Date();
+    
+    if (!dateInput.value || isNaN(birthDate.getTime())) {
+        // Clear age if no valid date
+        const ageInput = dateInput.closest('tr').querySelector('.age-display');
+        if (ageInput) {
+            ageInput.value = '';
+        }
+        return;
+    }
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    // Adjust age if birthday hasn't occurred this year
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    // Update the age field in the same row
+    const ageInput = dateInput.closest('tr').querySelector('.age-display');
+    if (ageInput) {
+        ageInput.value = age >= 0 ? age : 0;
+    }
+}
+
 // Family Member Management Functions
 function addFamilyMember() {
     const familyMembersBody = document.getElementById('familyMembersBody');
@@ -5929,12 +6006,13 @@ function addFamilyMember() {
                 <option value="Iba pa">Iba pa (Others)</option>
             </select>
         </td>
-        <td data-label="Age"><input type="number" name="familyAge[]" class="table-input" placeholder="Edad" min="0" max="120"></td>
+        <td data-label="Birth Date"><input type="date" name="familyBirthDate[]" class="table-input" onchange="calculateAge(this)"></td>
+        <td data-label="Age"><input type="number" name="familyAge[]" class="table-input age-display" placeholder="Edad" min="0" max="120" readonly></td>
         <td data-label="Gender">
             <select name="familyGender[]" class="table-input">
                 <option value="">Piliin</option>
-                <option value="Male">Lalaki (Male)</option>
-                <option value="Female">Babae (Female)</option>
+                <option value="Lalaki">Lalaki</option>
+                <option value="Babae">Babae</option>
             </select>
         </td>
         <td data-label="Civil Status">

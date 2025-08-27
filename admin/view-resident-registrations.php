@@ -1,12 +1,16 @@
 <?php
 session_start();
 include '../includes/db_connect.php';
+include '../includes/AdminLogger.php';
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header('Location: login.php');
     exit;
 }
+
+// Initialize logger
+$logger = new AdminLogger($pdo);
 
 // Handle status updates
 if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['status'])) {
@@ -16,9 +20,10 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
     
     if (in_array($new_status, $allowed_statuses)) {
         // Get current status first
-        $stmt = $pdo->prepare("SELECT status FROM resident_registrations WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT status, first_name, last_name FROM resident_registrations WHERE id = ?");
         $stmt->execute([$id]);
-        $current_status = $stmt->fetchColumn();
+        $current_data = $stmt->fetch(PDO::FETCH_ASSOC);
+        $current_status = $current_data['status'];
         
         // Check status progression rules
         $status_valid = false;
@@ -113,7 +118,8 @@ $total_records = $count_stmt->fetchColumn();
 $total_pages = ceil($total_records / $per_page);
 
 // Get records with additional data counts
-$sql = "SELECT rr.*, 
+$sql = "SELECT rr.id, rr.first_name, rr.middle_name, rr.last_name, rr.age, rr.gender, 
+        rr.birth_date, rr.birth_place, rr.house_number, rr.status, rr.submitted_at,
         (SELECT COUNT(*) FROM family_members fm WHERE fm.registration_id = rr.id) as family_count,
         (SELECT COUNT(*) FROM family_disabilities fd WHERE fd.registration_id = rr.id) as disability_count,
         (SELECT COUNT(*) FROM family_organizations fo WHERE fo.registration_id = rr.id) as organization_count
@@ -501,27 +507,27 @@ if (isset($_SESSION['toast_message'])) {
         }
         
         .family-badge {
-            background: rgba(33, 150, 243, 0.1);
-            color: #1976d2;
-            border: 1px solid rgba(33, 150, 243, 0.3);
+            background: rgba(76, 175, 80, 0.1);
+            color: #2e7d32;
+            border: 1px solid rgba(76, 175, 80, 0.3);
         }
         
         .disability-badge {
-            background: rgba(255, 152, 0, 0.1);
-            color: #f57c00;
-            border: 1px solid rgba(255, 152, 0, 0.3);
+            background: rgba(76, 175, 80, 0.1);
+            color: #2e7d32;
+            border: 1px solid rgba(76, 175, 80, 0.3);
         }
         
         .organization-badge {
-            background: rgba(156, 39, 176, 0.1);
-            color: #7b1fa2;
-            border: 1px solid rgba(156, 39, 176, 0.3);
+            background: rgba(76, 175, 80, 0.1);
+            color: #2e7d32;
+            border: 1px solid rgba(76, 175, 80, 0.3);
         }
         
         .basic-badge {
-            background: rgba(158, 158, 158, 0.1);
-            color: #616161;
-            border: 1px solid rgba(158, 158, 158, 0.3);
+            background: rgba(76, 175, 80, 0.1);
+            color: #2e7d32;
+            border: 1px solid rgba(76, 175, 80, 0.3);
         }
 
         @media (max-width: 768px) {
@@ -542,6 +548,14 @@ if (isset($_SESSION['toast_message'])) {
             
             .search-form input[type="text"] {
                 min-width: 100%;
+            }
+            
+            .admin-table {
+                overflow-x: auto;
+            }
+            
+            .admin-table table {
+                min-width: 800px;
             }
             
             .admin-table th,
@@ -613,6 +627,7 @@ if (isset($_SESSION['toast_message'])) {
                         <th>Name</th>
                         <th>Age</th>
                         <th>Gender</th>
+                        <th>Birth Info</th>
                         <th>Family Data</th>
                         <th>Status</th>
                         <th>Submitted</th>
@@ -626,12 +641,24 @@ if (isset($_SESSION['toast_message'])) {
                         <td><strong>#<?php echo $reg['id']; ?></strong></td>
                         <td>
                             <strong><?php echo htmlspecialchars($reg['first_name'] . ' ' . $reg['last_name']); ?></strong>
-                            <?php if ($reg['middle_name']): ?>
+                            <?php if ($reg['middle_name'] ?? false): ?>
                                 <br><small style="color: #666;"><?php echo htmlspecialchars($reg['middle_name']); ?></small>
                             <?php endif; ?>
                         </td>
                         <td><?php echo $reg['age']; ?></td>
                         <td><?php echo htmlspecialchars($reg['gender']); ?></td>
+                        <td>
+                            <div style="font-size: 0.85rem;">
+                                <?php if ($reg['birth_date'] ?? false): ?>
+                                    <strong><?php echo date('M j, Y', strtotime($reg['birth_date'])); ?></strong>
+                                <?php else: ?>
+                                    <span style="color: #999; font-style: italic;">No birth date</span>
+                                <?php endif; ?>
+                                <?php if ($reg['birth_place'] ?? false): ?>
+                                    <br><small style="color: #666; font-style: italic;">📍 <?php echo htmlspecialchars($reg['birth_place']); ?></small>
+                                <?php endif; ?>
+                            </div>
+                        </td>
                         <td>
                             <div class="family-data-summary">
                                 <?php if ($reg['family_count'] > 0): ?>
