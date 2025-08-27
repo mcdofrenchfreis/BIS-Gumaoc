@@ -1,5 +1,11 @@
 <?php
-require_once 'auth_check.php';
+// Check if this is an admin view (readonly mode)
+$is_admin_view = isset($_GET['admin_view']) && isset($_GET['readonly']);
+
+if (!$is_admin_view) {
+    // Only require authentication for regular user access
+    require_once 'auth_check.php';
+}
 
 $page_title = 'Certificate Request - Barangay Gumaoc East';
 $current_page = 'certificate-request';
@@ -7,7 +13,7 @@ $current_page = 'certificate-request';
 // Initialize database connection
 require_once '../includes/db_connect.php';
 
-// Get current user data for auto-population
+// Get current user data for auto-population (only for authenticated users)
 $current_user = null;
 if (isset($_SESSION['user_id'])) {
     try {
@@ -19,8 +25,21 @@ if (isset($_SESSION['user_id'])) {
     }
 }
 
-// Handle form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Handle admin view for business applications
+$business_application = null;
+if ($is_admin_view && isset($_GET['admin_view'])) {
+    $app_id = (int)$_GET['admin_view'];
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM business_applications WHERE id = ?");
+        $stmt->execute([$app_id]);
+        $business_application = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        $business_application = null;
+    }
+}
+
+// Handle form submission (only for authenticated users, not in admin view)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$is_admin_view && isset($_SESSION['user_id'])) {
     try {
         $certificate_type = $_POST['certificateType'] ?? '';
         $full_name = trim(($_POST['firstName'] ?? '') . ' ' . ($_POST['middleName'] ?? '') . ' ' . ($_POST['lastName'] ?? ''));
@@ -288,6 +307,78 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .certificate-description {
             font-size: 0.9rem;
             opacity: 0.8;
+        }
+
+        /* Business Application Admin View Styles */
+        .business-application-view {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .business-application-view h2 {
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+
+        .business-application-view p {
+            color: #6c757d;
+            margin-bottom: 30px;
+        }
+
+        .application-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .detail-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            text-align: left;
+        }
+
+        .detail-section h3 {
+            color: #28a745;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .detail-row label {
+            font-weight: 600;
+            color: #495057;
+            min-width: 120px;
+            margin-right: 15px;
+        }
+
+        .detail-row span {
+            color: #6c757d;
+            word-break: break-word;
+            flex: 1;
+            text-align: right;
+        }
+
+        .admin-view-notice {
+            background: rgba(40, 167, 69, 0.1);
+            border-left: 4px solid #28a745;
         }
 
         .form-container {
@@ -715,28 +806,103 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 
 
+    <?php if (!$is_admin_view): ?>
     <?php include 'navbar_component.php'; ?>
+    <?php endif; ?>
 
     <div class="container">
         <div class="content">
-            <?php if (isset($_SESSION['success'])): ?>
+            <?php if (!$is_admin_view && isset($_SESSION['success'])): ?>
                 <div class="alert alert-success">
                     <i class="fas fa-check-circle"></i> <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
                 </div>
             <?php endif; ?>
             
-            <?php if (isset($_SESSION['error'])): ?>
+            <?php if (!$is_admin_view && isset($_SESSION['error'])): ?>
                 <div class="alert alert-error">
                     <i class="fas fa-exclamation-circle"></i> <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
                 </div>
             <?php endif; ?>
             
-            <?php if ($current_user): ?>
+            <?php if (!$is_admin_view && $current_user): ?>
                 <div class="alert alert-success auto-populated-notice">
                     <i class="fas fa-user-check"></i> Your personal information has been automatically filled from your profile. Please review and update if necessary.
                 </div>
             <?php endif; ?>
 
+            <?php if ($is_admin_view && $business_application): ?>
+                <div class="alert alert-success admin-view-notice">
+                    <i class="fas fa-eye"></i> Admin View: Viewing business application #<?php echo $business_application['id']; ?> - <?php echo htmlspecialchars($business_application['business_name']); ?>
+                </div>
+            <?php elseif ($is_admin_view): ?>
+                <div class="alert alert-error">
+                    <i class="fas fa-exclamation-circle"></i> Business application not found.
+                </div>
+            <?php endif; ?>
+
+            <?php if ($is_admin_view && $business_application): ?>
+                <!-- Business Application Admin View -->
+                <div class="business-application-view">
+                    <h2>Business Application Details</h2>
+                    <p>Viewing business application submitted by <?php echo htmlspecialchars($business_application['owner_name']); ?></p>
+                    
+                    <div class="application-details-grid">
+                        <div class="detail-section">
+                            <h3><i class="fas fa-building"></i> Business Information</h3>
+                            <div class="detail-row">
+                                <label>Business Name:</label>
+                                <span><?php echo htmlspecialchars($business_application['business_name']); ?></span>
+                            </div>
+                            <div class="detail-row">
+                                <label>Business Type:</label>
+                                <span><?php echo htmlspecialchars($business_application['business_type'] ?? 'General Business'); ?></span>
+                            </div>
+                            <div class="detail-row">
+                                <label>Business Address:</label>
+                                <span><?php echo htmlspecialchars($business_application['business_address'] ?? $business_application['business_location'] ?? 'N/A'); ?></span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h3><i class="fas fa-user"></i> Owner Information</h3>
+                            <div class="detail-row">
+                                <label>Owner Name:</label>
+                                <span><?php echo htmlspecialchars($business_application['owner_name']); ?></span>
+                            </div>
+                            <div class="detail-row">
+                                <label>Owner Address:</label>
+                                <span><?php echo htmlspecialchars($business_application['owner_address'] ?? 'N/A'); ?></span>
+                            </div>
+                            <div class="detail-row">
+                                <label>Contact Number:</label>
+                                <span><?php echo htmlspecialchars($business_application['contact_number'] ?? 'N/A'); ?></span>
+                            </div>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h3><i class="fas fa-calendar"></i> Application Details</h3>
+                            <div class="detail-row">
+                                <label>Reference Number:</label>
+                                <span><?php echo htmlspecialchars($business_application['reference_no'] ?? 'N/A'); ?></span>
+                            </div>
+                            <div class="detail-row">
+                                <label>Application Date:</label>
+                                <span><?php echo $business_application['application_date'] ? date('M j, Y', strtotime($business_application['application_date'])) : 'N/A'; ?></span>
+                            </div>
+                            <div class="detail-row">
+                                <label>Status:</label>
+                                <span class="status-badge status-<?php echo $business_application['status']; ?>">
+                                    <?php echo ucfirst($business_application['status']); ?>
+                                </span>
+                            </div>
+                            <div class="detail-row">
+                                <label>Submitted:</label>
+                                <span><?php echo date('M j, Y g:i A', strtotime($business_application['submitted_at'])); ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <?php else: ?>
             <div class="certificate-selection" id="selectionSection">
                 <h2>Select Certificate Type</h2>
                 <p>Choose the type of certificate you would like to request</p>
@@ -773,7 +939,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
             </div>
+            <?php endif; ?>
 
+            <?php if (!$is_admin_view): ?>
             <div class="form-container" id="formContainer">
                 <button class="back-btn" onclick="showSelection()">
                     <i class="fas fa-arrow-left"></i> Back to Selection
@@ -1095,26 +1263,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </form>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 
     <script>
+        // Check if this is admin view mode
+        const isAdminView = <?php echo $is_admin_view ? 'true' : 'false'; ?>;
+        
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize all components
-            setupCertificateSelection();
-            setupMobileValidation();
-            setupTaxCalculation();
-            setupFileUpload();
-            setupNameValidation(); // Add blotter detection
-            
-            // Ensure all certificate sections are hidden initially
-            hideCertificateSections();
-            
-            // Debug: Log available certificate sections
-            console.log('Certificate sections initialized:', {
-                tricycle: !!document.getElementById('tricycleSection'),
-                cedula: !!document.getElementById('cedulaSection')
-            });
+            // Only initialize form components if not in admin view
+            if (!isAdminView) {
+                // Initialize all components
+                setupCertificateSelection();
+                setupMobileValidation();
+                setupTaxCalculation();
+                setupFileUpload();
+                setupNameValidation(); // Add blotter detection
+                
+                // Ensure all certificate sections are hidden initially
+                hideCertificateSections();
+                
+                // Debug: Log available certificate sections
+                console.log('Certificate sections initialized:', {
+                    tricycle: !!document.getElementById('tricycleSection'),
+                    cedula: !!document.getElementById('cedulaSection')
+                });
+            } else {
+                console.log('Admin view mode - form functionality disabled');
+            }
         });
 
         function setupCertificateSelection() {

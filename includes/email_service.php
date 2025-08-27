@@ -566,5 +566,262 @@ class EmailService {
         </html>
         ";
     }
+    
+    /**
+     * Send approval email with login credentials
+     * 
+     * This email is sent when admin approves a resident registration.
+     * Workflow:
+     * 1. User registers -> gets confirmation email (no credentials)
+     * 2. Admin approves -> account activated + approval email with RFID & password
+     * 3. User can now login with credentials
+     * 
+     * @param string $email Recipient email
+     * @param string $name Recipient name  
+     * @param string $rfidCode Generated RFID code
+     * @param string $tempPassword Temporary password
+     * @return bool Success status
+     */
+    public function sendApprovalEmail($email, $name, $rfidCode, $tempPassword) {
+        try {
+            // Check if email is configured
+            if (SMTP_USERNAME === 'your-gmail@gmail.com' || SMTP_PASSWORD === 'your-app-password') {
+                error_log("Email not configured - Approval: RFID: $rfidCode, Password: $tempPassword for $email ($name)");
+                return false;
+            }
+            
+            // Log attempt
+            error_log("EmailService: Attempting to send approval email to $email ($name) with RFID: $rfidCode");
+            
+            // Recipients
+            $this->mailer->addAddress($email, $name);
+            
+            // Content
+            $this->mailer->isHTML(true);
+            $this->mailer->Subject = 'Registration Approved - GUMAOC Account Activated';
+            
+            $htmlBody = $this->getApprovalEmailTemplate($name, $rfidCode, $tempPassword);
+            $this->mailer->Body = $htmlBody;
+            $this->mailer->AltBody = "Dear $name,\n\nCongratulations! Your GUMAOC resident registration has been approved and your account has been activated.\n\nRFID Code: $rfidCode\nTemporary Password: $tempPassword\n\nPlease change your password after logging in.\n\nBest regards,\nGUMAOC Team";
+            
+            $result = $this->mailer->send();
+            error_log("EmailService: Approval email sent successfully to $email ($name)");
+            return $result;
+            
+        } catch (Exception $e) {
+            error_log("EmailService: Approval email failed for $email: " . $e->getMessage());
+            error_log("EmailService: Approval credentials for $email ($name): RFID=$rfidCode, Password=$tempPassword");
+            return false;
+        } finally {
+            $this->mailer->clearAddresses();
+        }
+    }
+    
+    public function sendRejectionEmail($email, $name) {
+        try {
+            // Recipients
+            $this->mailer->addAddress($email, $name);
+            
+            // Content
+            $this->mailer->isHTML(true);
+            $this->mailer->Subject = 'Registration Status Update - GUMAOC';
+            
+            $htmlBody = $this->getRejectionEmailTemplate($name);
+            $this->mailer->Body = $htmlBody;
+            $this->mailer->AltBody = "Dear $name,\n\nWe regret to inform you that your application for residency has been rejected. Please visit the barangay office for a follow-up consultation to address any concerns or missing requirements.\n\nThank you for your understanding.\n\nBest regards,\nGUMAOC Team";
+            
+            $this->mailer->send();
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Rejection email failed: " . $e->getMessage());
+            return false;
+        } finally {
+            $this->mailer->clearAddresses();
+        }
+    }
+    
+    public function sendTestEmail($email, $name = 'Test User') {
+        try {
+            // Check if email is configured
+            if (SMTP_USERNAME === 'your-gmail@gmail.com' || SMTP_PASSWORD === 'your-app-password') {
+                error_log("Email not configured - Test email for $email ($name)");
+                return false;
+            }
+            
+            error_log("EmailService: Sending test email to $email ($name)");
+            
+            // Recipients
+            $this->mailer->addAddress($email, $name);
+            
+            // Content
+            $this->mailer->isHTML(true);
+            $this->mailer->Subject = 'Test Email - GUMAOC System';
+            $this->mailer->Body = "<h1>Test Email</h1><p>Hello $name,</p><p>This is a test email from the GUMAOC system to verify email functionality is working.</p>";
+            $this->mailer->AltBody = "Hello $name, This is a test email from the GUMAOC system to verify email functionality is working.";
+            
+            $result = $this->mailer->send();
+            error_log("EmailService: Test email sent successfully to $email");
+            return $result;
+            
+        } catch (Exception $e) {
+            error_log("EmailService: Test email failed for $email: " . $e->getMessage());
+            return false;
+        } finally {
+            $this->mailer->clearAddresses();
+        }
+    }
+    
+    private function getApprovalEmailTemplate($name, $rfidCode, $tempPassword) {
+        return "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #1b5e20 0%, #4caf50 100%); color: white; padding: 20px; text-align: center; }
+                .content { padding: 30px 20px; background: #f9f9f9; }
+                .credentials-box { background: white; border: 2px solid #4caf50; border-radius: 8px; padding: 20px; margin: 20px 0; }
+                .credential-item { margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; }
+                .credential-label { font-weight: bold; color: #2e7d32; font-size: 14px; }
+                .credential-value { font-size: 20px; font-weight: bold; color: #1565c0; letter-spacing: 2px; font-family: monospace; }
+                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+                .important { background: #e8f5e9; border: 1px solid #4caf50; border-radius: 5px; padding: 15px; margin: 20px 0; }
+                .success-badge { background: #4caf50; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1>🎉 GUMAOC System</h1>
+                    <p><span class='success-badge'>APPROVED</span></p>
+                    <p>Registration Successfully Approved!</p>
+                </div>
+                <div class='content'>
+                    <h2>Congratulations $name!</h2>
+                    <p>We are pleased to inform you that your resident registration application has been <strong>approved</strong>. Your account has been activated and you now have full access to all barangay services.</p>
+                    
+                    <div class='credentials-box'>
+                        <h3>🔐 Your Login Credentials</h3>
+                        <div class='credential-item'>
+                            <div class='credential-label'>🏷️ RFID Code:</div>
+                            <div class='credential-value'>$rfidCode</div>
+                        </div>
+                        <div class='credential-item'>
+                            <div class='credential-label'>🔒 Temporary Password:</div>
+                            <div class='credential-value'>$tempPassword</div>
+                        </div>
+                    </div>
+                    
+                    <div class='important'>
+                        <h4>📋 Next Steps:</h4>
+                        <ul>
+                            <li><strong>Login Options:</strong> Use your RFID code for quick access or login with your email and temporary password</li>
+                            <li><strong>Security:</strong> Please change your password after your first login for security</li>
+                            <li><strong>RFID Card:</strong> Visit the barangay office to get your physical RFID card</li>
+                            <li><strong>Services:</strong> You can now request certificates, apply for business permits, and access other barangay services</li>
+                        </ul>
+                    </div>
+                    
+                    <p><strong>Available Services:</strong></p>
+                    <ul>
+                        <li>📄 Barangay Clearance & Certificates</li>
+                        <li>🏢 Business Permit Applications</li>
+                        <li>📋 Document Processing</li>
+                        <li>🎫 Queue Management System</li>
+                        <li>👤 Profile Management</li>
+                    </ul>
+                    
+                    <p>Welcome to the GUMAOC community! We look forward to serving you.</p>
+                </div>
+                <div class='footer'>
+                    <p>This is an automated message from GUMAOC System. Please do not reply to this email.</p>
+                    <p>📍 For support, visit the barangay office or contact your administrator.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+    }
+    
+    private function getRejectionEmailTemplate($name) {
+        return "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%); color: white; padding: 20px; text-align: center; }
+                .content { padding: 30px 20px; background: #f9f9f9; }
+                .info-box { background: white; border: 2px solid #f44336; border-radius: 8px; padding: 20px; margin: 20px 0; }
+                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+                .important { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0; }
+                .status-badge { background: #f44336; color: white; padding: 5px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; }
+                .action-required { background: #ffebee; border: 1px solid #f44336; border-radius: 5px; padding: 15px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1>📋 GUMAOC System</h1>
+                    <p><span class='status-badge'>REQUIRES ATTENTION</span></p>
+                    <p>Registration Status Update</p>
+                </div>
+                <div class='content'>
+                    <h2>Dear $name,</h2>
+                    <p>Thank you for your interest in registering as a resident of Barangay GUMAOC East.</p>
+                    
+                    <div class='info-box'>
+                        <h3>📄 Registration Status Update</h3>
+                        <p>We regret to inform you that your application for residency registration requires further review and has been marked for follow-up.</p>
+                    </div>
+                    
+                    <div class='action-required'>
+                        <h4>📍 Action Required</h4>
+                        <p><strong>Please visit the barangay office for a follow-up consultation.</strong></p>
+                        <p>Our staff will:</p>
+                        <ul>
+                            <li>Review your application in detail</li>
+                            <li>Identify any missing requirements</li>
+                            <li>Provide guidance on next steps</li>
+                            <li>Address any questions or concerns</li>
+                        </ul>
+                    </div>
+                    
+                    <div class='important'>
+                        <h4>📋 What to Bring:</h4>
+                        <ul>
+                            <li>Valid government-issued ID</li>
+                            <li>Proof of residence (utility bills, lease agreement, etc.)</li>
+                            <li>Any supporting documents mentioned in your application</li>
+                            <li>This email for reference</li>
+                        </ul>
+                    </div>
+                    
+                    <div class='info-box'>
+                        <h4>🏢 Barangay Office Information</h4>
+                        <p><strong>Address:</strong> Barangay GUMAOC East, San Jose del Monte, Bulacan</p>
+                        <p><strong>Office Hours:</strong> Monday to Friday, 8:00 AM - 5:00 PM</p>
+                        <p><strong>What to expect:</strong> A friendly consultation to help complete your registration</p>
+                    </div>
+                    
+                    <p>We appreciate your understanding and look forward to assisting you at the barangay office. Our goal is to ensure all residents are properly registered and can access our services.</p>
+                    
+                    <p>Thank you for being part of our community.</p>
+                </div>
+                <div class='footer'>
+                    <p>This is an automated message from GUMAOC System. Please do not reply to this email.</p>
+                    <p>📍 For immediate assistance, please visit the barangay office during business hours.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+    }
 }
 ?>
+    }

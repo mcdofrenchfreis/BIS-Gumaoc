@@ -1,9 +1,13 @@
 <?php
-require_once 'auth_check.php';
+session_start();
 $page_title = 'Business Permit Application - Barangay Gumaoc East';
 $current_page = 'business-application';
 
 require_once '../includes/db_connect.php';
+
+// Check for admin view mode (readonly)
+$admin_view = isset($_GET['admin_view']) && isset($_GET['readonly']);
+$application_id = $_GET['admin_view'] ?? null;
 
 // Get current user data for auto-population
 $current_user = null;

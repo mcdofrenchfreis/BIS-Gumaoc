@@ -100,7 +100,7 @@ try {
 <!-- Hero Section -->
 <div class="hero-section">
   <div class="hero-content">
-    <div class="hero-text">
+    <div class="hero-text-maximized">
       <h1 class="hero-title">Welcome to the Future of<br><span class="highlight">Barangay Services</span></h1>
       <p class="hero-description">
         Experience seamless, efficient, and transparent public service through our cutting-edge digital platform. 
@@ -109,23 +109,6 @@ try {
       <div class="hero-buttons">
         <a href="pages/forms.php" class="btn btn-primary">Get Started</a>
         <a href="pages/about.php" class="btn btn-outline">Learn More</a>
-      </div>
-    </div>
-    <div class="hero-image">
-      <div class="floating-card">
-        <div class="card-icon">🏛️</div>
-        <h4>Digital Government</h4>
-        <p>24/7 accessible services</p>
-      </div>
-      <div class="floating-card">
-        <div class="card-icon">📱</div>
-        <h4>Mobile First</h4>
-        <p>Optimized for all devices</p>
-      </div>
-      <div class="floating-card">
-        <div class="card-icon">⚡</div>
-        <h4>Lightning Fast</h4>
-        <p>Instant processing</p>
       </div>
     </div>
   </div>
@@ -268,9 +251,150 @@ try {
 </div>
 
 <style>
+/* Add consistent green tint across entire page */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(46, 125, 50, 0.4);
+    backdrop-filter: blur(1px);
+    z-index: -1;
+    pointer-events: none;
+}
+
+/* Preserve background image but remove unwanted tints */
+body {
+    background-color: transparent !important;
+}
+
+.container {
+    background: transparent !important;
+}
+
+.section {
+    background: transparent !important;
+}
+
+/* Hero Section - ensure consistent green tint with other sections */
+.hero-section::before {
+    background: rgba(46, 125, 50, 0.4) !important;
+    backdrop-filter: blur(1px) !important;
+}
+
+.hero-section::after {
+    background: transparent !important;
+}
+
+/* Hero Text Maximized Layout */
+.hero-text-maximized {
+    text-align: center;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.hero-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 3;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+/* Enhanced text visibility */
+.hero-text-maximized .hero-title {
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.6);
+    font-weight: 900;
+    color: white;
+}
+
+.hero-text-maximized .hero-description {
+    text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 0, 0, 0.5);
+    color: rgba(255, 255, 255, 0.95);
+    font-weight: 500;
+    font-size: 1.3rem;
+    line-height: 1.7;
+}
+
+/* Override highlight color to white with strong shadow */
+.hero-text-maximized .highlight {
+    background: none;
+    -webkit-background-clip: unset;
+    -webkit-text-fill-color: unset;
+    background-clip: unset;
+    color: white;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9), 0 0 25px rgba(0, 0, 0, 0.7);
+    font-weight: 900;
+}
+
+/* Center buttons beneath description */
+.hero-text-maximized .hero-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+}
+
+/* Enhanced button visibility */
+.hero-text-maximized .btn {
+    font-weight: 600;
+    font-size: 1.1rem;
+    padding: 1rem 2.5rem;
+    border-radius: 50px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.hero-text-maximized .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+/* Responsive adjustments for maximized layout */
+@media (max-width: 768px) {
+    .hero-text-maximized {
+        max-width: 100%;
+        padding: 0 1rem;
+    }
+    
+    .hero-text-maximized .hero-buttons {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .hero-text-maximized .btn {
+        width: 200px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-text-maximized .hero-title {
+        font-size: 2rem;
+    }
+    
+    .hero-text-maximized .hero-description {
+        font-size: 1.1rem;
+    }
+}
+
 /* Update badge styles for different types */
 .update-badge.badge-important {
-    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%) !important;
+}
+
+/* Remove gray tint from important update cards */
+.update-card.priority {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(76, 175, 80, 0.3) !important;
 }
 
 .update-badge.badge-new {

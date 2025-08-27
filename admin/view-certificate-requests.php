@@ -134,17 +134,26 @@ $logger->log('page_view', 'admin_panel', 'Viewed certificate requests admin page
 $status_filter = $_GET['status'] ?? '';
 $cert_type = $_GET['cert_type'] ?? '';
 $search = $_GET['search'] ?? '';
+$active_tab = $_GET['tab'] ?? 'active'; // 'active' or 'released'
 $page = max(1, (int)($_GET['page'] ?? 1));
 $per_page = 10;
 $offset = ($page - 1) * $per_page;
 
-// Build query
+// Build query based on active tab
 $where_conditions = [];
 $params = [];
 
-if ($status_filter && in_array($status_filter, ['pending', 'processing', 'ready', 'released'])) {
-    $where_conditions[] = "cr.status = ?";
-    $params[] = $status_filter;
+if ($active_tab === 'released') {
+    // For released tab, only show released certificates
+    $where_conditions[] = "cr.status = 'released'";
+} else {
+    // For active tab, show all non-released certificates
+    $where_conditions[] = "cr.status != 'released'";
+    
+    if ($status_filter && in_array($status_filter, ['pending', 'processing', 'ready'])) {
+        $where_conditions = ["cr.status = ?"];
+        $params[] = $status_filter;
+    }
 }
 
 if ($cert_type) {
@@ -187,6 +196,10 @@ $requests = $stmt->fetchAll();
 
 // Get certificate types for filter
 $cert_types = $pdo->query("SELECT DISTINCT certificate_type FROM certificate_requests ORDER BY certificate_type")->fetchAll(PDO::FETCH_COLUMN);
+
+// Get counts for tab badges
+$active_count = $pdo->query("SELECT COUNT(*) FROM certificate_requests WHERE status != 'released'")->fetchColumn();
+$released_count = $pdo->query("SELECT COUNT(*) FROM certificate_requests WHERE status = 'released'")->fetchColumn();
 
 // Check if we should show toast
 $show_toast = isset($_SESSION['toast_message']);
@@ -406,7 +419,7 @@ function getRequestDetails($request) {
         
         .admin-table th, .admin-table td {
             padding: 1rem;
-            text-align: left;
+            text-align: center;
             border-bottom: 1px solid #eee;
         }
         
@@ -439,6 +452,10 @@ function getRequestDetails($request) {
             gap: 0.3rem;
             text-decoration: none;
             margin-bottom: 0.3rem;
+            line-height: 1.2;
+            height: 36px;
+            min-height: 36px;
+            box-sizing: border-box;
         }
         
         .view-form-btn:hover {
@@ -461,6 +478,11 @@ function getRequestDetails($request) {
             align-items: center;
             gap: 0.3rem;
             text-decoration: none;
+            margin-bottom: 0.3rem;
+            line-height: 1.2;
+            height: 36px;
+            min-height: 36px;
+            box-sizing: border-box;
         }
 
         .print-cert-btn:hover {
@@ -757,6 +779,108 @@ function getRequestDetails($request) {
             gap: 0.2rem;
             margin-top: 0.1rem;
         }
+        
+        /* Method of Application Styling */
+        .application-method {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            font-size: 0.8rem;
+            min-width: 120px;
+        }
+        
+        .method-badge {
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+            display: inline-block;
+        }
+        
+        .online-badge {
+            background: linear-gradient(135deg, #4caf50, #388e3c);
+            color: white;
+            border: 1px solid #2e7d32;
+        }
+        
+        .walk-in-badge {
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+            color: white;
+            border: 1px solid #1565c0;
+        }
+        
+        .queue-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            margin-top: 0.3rem;
+        }
+        
+        /* Tab Styling */
+        .tab-container {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        .tab-navigation {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .tab-button {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        
+        .tab-button.active {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+        
+        .tab-button:hover:not(.active) {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 0;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .tab-badge {
+            background: rgba(255, 255, 255, 0.2);
+            color: currentColor;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .tab-button:not(.active) .tab-badge {
+            background: #dee2e6;
+            color: #6c757d;
+        }
     </style>
 </head>
 <body>
@@ -786,29 +910,68 @@ function getRequestDetails($request) {
             <a href="dashboard.php" class="admin-btn">← Back to Dashboard</a>
         </div>
         
-        <div class="admin-controls">
-            <form method="GET" class="search-form">
-                <select name="status" onchange="this.form.submit()">
-                    <option value="">All Status</option>
-                    <option value="pending" <?php echo $status_filter === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                    <option value="processing" <?php echo $status_filter === 'processing' ? 'selected' : ''; ?>>Processing</option>
-                    <option value="ready" <?php echo $status_filter === 'ready' ? 'selected' : ''; ?>>Ready</option>
-                    <option value="released" <?php echo $status_filter === 'released' ? 'selected' : ''; ?>>Released</option>
-                </select>
-                
-                <select name="cert_type" onchange="this.form.submit()">
-                    <option value="">All Certificate Types</option>
-                    <?php foreach ($cert_types as $type): ?>
-                        <option value="<?php echo htmlspecialchars($type); ?>" <?php echo $cert_type === $type ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($type); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
-                
-                <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by name, purpose, or vehicle details...">
-                <button type="submit" class="admin-btn">🔍 Search</button>
-                <a href="view-certificate-requests.php" class="admin-btn">🔄 Clear</a>
-            </form>
+        <!-- Tab Navigation -->
+        <div class="tab-container">
+            <div class="tab-navigation">
+                <button class="tab-button <?php echo $active_tab === 'active' ? 'active' : ''; ?>" onclick="switchTab('active')">
+                    📝 Active Requests
+                    <span class="tab-badge"><?php echo $active_count; ?></span>
+                </button>
+                <button class="tab-button <?php echo $active_tab === 'released' ? 'active' : ''; ?>" onclick="switchTab('released')">
+                    ✅ Released Certificates
+                    <span class="tab-badge"><?php echo $released_count; ?></span>
+                </button>
+            </div>
+            
+            <!-- Active Requests Tab -->
+            <div class="tab-content <?php echo $active_tab === 'active' ? 'active' : ''; ?>" id="active-tab">
+                <div class="admin-controls">
+                    <form method="GET" class="search-form">
+                        <input type="hidden" name="tab" value="active">
+                        <select name="status" onchange="this.form.submit()">
+                            <option value="">All Status</option>
+                            <option value="pending" <?php echo $status_filter === 'pending' ? 'selected' : ''; ?>>Pending</option>
+                            <option value="processing" <?php echo $status_filter === 'processing' ? 'selected' : ''; ?>>Processing</option>
+                            <option value="ready" <?php echo $status_filter === 'ready' ? 'selected' : ''; ?>>Ready</option>
+                        </select>
+                        
+                        <select name="cert_type" onchange="this.form.submit()">
+                            <option value="">All Certificate Types</option>
+                            <?php foreach ($cert_types as $type): ?>
+                                <option value="<?php echo htmlspecialchars($type); ?>" <?php echo $cert_type === $type ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($type); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        
+                        <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by name, purpose, or vehicle details...">
+                        <button type="submit" class="admin-btn">🔍 Search</button>
+                        <a href="view-certificate-requests.php?tab=active" class="admin-btn">🔄 Clear</a>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Released Certificates Tab -->
+            <div class="tab-content <?php echo $active_tab === 'released' ? 'active' : ''; ?>" id="released-tab">
+                <div class="admin-controls">
+                    <form method="GET" class="search-form">
+                        <input type="hidden" name="tab" value="released">
+                        
+                        <select name="cert_type" onchange="this.form.submit()">
+                            <option value="">All Certificate Types</option>
+                            <?php foreach ($cert_types as $type): ?>
+                                <option value="<?php echo htmlspecialchars($type); ?>" <?php echo $cert_type === $type ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($type); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        
+                        <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search released certificates...">
+                        <button type="submit" class="admin-btn">🔍 Search</button>
+                        <a href="view-certificate-requests.php?tab=released" class="admin-btn">🔄 Clear</a>
+                    </form>
+                </div>
+            </div>
         </div>
         
         <div class="admin-table">
@@ -822,8 +985,10 @@ function getRequestDetails($request) {
                         <th>Status</th>
                         <th>Submitted</th>
                         <th>View Form</th>
+                        <?php if ($active_tab !== 'released'): ?>
                         <th>Actions</th>
-                        <th>Queue Info</th>
+                        <?php endif; ?>
+                        <th>Method of Application</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -891,16 +1056,32 @@ function getRequestDetails($request) {
                                 ?>
                             </div>
                         </td>
+                        <?php if ($active_tab !== 'released'): ?>
                         <td>
                             <?php if ($req['status'] !== 'released'): ?>
                             <form method="POST" style="margin: 0;">
                                 <input type="hidden" name="action" value="update_status">
                                 <input type="hidden" name="id" value="<?php echo $req['id']; ?>">
                                 <select name="status" class="action-select" onchange="this.form.submit()">
-                                    <option value="pending" <?php echo $req['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                    <option value="processing" <?php echo $req['status'] === 'processing' ? 'selected' : ''; ?>>Processing</option>
-                                    <option value="ready" <?php echo $req['status'] === 'ready' ? 'selected' : ''; ?>>Ready</option>
-                                    <option value="released" <?php echo $req['status'] === 'released' ? 'selected' : ''; ?>>Released</option>
+                                    <?php
+                                    // Sequential status progression - only show next logical step
+                                    switch ($req['status']) {
+                                        case 'pending':
+                                            echo '<option value="pending" selected>Pending</option>';
+                                            echo '<option value="processing">→ Move to Processing</option>';
+                                            break;
+                                        case 'processing':
+                                            echo '<option value="processing" selected>Processing</option>';
+                                            echo '<option value="ready">→ Move to Ready</option>';
+                                            break;
+                                        case 'ready':
+                                            echo '<option value="ready" selected>Ready</option>';
+                                            echo '<option value="released">→ Move to Released</option>';
+                                            break;
+                                        default:
+                                            echo '<option value="' . htmlspecialchars($req['status']) . '" selected>' . ucfirst($req['status']) . '</option>';
+                                    }
+                                    ?>
                                 </select>
                             </form>
                             <?php else: ?>
@@ -909,36 +1090,42 @@ function getRequestDetails($request) {
                             </div>
                             <?php endif; ?>
                         </td>
+                        <?php endif; ?>
                         <td>
                             <?php if ($req['queue_ticket']): ?>
-                                <div class="queue-info">
-                                    <span class="queue-ticket"><?php echo htmlspecialchars($req['queue_ticket']); ?></span>
-                                    <span class="queue-status status-<?php echo $req['queue_status']; ?>">
-                                        <?php echo ucfirst($req['queue_status']); ?>
-                                    </span>
-                                    <?php 
-                                    // Show sync indicator based on certificate-queue status alignment
-                                    $cert_status = $req['status'];
-                                    $queue_status = $req['queue_status'];
-                                    $is_synced = (
-                                        ($cert_status === 'pending' && $queue_status === 'waiting') ||
-                                        ($cert_status === 'processing' && $queue_status === 'serving') ||
-                                        ($cert_status === 'ready' && $queue_status === 'serving') ||
-                                        ($cert_status === 'released' && $queue_status === 'completed')
-                                    );
-                                    ?>
-                                    <?php if ($is_synced): ?>
-                                        <div class="queue-sync-indicator">
-                                            ✓ Synchronized
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="queue-sync-indicator" style="color: #ffc107;">
-                                            ⚠ Needs sync
-                                        </div>
-                                    <?php endif; ?>
+                                <div class="application-method walk-in">
+                                    <span class="method-badge walk-in-badge">🚶 Walk-in</span>
+                                    <div class="queue-details">
+                                        <span class="queue-ticket"><?php echo htmlspecialchars($req['queue_ticket']); ?></span>
+                                        <span class="queue-status status-<?php echo $req['queue_status']; ?>">
+                                            <?php echo ucfirst($req['queue_status']); ?>
+                                        </span>
+                                        <?php 
+                                        // Show sync indicator based on certificate-queue status alignment
+                                        $cert_status = $req['status'];
+                                        $queue_status = $req['queue_status'];
+                                        $is_synced = (
+                                            ($cert_status === 'pending' && $queue_status === 'waiting') ||
+                                            ($cert_status === 'processing' && $queue_status === 'serving') ||
+                                            ($cert_status === 'ready' && $queue_status === 'serving') ||
+                                            ($cert_status === 'released' && $queue_status === 'completed')
+                                        );
+                                        ?>
+                                        <?php if ($is_synced): ?>
+                                            <div class="queue-sync-indicator">
+                                                ✓ Synchronized
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="queue-sync-indicator" style="color: #ffc107;">
+                                                ⚠ Needs sync
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
                                 </div>
                             <?php else: ?>
-                                <span class="no-queue">No Queue Ticket</span>
+                                <div class="application-method online">
+                                    <span class="method-badge online-badge">💻 Online Registration</span>
+                                </div>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -948,9 +1135,15 @@ function getRequestDetails($request) {
             
             <?php if (empty($requests)): ?>
             <div style="text-align: center; padding: 3rem;">
-                <h3 style="color: #666; margin-bottom: 1rem;">📭 No Certificate Requests Found</h3>
-                <p style="color: #999; margin-bottom: 1.5rem;">No certificate requests match your current filters.</p>
-                <a href="view-certificate-requests.php" class="admin-btn">Clear Filters</a>
+                <?php if ($active_tab === 'released'): ?>
+                    <h3 style="color: #666; margin-bottom: 1rem;">✅ No Released Certificates Found</h3>
+                    <p style="color: #999; margin-bottom: 1.5rem;">No released certificates match your current filters.</p>
+                    <a href="view-certificate-requests.php?tab=released" class="admin-btn">Clear Filters</a>
+                <?php else: ?>
+                    <h3 style="color: #666; margin-bottom: 1rem;">📭 No Active Requests Found</h3>
+                    <p style="color: #999; margin-bottom: 1.5rem;">No active certificate requests match your current filters.</p>
+                    <a href="view-certificate-requests.php?tab=active" class="admin-btn">Clear Filters</a>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
         </div>
@@ -958,19 +1151,19 @@ function getRequestDetails($request) {
         <?php if ($total_pages > 1): ?>
         <div class="pagination">
             <?php if ($page > 1): ?>
-                <a href="?page=<?php echo $page-1; ?>&status=<?php echo $status_filter; ?>&cert_type=<?php echo urlencode($cert_type); ?>&search=<?php echo urlencode($search); ?>">« Previous</a>
+                <a href="?page=<?php echo $page-1; ?>&tab=<?php echo $active_tab; ?>&status=<?php echo $status_filter; ?>&cert_type=<?php echo urlencode($cert_type); ?>&search=<?php echo urlencode($search); ?>">« Previous</a>
             <?php endif; ?>
             
             <?php for ($i = max(1, $page-2); $i <= min($total_pages, $page+2); $i++): ?>
                 <?php if ($i == $page): ?>
                     <span class="current"><?php echo $i; ?></span>
                 <?php else: ?>
-                    <a href="?page=<?php echo $i; ?>&status=<?php echo $status_filter; ?>&cert_type=<?php echo urlencode($cert_type); ?>&search=<?php echo urlencode($search); ?>"><?php echo $i; ?></a>
+                    <a href="?page=<?php echo $i; ?>&tab=<?php echo $active_tab; ?>&status=<?php echo $status_filter; ?>&cert_type=<?php echo urlencode($cert_type); ?>&search=<?php echo urlencode($search); ?>"><?php echo $i; ?></a>
                 <?php endif; ?>
             <?php endfor; ?>
             
             <?php if ($page < $total_pages): ?>
-                <a href="?page=<?php echo $page+1; ?>&status=<?php echo $status_filter; ?>&cert_type=<?php echo urlencode($cert_type); ?>&search=<?php echo urlencode($search); ?>">Next »</a>
+                <a href="?page=<?php echo $page+1; ?>&tab=<?php echo $active_tab; ?>&status=<?php echo $status_filter; ?>&cert_type=<?php echo urlencode($cert_type); ?>&search=<?php echo urlencode($search); ?>">Next »</a>
             <?php endif; ?>
         </div>
         <?php endif; ?>
@@ -980,6 +1173,16 @@ function getRequestDetails($request) {
         function viewFormDetails(requestId) {
             // Open the certificate request form with pre-filled data
             window.open('../pages/certificate-request.php?admin_view=' + requestId + '&readonly=1', '_blank');
+        }
+        
+        function switchTab(tabName) {
+            // Update URL with tab parameter and preserve other filters
+            const urlParams = new URLSearchParams(window.location.search);
+            urlParams.set('tab', tabName);
+            urlParams.delete('page'); // Reset to page 1 when switching tabs
+            
+            // Redirect to new URL
+            window.location.href = '?' + urlParams.toString();
         }
 
         // Toast notification functionality

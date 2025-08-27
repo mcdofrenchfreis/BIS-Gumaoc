@@ -117,13 +117,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $estimated_birth_year = date('Y') - $age;
             $estimated_birthdate = "$estimated_birth_year-01-01";
             
-            // Insert into residents table (main user table)
+            // Insert into residents table (main user table) with pending status
             $residents_sql = "INSERT INTO residents (
                 first_name, middle_name, last_name, email, phone, password,
                 address, house_number, barangay, sitio, interviewer, interviewer_title,
                 birthdate, birth_place, gender, civil_status, rfid_code, rfid,
                 status, profile_complete, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 1, NOW())";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, NOW())";
             
             $residents_stmt = $pdo->prepare($residents_sql);
             $residents_result = $residents_stmt->execute([
@@ -238,13 +238,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     }
                                     $family_civil_status_standard = in_array($family_civil_status, ['Single', 'Married', 'Widowed', 'Separated', 'Divorced']) ? $family_civil_status : 'Single';
                                     
-                                    // Insert family member as resident user with incomplete profile
+                                    // Insert family member as resident user with pending status and incomplete profile
                                     $family_residents_sql = "INSERT INTO residents (
                                         first_name, middle_name, last_name, email, phone, password,
                                         address, house_number, barangay, sitio, interviewer, interviewer_title,
                                         birthdate, birth_place, gender, civil_status, rfid_code, rfid,
                                         status, profile_complete, created_by, relationship_to_head, created_at
-                                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, ?, ?, NOW())";
+                                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, ?, ?, NOW())";
                                     
                                     $family_residents_stmt = $pdo->prepare($family_residents_sql);
                                     $family_residents_result = $family_residents_stmt->execute([

@@ -711,7 +711,7 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                     <li><a href="/GUMAOC/pages/report.php" class="nav-link">🚨 Report</a></li>
                     <li><a href="/GUMAOC/pages/queue-status.php" class="nav-link">🎫 Queue</a></li>
                     <li><a href="/GUMAOC/pages/contact.php" class="nav-link">📞 Contact</a></li>
-                    <li><a href="/GUMAOC/login.php" class="nav-link">🔐 Login</a></li>
+                    <li><a href="/GUMAOC/user/login.php" class="nav-link">🔐 User Login</a></li>
                     <li><a href="/GUMAOC/pages/resident-registration.php" class="nav-link">📝 Register</a></li>
                 <?php else: ?>
                     <!-- Authenticated User Navigation -->

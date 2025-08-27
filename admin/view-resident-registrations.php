@@ -2,6 +2,7 @@
 session_start();
 include '../includes/db_connect.php';
 include '../includes/AdminLogger.php';
+include '../includes/email_service.php';
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
@@ -20,7 +21,7 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
     
     if (in_array($new_status, $allowed_statuses)) {
         // Get current status first
-        $stmt = $pdo->prepare("SELECT status, first_name, last_name FROM resident_registrations WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT status, first_name, last_name, email FROM resident_registrations WHERE id = ?");
         $stmt->execute([$id]);
         $current_data = $stmt->fetch(PDO::FETCH_ASSOC);
         $current_status = $current_data['status'];
@@ -49,6 +50,103 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
             $result = $stmt->execute([$new_status, $id]);
             
             if ($result) {
+                // Get full registration data for email processing
+                $stmt = $pdo->prepare("SELECT * FROM resident_registrations WHERE id = ?");
+                $stmt->execute([$id]);
+                $registration_data = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                $email_sent = false;
+                $email_message = '';
+                
+                // Process emails based on status change
+                if ($new_status === 'approved' && $registration_data['email']) {
+                    try {
+                        // Generate RFID and temporary password
+                        $generated_rfid = EmailService::generateUniqueRFID($pdo);
+                        $temp_password = EmailService::generateTempPassword();
+                        $hashed_password = password_hash($temp_password, PASSWORD_DEFAULT);
+                        
+                        // Look for existing resident account (should exist as 'pending' from registration)
+                        $check_stmt = $pdo->prepare("SELECT id, status FROM residents WHERE email = ?");
+                        $check_stmt->execute([$registration_data['email']]);
+                        $existing_resident = $check_stmt->fetch(PDO::FETCH_ASSOC);
+                        
+                        if ($existing_resident) {
+                            // Account exists - activate it with new RFID and password
+                            $resident_id = $existing_resident['id'];
+                            
+                            // Update existing resident: activate account, set new RFID and password
+                            $update_sql = "UPDATE residents SET 
+                                rfid_code = ?, rfid = ?, password = ?, 
+                                status = 'active', profile_complete = 1, updated_at = NOW() 
+                                WHERE id = ?";
+                            $update_stmt = $pdo->prepare($update_sql);
+                            $update_result = $update_stmt->execute([
+                                $generated_rfid, $generated_rfid, $hashed_password, $resident_id
+                            ]);
+                            
+                            if ($update_result) {
+                                // Assign the RFID code
+                                EmailService::assignRFIDCode($pdo, $generated_rfid, $resident_id, $registration_data['email']);
+                                
+                                // Send approval email with credentials
+                                $emailService = new EmailService();
+                                $resident_name = trim($registration_data['first_name'] . ' ' . $registration_data['last_name']);
+                                
+                                // Log email attempt
+                                error_log("Admin Approval: Sending credentials to: {$registration_data['email']} for {$resident_name} with RFID: {$generated_rfid}");
+                                
+                                $email_sent = $emailService->sendApprovalEmail(
+                                    $registration_data['email'],
+                                    $resident_name,
+                                    $generated_rfid,
+                                    $temp_password
+                                );
+                                
+                                // Log email result
+                                error_log("Admin Approval Email Result: " . ($email_sent ? 'SUCCESS' : 'FAILED') . " for {$registration_data['email']}");
+                                
+                                if ($email_sent) {
+                                    $email_message = " Account activated successfully! Login credentials with RFID ({$generated_rfid}) sent to {$registration_data['email']}";
+                                } else {
+                                    $email_message = " Account activated with RFID ({$generated_rfid}), but email delivery failed. Please contact resident manually.";
+                                }
+                            } else {
+                                $email_message = " Registration approved, but failed to activate resident account.";
+                            }
+                        } else {
+                            // No existing account found - this shouldn't happen with the new workflow
+                            error_log("Warning: No resident account found for approved registration {$registration_data['email']}");
+                            $email_message = " Registration approved, but no resident account found. Please check the registration process.";
+                        }
+                        
+                    } catch (Exception $e) {
+                        error_log("Approval process error: " . $e->getMessage());
+                        $email_message = " Registration approved, but there was an error processing the account activation.";
+                    }
+                    
+                } elseif ($new_status === 'rejected' && $registration_data['email']) {
+                    try {
+                        // Send rejection email
+                        $emailService = new EmailService();
+                        $resident_name = $registration_data['first_name'] . ' ' . $registration_data['last_name'];
+                        $email_sent = $emailService->sendRejectionEmail(
+                            $registration_data['email'],
+                            $resident_name
+                        );
+                        
+                        if ($email_sent) {
+                            $email_message = " Rejection notification sent to {$registration_data['email']}";
+                        } else {
+                            $email_message = " Registration rejected, but email delivery failed. Please contact resident manually.";
+                        }
+                        
+                    } catch (Exception $e) {
+                        error_log("Rejection email error: " . $e->getMessage());
+                        $email_message = " Registration rejected, but there was an error sending the notification email.";
+                    }
+                }
+                
                 // Enhanced logging with more details
                 $logger->logStatusUpdate(
                     'resident_registration',
@@ -59,11 +157,13 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
                         'applicant_name' => $current_data['first_name'] . ' ' . $current_data['last_name'],
                         'registration_type' => 'resident_registration',
                         'processing_time' => date('Y-m-d H:i:s'),
-                        'admin_action' => true
+                        'admin_action' => true,
+                        'email_sent' => $email_sent,
+                        'email_address' => $registration_data['email'] ?? 'N/A'
                     ]
                 );
                 
-                $_SESSION['toast_message'] = "The status of Registration ID #$id has been successfully updated to " . ucfirst($new_status);
+                $_SESSION['toast_message'] = "The status of Registration ID #$id has been successfully updated to " . ucfirst($new_status) . "." . $email_message;
                 $_SESSION['toast_type'] = 'success';
             } else {
                 $logger->log('error', 'resident_registration', "Failed to update status for Registration ID #$id", $id);
@@ -119,7 +219,7 @@ $total_pages = ceil($total_records / $per_page);
 
 // Get records with additional data counts
 $sql = "SELECT rr.id, rr.first_name, rr.middle_name, rr.last_name, rr.age, rr.gender, 
-        rr.birth_date, rr.birth_place, rr.house_number, rr.status, rr.submitted_at,
+        rr.birth_date, rr.birth_place, rr.house_number, rr.email, rr.status, rr.submitted_at,
         (SELECT COUNT(*) FROM family_members fm WHERE fm.registration_id = rr.id) as family_count,
         (SELECT COUNT(*) FROM family_disabilities fd WHERE fd.registration_id = rr.id) as disability_count,
         (SELECT COUNT(*) FROM family_organizations fo WHERE fo.registration_id = rr.id) as organization_count

@@ -518,7 +518,7 @@ $valid_until = date('F j, Y', strtotime('+1 year'));
                 </div>
                 
                 <div class="detail-row">
-                    <div class="detail-value"><?php echo htmlspecialchars($application['business_address']); ?></div>
+                    <div class="detail-value"><?php echo htmlspecialchars($application['owner_address']); ?></div>
                     <div class="detail-label">(Address of Owner/Manager)</div>
                 </div>
                 

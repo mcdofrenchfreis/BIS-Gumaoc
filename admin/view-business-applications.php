@@ -2,22 +2,19 @@
 session_start();
 include '../includes/db_connect.php';
 
-// Check if admin is logged in
-if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
-    header('Location: login.php');
-    exit;
-}
-
-// Handle status updates
+// Handle status updates (only if admin is logged in)
 if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['status'])) {
-    $id = (int)$_POST['id'];
-    $status = $_POST['status'];
-    $allowed_statuses = ['pending', 'reviewing', 'approved', 'rejected'];
-    
-    if (in_array($status, $allowed_statuses)) {
-        $stmt = $pdo->prepare("UPDATE business_applications SET status = ? WHERE id = ?");
-        $stmt->execute([$status, $id]);
-        $_SESSION['success'] = "Status updated successfully!";
+    // Check if admin is logged in for status updates
+    if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
+        $id = (int)$_POST['id'];
+        $status = $_POST['status'];
+        $allowed_statuses = ['pending', 'reviewing', 'approved', 'rejected'];
+        
+        if (in_array($status, $allowed_statuses)) {
+            $stmt = $pdo->prepare("UPDATE business_applications SET status = ? WHERE id = ?");
+            $stmt->execute([$status, $id]);
+            $_SESSION['success'] = "Status updated successfully!";
+        }
     }
     header('Location: view-business-applications.php');
     exit;
@@ -144,12 +141,48 @@ $applications = $stmt->fetchAll();
             gap: 0.5rem;
             text-decoration: none;
             white-space: nowrap;
+            margin-bottom: 0.3rem;
         }
         
         .view-form-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
             background: linear-gradient(135deg, #45a049, #4CAF50);
+        }
+        
+        .print-clearance-btn {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            white-space: nowrap;
+            margin-bottom: 0.3rem;
+        }
+        
+        .print-clearance-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 152, 0, 0.4);
+            background: linear-gradient(135deg, #f57c00, #ff9800);
+        }
+        
+        .view-column {
+            min-width: 160px;
+        }
+        
+        .view-column .view-form-btn,
+        .view-column .print-clearance-btn {
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 0.3rem;
         }
         
         .status-badge {
@@ -413,7 +446,9 @@ $applications = $stmt->fetchAll();
                         <th>Status</th>
                         <th>Submitted</th>
                         <th class="view-column">View Form</th>
+                        <?php if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
                         <th class="action-column">Actions</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -453,19 +488,17 @@ $applications = $stmt->fetchAll();
                                     <div class="business-info">
                                         📍 <?php echo htmlspecialchars(substr($app['business_location'], 0, 60)); ?><?php echo strlen($app['business_location']) > 60 ? '...' : ''; ?>
                                     </div>
+                                <?php elseif (!empty($app['business_address'])): ?>
+                                    <div class="business-info">
+                                        📍 <?php echo htmlspecialchars(substr($app['business_address'], 0, 60)); ?><?php echo strlen($app['business_address']) > 60 ? '...' : ''; ?>
+                                    </div>
                                 <?php endif; ?>
                             </div>
                         </td>
                         <td>
                             <div class="owner-details">
                                 <div class="owner-name">
-                                    <?php 
-                                    if (!empty($app['first_name']) || !empty($app['last_name'])) {
-                                        echo htmlspecialchars(trim($app['first_name'] . ' ' . ($app['middle_name'] ? $app['middle_name'] . ' ' : '') . $app['last_name']));
-                                    } else {
-                                        echo htmlspecialchars($app['owner_name']);
-                                    }
-                                    ?>
+                                    <?php echo htmlspecialchars($app['owner_name']); ?>
                                 </div>
                                 <?php if (!empty($app['contact_number']) && $app['contact_number'] !== '09000000000'): ?>
                                     <div class="contact-info">
@@ -496,7 +529,13 @@ $applications = $stmt->fetchAll();
                             <button onclick="viewFormDetails(<?php echo $app['id']; ?>)" class="view-form-btn">
                                 👁️ View Form
                             </button>
+                            <?php if ($app['status'] === 'approved'): ?>
+                                <a href="generate-business-clearance.php?id=<?php echo $app['id']; ?>" class="print-clearance-btn" target="_blank">
+                                    🖨️ Print Clearance
+                                </a>
+                            <?php endif; ?>
                         </td>
+                        <?php if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
                         <td class="action-column">
                             <form method="POST" style="margin-bottom: 0.5rem;">
                                 <input type="hidden" name="action" value="update_status">
@@ -508,12 +547,8 @@ $applications = $stmt->fetchAll();
                                     <option value="rejected" <?php echo $app['status'] === 'rejected' ? 'selected' : ''; ?>>Rejected</option>
                                 </select>
                             </form>
-                            <?php if ($app['status'] === 'approved'): ?>
-                                <a href="generate-business-clearance.php?id=<?php echo $app['id']; ?>" class="admin-btn" target="_blank" style="font-size: 0.8rem; padding: 0.4rem 0.8rem;">
-                                    📄 Generate Clearance
-                                </a>
-                            <?php endif; ?>
                         </td>
+                        <?php endif; ?>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -543,8 +578,8 @@ $applications = $stmt->fetchAll();
 
     <script>
     function viewFormDetails(applicationId) {
-        // Open the business application form in a new tab instead of popup window
-        window.open('../user/business-application.php?admin_view=' + applicationId + '&readonly=1', '_blank');
+        // Open the certificate request form where business applications are now located
+        window.open('../user/certificate-request.php?admin_view=' + applicationId + '&readonly=1', '_blank');
     }
     </script>
 </body>
