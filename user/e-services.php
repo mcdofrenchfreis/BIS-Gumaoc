@@ -862,28 +862,6 @@ $display_name = $user['first_name'] . ' ' . ($user['middle_name'] ? $user['middl
     <!-- Page Content -->
     <div class="page-content">
         <div class="e-services-page">
-            <!-- Search and Filter Section -->
-            <div class="search-filter-section">
-                <div class="search-container">
-                    <i class="fas fa-search search-icon"></i>
-                    <input type="text" id="serviceSearch" placeholder="Search for services..." class="search-input">
-                </div>
-                <div class="filter-container">
-                    <select id="statusFilter" class="filter-select">
-                        <option value="all">All Status</option>
-                        <option value="available">Available</option>
-                        <option value="coming-soon">Coming Soon</option>
-                    </select>
-                    <select id="categoryFilter" class="filter-select">
-                        <option value="all">All Categories</option>
-                        <option value="documents">Document Requests</option>
-                        <option value="business">Business Services</option>
-                        <option value="community">Community Services</option>
-                        <option value="emergency">Emergency Services</option>
-                        <option value="infrastructure">Infrastructure</option>
-                    </select>
-                </div>
-            </div>
 
             <!-- Page Header -->
             <div class="page-header">
@@ -959,22 +937,6 @@ $display_name = $user['first_name'] . ' ' . ($user['middle_name'] ? $user['middl
                     </div>
                     <a href="business-application.php" class="service-btn">Apply Now</a>
                     <a href="../pages/services.php" class="service-btn secondary">Requirements</a>
-                </div>
-
-                <!-- Community Census -->
-                <div class="service-card" id="community-services">
-                    <div class="service-status status-available">Available</div>
-                    <div class="service-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <h3>Community Census</h3>
-                    <p>Register as a resident and contribute to our comprehensive community database. Help us serve you better.</p>
-                    <div class="service-features">
-                        <span class="feature-tag">Resident Registration</span>
-                        <span class="feature-tag">Family Profile</span>
-                        <span class="feature-tag">Update Information</span>
-                    </div>
-                    <a href="../pages/resident-registration.php" class="service-btn secondary">Update Profile</a>
                 </div>
 
                 <!-- Emergency Response -->
