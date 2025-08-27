@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Aug 26, 2025 at 03:13 PM
+-- Generation Time: Aug 27, 2025 at 12:14 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -20,6 +20,94 @@ SET time_zone = "+00:00";
 --
 -- Database: `gumaoc_db`
 --
+
+DELIMITER $$
+--
+-- Functions
+--
+CREATE DEFINER=`root`@`localhost` FUNCTION `update_resident_status` (`resident_id_param` INT) RETURNS VARCHAR(20) CHARSET utf8mb4 COLLATE utf8mb4_general_ci DETERMINISTIC READS SQL DATA BEGIN
+    DECLARE complaint_count INT DEFAULT 0;
+    DECLARE incident_count INT DEFAULT 0;
+    DECLARE pending_count INT DEFAULT 0;
+    DECLARE resolved_count INT DEFAULT 0;
+    DECLARE new_status VARCHAR(20) DEFAULT 'good';
+    DECLARE requires_clearance BOOLEAN DEFAULT FALSE;
+    
+    -- Count complaints where resident is complainant
+    SELECT COUNT(*) INTO complaint_count 
+    FROM barangay_blotter 
+    WHERE complainant_id = resident_id_param;
+    
+    -- Count incidents where resident is respondent
+    SELECT COUNT(*) INTO incident_count 
+    FROM barangay_blotter 
+    WHERE respondent_id = resident_id_param;
+    
+    -- Count pending cases where resident is respondent
+    SELECT COUNT(*) INTO pending_count 
+    FROM barangay_blotter 
+    WHERE respondent_id = resident_id_param 
+    AND status IN ('filed', 'under_investigation', 'mediation');
+    
+    -- Count resolved cases where resident is respondent
+    SELECT COUNT(*) INTO resolved_count 
+    FROM barangay_blotter 
+    WHERE respondent_id = resident_id_param 
+    AND status IN ('resolved', 'dismissed');
+    
+    -- Determine status based on incident count and pending cases
+    IF incident_count = 0 THEN
+        SET new_status = 'good';
+        SET requires_clearance = FALSE;
+    ELSEIF incident_count <= 2 AND pending_count = 0 THEN
+        SET new_status = 'minor_issues';
+        SET requires_clearance = FALSE;
+    ELSEIF incident_count <= 5 OR pending_count > 0 THEN
+        SET new_status = 'major_issues';
+        SET requires_clearance = TRUE;
+    ELSE
+        SET new_status = 'critical';
+        SET requires_clearance = TRUE;
+    END IF;
+    
+    -- Update or insert resident status
+    INSERT INTO resident_status (
+        resident_id, resident_name, record_status, total_complaints, 
+        total_incidents, pending_cases, resolved_cases, requires_captain_clearance
+    ) VALUES (
+        resident_id_param, 
+        (SELECT CONCAT(first_name, ' ', IFNULL(middle_name, ''), ' ', last_name) FROM residents WHERE id = resident_id_param),
+        new_status, complaint_count, incident_count, pending_count, resolved_count, requires_clearance
+    ) ON DUPLICATE KEY UPDATE
+        record_status = new_status,
+        total_complaints = complaint_count,
+        total_incidents = incident_count,
+        pending_cases = pending_count,
+        resolved_cases = resolved_count,
+        requires_captain_clearance = requires_clearance,
+        last_updated = CURRENT_TIMESTAMP;
+    
+    RETURN new_status;
+END$$
+
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `access_logs`
+--
+
+CREATE TABLE `access_logs` (
+  `id` int(11) NOT NULL,
+  `resident_id` int(11) DEFAULT NULL,
+  `form_type` varchar(100) NOT NULL,
+  `access_granted` tinyint(1) NOT NULL,
+  `reason` varchar(255) NOT NULL,
+  `attempted_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -100,7 +188,20 @@ INSERT INTO `admin_logs` (`id`, `admin_id`, `action_type`, `target_type`, `targe
 (53, 'admin', 'form_view', 'resident_registration', 202, 'Viewed resident registration form ID #202', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:26:27'),
 (54, 'admin', 'form_view', 'resident_registration', 211, 'Viewed resident registration form ID #211', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-24 12:41:55'),
 (55, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-26 11:49:49'),
-(56, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed manage updates admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-26 12:24:03');
+(56, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed manage updates admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-26 12:24:03'),
+(57, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed manage updates admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-26 13:29:28'),
+(58, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-26 13:29:44'),
+(59, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed manage updates admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-26 13:42:43'),
+(60, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-26 13:42:47'),
+(61, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-26 14:25:08'),
+(62, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed manage updates admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-26 14:25:12'),
+(63, 'admin', 'page_view', 'admin_panel', NULL, 'Viewed certificate requests admin page', NULL, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-26 14:32:43'),
+(64, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 03:42:07'),
+(65, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 04:37:18'),
+(66, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 08:33:42'),
+(67, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 09:25:32'),
+(68, 'admin', 'admin_logout', 'admin_auth', NULL, 'Admin logout for username: admin', '{\"username\":\"admin\"}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 09:42:59'),
+(69, 'admin', 'admin_login', 'admin_auth', NULL, 'Admin login successful for username: admin', '{\"username\":\"admin\",\"success\":true}', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36', '2025-08-27 10:12:59');
 
 -- --------------------------------------------------------
 
@@ -124,7 +225,99 @@ CREATE TABLE `admin_users` (
 --
 
 INSERT INTO `admin_users` (`id`, `username`, `password`, `full_name`, `email`, `role`, `created_at`, `updated_at`) VALUES
-(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin@gumaoc.local', 'super_admin', '2025-08-01 07:44:29', '2025-08-01 07:44:29');
+(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin@gumaoc.local', 'super_admin', '2025-08-01 07:44:29', '2025-08-01 07:44:29'),
+(2, 'blotter_admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Blotter Administrator', 'blotter@gumaoc.local', 'admin', '2025-08-25 05:45:36', '2025-08-25 05:45:36');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `barangay_blotter`
+--
+
+CREATE TABLE `barangay_blotter` (
+  `id` int(11) NOT NULL,
+  `blotter_number` varchar(50) NOT NULL,
+  `incident_type` enum('complaint','incident','dispute','violation','other') NOT NULL,
+  `complainant_id` int(11) DEFAULT NULL,
+  `complainant_name` varchar(255) NOT NULL,
+  `complainant_address` varchar(500) NOT NULL,
+  `complainant_contact` varchar(20) DEFAULT NULL,
+  `respondent_id` int(11) DEFAULT NULL,
+  `respondent_name` varchar(255) NOT NULL,
+  `respondent_address` varchar(500) NOT NULL,
+  `respondent_contact` varchar(20) DEFAULT NULL,
+  `incident_date` datetime NOT NULL,
+  `reported_date` datetime NOT NULL DEFAULT current_timestamp(),
+  `location` varchar(500) NOT NULL,
+  `description` text NOT NULL,
+  `classification` enum('minor','major','critical') DEFAULT 'minor',
+  `status` enum('filed','under_investigation','mediation','resolved','dismissed','referred_to_court') DEFAULT 'filed',
+  `investigating_officer` varchar(255) DEFAULT NULL,
+  `settlement_details` text DEFAULT NULL,
+  `action_taken` text DEFAULT NULL,
+  `case_disposition` text DEFAULT NULL,
+  `created_by` varchar(100) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Triggers `barangay_blotter`
+--
+DELIMITER $$
+CREATE TRIGGER `update_resident_status_after_blotter_insert` AFTER INSERT ON `barangay_blotter` FOR EACH ROW BEGIN
+    -- Update complainant status if they are a registered resident
+    IF NEW.complainant_id IS NOT NULL THEN
+        SET @result = update_resident_status(NEW.complainant_id);
+    END IF;
+    
+    -- Update respondent status if they are a registered resident
+    IF NEW.respondent_id IS NOT NULL THEN
+        SET @result = update_resident_status(NEW.respondent_id);
+    END IF;
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `update_resident_status_after_blotter_update` AFTER UPDATE ON `barangay_blotter` FOR EACH ROW BEGIN
+    -- Update complainant status if they are a registered resident
+    IF NEW.complainant_id IS NOT NULL THEN
+        SET @result = update_resident_status(NEW.complainant_id);
+    END IF;
+    
+    -- Update respondent status if they are a registered resident
+    IF NEW.respondent_id IS NOT NULL THEN
+        SET @result = update_resident_status(NEW.respondent_id);
+    END IF;
+    
+    -- Also update old complainant/respondent if they changed
+    IF OLD.complainant_id IS NOT NULL AND OLD.complainant_id != NEW.complainant_id THEN
+        SET @result = update_resident_status(OLD.complainant_id);
+    END IF;
+    
+    IF OLD.respondent_id IS NOT NULL AND OLD.respondent_id != NEW.respondent_id THEN
+        SET @result = update_resident_status(OLD.respondent_id);
+    END IF;
+END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `blotter_attachments`
+--
+
+CREATE TABLE `blotter_attachments` (
+  `id` int(11) NOT NULL,
+  `blotter_id` int(11) NOT NULL,
+  `file_name` varchar(255) NOT NULL,
+  `file_path` varchar(500) NOT NULL,
+  `file_type` varchar(50) NOT NULL,
+  `file_size` int(11) NOT NULL,
+  `uploaded_by` varchar(100) NOT NULL,
+  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -146,13 +339,37 @@ CREATE TABLE `business_applications` (
   `business_name` varchar(255) NOT NULL,
   `business_type` varchar(100) NOT NULL,
   `business_address` varchar(500) NOT NULL,
+  `business_description` text DEFAULT NULL,
+  `capital_amount` decimal(15,2) DEFAULT NULL,
   `owner_name` varchar(255) NOT NULL,
   `owner_address` text DEFAULT NULL,
+  `owner_contact` varchar(20) DEFAULT NULL,
   `contact_number` varchar(20) NOT NULL,
   `years_operation` int(11) NOT NULL,
   `investment_capital` decimal(15,2) NOT NULL,
+  `proof_image` varchar(255) DEFAULT NULL COMMENT 'Optional proof image filename for the business application',
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `status` enum('pending','reviewing','approved','rejected') DEFAULT 'pending'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `captain_clearances`
+--
+
+CREATE TABLE `captain_clearances` (
+  `id` int(11) NOT NULL,
+  `resident_id` int(11) NOT NULL,
+  `clearance_type` enum('form_access','certificate_request','business_permit','general') NOT NULL,
+  `reason` text NOT NULL,
+  `granted_by` varchar(100) NOT NULL,
+  `granted_date` datetime NOT NULL DEFAULT current_timestamp(),
+  `expires_at` datetime DEFAULT NULL,
+  `status` enum('active','expired','revoked') DEFAULT 'active',
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -163,6 +380,7 @@ CREATE TABLE `business_applications` (
 
 CREATE TABLE `certificate_requests` (
   `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
   `full_name` varchar(255) NOT NULL,
   `address` varchar(500) NOT NULL,
   `mobile_number` varchar(20) DEFAULT NULL,
@@ -174,6 +392,8 @@ CREATE TABLE `certificate_requests` (
   `years_of_residence` int(11) DEFAULT NULL,
   `certificate_type` varchar(100) NOT NULL,
   `purpose` text NOT NULL,
+  `additional_data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`additional_data`)),
+  `proof_image` varchar(255) DEFAULT NULL,
   `vehicle_make_type` varchar(255) DEFAULT NULL,
   `motor_no` varchar(100) DEFAULT NULL,
   `chassis_no` varchar(100) DEFAULT NULL,
@@ -185,7 +405,8 @@ CREATE TABLE `certificate_requests` (
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `status` enum('pending','processing','ready','released') DEFAULT 'pending',
   `queue_ticket_id` int(11) DEFAULT NULL,
-  `queue_ticket_number` varchar(20) DEFAULT NULL
+  `queue_ticket_number` varchar(20) DEFAULT NULL,
+  `notes` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -224,14 +445,6 @@ CREATE TABLE `family_members` (
   `monthly_income` decimal(10,2) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `family_members`
---
-
-INSERT INTO `family_members` (`id`, `registration_id`, `full_name`, `relationship`, `birth_date`, `age`, `gender`, `civil_status`, `email`, `education`, `occupation`, `skills`, `monthly_income`, `created_at`) VALUES
-(239, 214, 'TEST ME PLEASE', 'Anak', NULL, 18, '', 'Single', 'marandrei2k22@gmail.com', NULL, 'TEST ME PLEASE', NULL, NULL, '2025-08-25 13:04:06'),
-(240, 215, 'TEST ME PLEASE', 'Anak', NULL, 18, '', 'Single', 'marandrei2k22@gmail.com', NULL, 'STUDENT', NULL, NULL, '2025-08-25 13:13:04');
 
 -- --------------------------------------------------------
 
@@ -290,9 +503,9 @@ CREATE TABLE `queue_counters` (
 --
 
 INSERT INTO `queue_counters` (`id`, `counter_number`, `counter_name`, `service_id`, `operator_name`, `is_active`, `current_ticket_id`, `last_called_at`, `created_at`, `updated_at`) VALUES
-(1, 'C1', 'Counter 1 - Certificates', 1, NULL, 1, NULL, NULL, '2025-08-21 00:17:36', '2025-08-21 00:17:36'),
-(2, 'C2', 'Counter 2 - Permits', 3, NULL, 1, NULL, NULL, '2025-08-21 00:17:36', '2025-08-21 00:17:36'),
-(3, 'C3', 'Counter 3 - General', 5, NULL, 1, NULL, NULL, '2025-08-21 00:17:36', '2025-08-21 00:17:36');
+(1, 'C1', 'Counter 1 - All Certificates', 1, NULL, 1, 90, '2025-08-27 09:41:51', '2025-08-21 00:17:36', '2025-08-27 09:41:51'),
+(2, 'C2', 'Counter 2 - Business Applications', 6, NULL, 1, 89, '2025-08-27 09:41:50', '2025-08-21 00:17:36', '2025-08-27 09:41:50'),
+(3, 'C3', 'Counter 3 - General', 5, NULL, 1, 88, '2025-08-27 09:41:50', '2025-08-21 00:17:36', '2025-08-27 09:41:50');
 
 -- --------------------------------------------------------
 
@@ -350,6 +563,32 @@ CREATE TABLE `queue_tickets` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `queue_tickets`
+--
+
+INSERT INTO `queue_tickets` (`id`, `ticket_number`, `service_id`, `customer_name`, `mobile_number`, `user_id`, `purpose`, `priority_level`, `status`, `queue_position`, `estimated_time`, `called_at`, `served_at`, `completed_at`, `served_by`, `notes`, `created_at`, `updated_at`) VALUES
+(88, 'GS-20250827-001', 5, 'Patricia Morales', '09878863389', NULL, 'Form Submission', 'priority', 'serving', 1, '2025-08-27 11:39:11', '2025-08-27 09:41:50', '2025-08-27 09:41:50', NULL, NULL, NULL, '2025-08-27 09:39:11', '2025-08-27 09:41:50'),
+(89, 'BP-20250827-001', 6, 'Pedro Perez', '09260495790', NULL, 'Document Verification', 'normal', 'serving', 1, '2025-08-27 11:39:11', '2025-08-27 09:41:50', '2025-08-27 09:41:50', NULL, NULL, NULL, '2025-08-27 09:39:11', '2025-08-27 09:41:50'),
+(90, 'PR-20250827-001', 4, 'Maria Torres', '09791067451', NULL, 'Document Verification', 'normal', 'serving', 1, '2025-08-27 11:39:11', '2025-08-27 09:41:51', '2025-08-27 09:41:51', NULL, NULL, NULL, '2025-08-27 09:39:11', '2025-08-27 09:41:51'),
+(91, 'BI-20250827-001', 2, 'Ana Torres', '09961597193', NULL, 'Permit Application', '', 'waiting', 1, '2025-08-27 11:39:11', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:11', '2025-08-27 09:39:11'),
+(92, 'GS-20250827-002', 5, 'Elena Flores', '09969421938', NULL, 'Certificate Request', 'normal', 'waiting', 2, '2025-08-27 11:59:11', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:11', '2025-08-27 09:39:11'),
+(93, 'GS-20250827-003', 5, 'Pedro Jimenez', '09882382417', NULL, 'Complaint Filing', 'normal', 'waiting', 3, '2025-08-27 12:19:11', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:11', '2025-08-27 09:39:11'),
+(94, 'GS-20250827-004', 5, 'Luz Flores', '09286032224', NULL, 'Complaint Filing', 'normal', 'waiting', 4, '2025-08-27 12:39:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(95, 'GS-20250827-005', 5, 'Ana Fernandez', '09756840517', NULL, 'Permit Application', 'normal', 'waiting', 5, '2025-08-27 12:59:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(96, 'GS-20250827-006', 5, 'Ana Hernandez', '09124901236', NULL, 'Certificate Request', 'normal', 'waiting', 6, '2025-08-27 13:19:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(97, 'BP-20250827-002', 6, 'Ana Torres', '09415613485', NULL, 'Complaint Filing', 'normal', 'waiting', 2, '2025-08-27 12:09:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(98, 'GS-20250827-007', 5, 'Isabel Mendoza', '09525455004', NULL, 'Complaint Filing', '', 'waiting', 7, '2025-08-27 13:39:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(99, 'BP-20250827-003', 6, 'Teresa Gonzales', '09464282067', NULL, 'Certificate Request', 'normal', 'waiting', 3, '2025-08-27 12:39:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(100, 'GS-20250827-008', 5, 'Carlos Reyes', '09328534360', NULL, 'Permit Application', 'normal', 'waiting', 8, '2025-08-27 13:59:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(101, 'TP-20250827-001', 3, 'Jose Hernandez', '09342673127', NULL, 'General Inquiry', 'priority', 'waiting', 1, '2025-08-27 11:39:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(102, 'GS-20250827-009', 5, 'Carmen Perez', '09458775308', NULL, 'Document Verification', 'normal', 'waiting', 9, '2025-08-27 14:19:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(103, 'TP-20250827-002', 3, 'Francisco Flores', '09556067433', NULL, 'Form Submission', 'priority', 'waiting', 2, '2025-08-27 12:04:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(104, 'BC-20250827-001', 1, 'Ana Torres', '09169580701', NULL, 'Complaint Filing', 'priority', 'waiting', 1, '2025-08-27 11:39:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(105, 'PR-20250827-002', 4, 'Antonio Mendoza', '09607725434', NULL, 'Complaint Filing', 'normal', 'waiting', 2, '2025-08-27 11:49:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(106, 'GS-20250827-010', 5, 'Juan Flores', '09498584063', NULL, 'Registration Update', 'normal', 'waiting', 10, '2025-08-27 14:39:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12'),
+(107, 'TP-20250827-003', 3, 'Ana Fernandez', '09200638114', NULL, 'Document Verification', 'normal', 'waiting', 3, '2025-08-27 12:29:12', NULL, NULL, NULL, NULL, NULL, '2025-08-27 09:39:12', '2025-08-27 09:39:12');
 
 -- --------------------------------------------------------
 
@@ -420,7 +659,7 @@ CREATE TABLE `residents` (
 --
 
 INSERT INTO `residents` (`id`, `first_name`, `middle_name`, `last_name`, `email`, `phone`, `password`, `address`, `house_number`, `barangay`, `sitio`, `interviewer`, `interviewer_title`, `birthdate`, `birth_place`, `gender`, `civil_status`, `rfid_code`, `rfid`, `status`, `reset_otp`, `otp_expiry`, `created_at`, `updated_at`, `profile_complete`, `created_by`, `relationship_to_head`) VALUES
-(10, 'Mar Yvan', '', 'Dela Cruz', 'biofrostyv@gmail.com', '09162291763', '$2y$10$.QTJXyrfz0gIAWKqRSeZLuGjE3Y2oLOzYjkE7RuGhizbZ2MufzXO2', 'House 101, Barangay Gumaoc East, San Jose del Monte, Bulacan, Philippines', '101', 'Gumaoc East', 'BLOCK', 'TEST ME PLEASE', 'TEST ME PLEASE', '2004-07-08', 'Caloocan City', '', '', '0006954375', '0006954375', 'active', NULL, NULL, '2025-08-26 13:09:35', '2025-08-26 13:09:35', 1, NULL, NULL);
+(15, 'Mar Yvan', 'Sagun', 'Dela Cruz', 'biofrostyv@gmail.com', '09162291763', '$2y$10$V3RI1ldznE2mre3TGxu1R.0DsG30EvCssJNMpX2kU5BfmBkGXNbH6', 'House 101, Barangay Gumaoc East, San Jose del Monte, Bulacan, Philippines', '101', 'Gumaoc East', 'BLOCK', 'TEST ME PLEASE', 'TEST ME PLEASE', '2004-07-08', 'Caloocan City', '', '', '0005805639', '0005805639', 'active', NULL, NULL, '2025-08-27 04:25:22', '2025-08-27 04:25:22', 1, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -473,9 +712,32 @@ CREATE TABLE `resident_registrations` (
 --
 
 INSERT INTO `resident_registrations` (`id`, `first_name`, `middle_name`, `last_name`, `birth_date`, `age`, `civil_status`, `gender`, `contact_number`, `email`, `house_number`, `pangkabuhayan`, `submitted_at`, `status`, `land_ownership`, `land_ownership_other`, `house_ownership`, `house_ownership_other`, `farmland`, `cooking_energy`, `cooking_energy_other`, `toilet_type`, `toilet_type_other`, `electricity_source`, `electricity_source_other`, `water_source`, `water_source_other`, `waste_disposal`, `waste_disposal_other`, `appliances`, `transportation`, `transportation_other`, `business`, `business_other`, `contraceptive`, `interviewer`, `interviewer_title`) VALUES
-(214, 'Mar Yvan', 'Sagun', 'Dela Cruz', '2004-07-08', 21, 'Unknown', 'Not Specified', '09162291763', 'biofrostyv@gmail.com', '101', 'Iba pa', '2025-08-25 13:04:06', 'pending', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Radyo/Stereo,Telebisyon,Refrigerator,Muwebles', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'TEST ME PLEASE', 'TEST ME PLEASE'),
-(215, 'Mar Yvan', 'Sagun', 'Dela Cruz', '2004-07-08', 21, 'Unknown', 'Not Specified', '09162291763', 'biofrostyv@gmail.com', '101', 'Iba pa', '2025-08-25 13:13:04', 'pending', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Muwebles', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'TEST ME PLEASE', 'TEST ME PLEASE'),
-(216, 'Mar Yvan', '', 'Dela Cruz', '2004-07-08', 21, 'Unknown', 'Not Specified', '09162291763', 'biofrostyv@gmail.com', '101', 'Iba pa', '2025-08-26 13:09:35', 'pending', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Muwebles', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'TEST ME PLEASE', 'TEST ME PLEASE');
+(217, 'Mar Yvan', 'Sagun', 'Dela Cruz', '2004-07-08', 21, 'Unknown', 'Not Specified', '09162291763', 'biofrostyv@gmail.com', '101', 'Iba pa', '2025-08-27 04:25:22', 'pending', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Muwebles', 'Iba pa', 'TEST ME PLEASE', 'Iba pa', 'TEST ME PLEASE', 'Wala', 'TEST ME PLEASE', 'TEST ME PLEASE');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `resident_status`
+--
+
+CREATE TABLE `resident_status` (
+  `id` int(11) NOT NULL,
+  `resident_id` int(11) NOT NULL,
+  `resident_name` varchar(255) NOT NULL,
+  `record_status` enum('good','minor_issues','major_issues','critical') DEFAULT 'good',
+  `total_complaints` int(11) DEFAULT 0,
+  `total_incidents` int(11) DEFAULT 0,
+  `pending_cases` int(11) DEFAULT 0,
+  `resolved_cases` int(11) DEFAULT 0,
+  `requires_captain_clearance` tinyint(1) DEFAULT 0,
+  `captain_clearance_granted` tinyint(1) DEFAULT 0,
+  `captain_clearance_date` datetime DEFAULT NULL,
+  `captain_clearance_reason` text DEFAULT NULL,
+  `captain_clearance_expires` datetime DEFAULT NULL,
+  `last_incident_date` datetime DEFAULT NULL,
+  `last_updated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -563,7 +825,7 @@ INSERT INTO `scanned_rfid_codes` (`id`, `rfid_code`, `status`, `scanned_at`, `as
 (2, 'TEST002', 'archived', '2025-08-26 11:53:26', NULL, NULL, NULL, NULL, 'Test RFID code for development', '2025-08-26 11:53:26', '2025-08-26 13:05:30'),
 (3, 'TEST003', 'archived', '2025-08-26 11:53:26', NULL, NULL, NULL, NULL, 'Test RFID code for development', '2025-08-26 11:53:26', '2025-08-26 13:05:32'),
 (4, '0006954375', 'assigned', '2025-08-26 13:05:56', '2025-08-26 13:09:35', 10, 'biofrostyv@gmail.com', 1, '', '2025-08-26 13:05:56', '2025-08-26 13:09:35'),
-(5, '0005805639', 'available', '2025-08-26 13:06:46', NULL, NULL, NULL, 1, '', '2025-08-26 13:06:46', '2025-08-26 13:06:46'),
+(5, '0005805639', 'assigned', '2025-08-26 13:06:46', '2025-08-27 04:25:22', 15, 'biofrostyv@gmail.com', 1, '', '2025-08-26 13:06:46', '2025-08-27 04:25:22'),
 (6, '0006909504', 'available', '2025-08-26 13:07:29', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:29', '2025-08-26 13:07:29'),
 (7, '0006892606', 'available', '2025-08-26 13:07:31', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:31', '2025-08-26 13:07:31'),
 (8, '0005794103', 'available', '2025-08-26 13:07:38', NULL, NULL, NULL, 1, '', '2025-08-26 13:07:38', '2025-08-26 13:07:38'),
@@ -631,9 +893,39 @@ INSERT INTO `updates` (`id`, `title`, `description`, `badge_text`, `badge_type`,
 (2, 'Enhanced E-Services Launch', 'Our improved digital platform now offers faster processing, better security, and mobile optimization.', 'New', 'new', 'July 25, 2025', '???? Live', 0, 0, '2025-08-04 09:04:14', '2025-08-04 09:04:14'),
 (3, 'Town Fiesta 2025', 'Join us for our annual town celebration. Cultural shows, local food, and community activities for everyone.', 'Community', 'community', 'August 15, 2025', '???? Upcoming', 0, 0, '2025-08-04 09:04:14', '2025-08-04 09:04:14');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `user_reports`
+--
+
+CREATE TABLE `user_reports` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `incident_type` varchar(100) NOT NULL,
+  `location` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `priority` enum('low','medium','high') DEFAULT 'medium',
+  `contact_number` varchar(20) NOT NULL,
+  `proof_image` varchar(255) DEFAULT NULL COMMENT 'Optional proof image filename for the report',
+  `status` enum('pending','processing','completed','rejected') DEFAULT 'pending',
+  `admin_notes` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `access_logs`
+--
+ALTER TABLE `access_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `resident_id` (`resident_id`),
+  ADD KEY `form_type` (`form_type`),
+  ADD KEY `attempted_at` (`attempted_at`);
 
 --
 -- Indexes for table `admin_logs`
@@ -654,6 +946,25 @@ ALTER TABLE `admin_users`
   ADD UNIQUE KEY `email` (`email`);
 
 --
+-- Indexes for table `barangay_blotter`
+--
+ALTER TABLE `barangay_blotter`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `blotter_number` (`blotter_number`),
+  ADD KEY `complainant_id` (`complainant_id`),
+  ADD KEY `respondent_id` (`respondent_id`),
+  ADD KEY `incident_date` (`incident_date`),
+  ADD KEY `status` (`status`),
+  ADD KEY `classification` (`classification`);
+
+--
+-- Indexes for table `blotter_attachments`
+--
+ALTER TABLE `blotter_attachments`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `blotter_id` (`blotter_id`);
+
+--
 -- Indexes for table `business_applications`
 --
 ALTER TABLE `business_applications`
@@ -661,11 +972,24 @@ ALTER TABLE `business_applications`
   ADD KEY `user_id` (`user_id`);
 
 --
+-- Indexes for table `captain_clearances`
+--
+ALTER TABLE `captain_clearances`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `resident_id` (`resident_id`),
+  ADD KEY `clearance_type` (`clearance_type`),
+  ADD KEY `status` (`status`);
+
+--
 -- Indexes for table `certificate_requests`
 --
 ALTER TABLE `certificate_requests`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `idx_queue_ticket` (`queue_ticket_id`);
+  ADD KEY `idx_queue_ticket` (`queue_ticket_id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_certificate_type` (`certificate_type`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_submitted_at` (`submitted_at`);
 
 --
 -- Indexes for table `family_disabilities`
@@ -755,6 +1079,15 @@ ALTER TABLE `resident_registrations`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `resident_status`
+--
+ALTER TABLE `resident_status`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `resident_id` (`resident_id`),
+  ADD KEY `record_status` (`record_status`),
+  ADD KEY `requires_captain_clearance` (`requires_captain_clearance`);
+
+--
 -- Indexes for table `rfid_access_logs`
 --
 ALTER TABLE `rfid_access_logs`
@@ -799,20 +1132,45 @@ ALTER TABLE `updates`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `user_reports`
+--
+ALTER TABLE `user_reports`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
+
+--
+-- AUTO_INCREMENT for table `access_logs`
+--
+ALTER TABLE `access_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `admin_logs`
 --
 ALTER TABLE `admin_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=70;
 
 --
 -- AUTO_INCREMENT for table `admin_users`
 --
 ALTER TABLE `admin_users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `barangay_blotter`
+--
+ALTER TABLE `barangay_blotter`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `blotter_attachments`
+--
+ALTER TABLE `blotter_attachments`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `business_applications`
@@ -821,10 +1179,16 @@ ALTER TABLE `business_applications`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `captain_clearances`
+--
+ALTER TABLE `captain_clearances`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `certificate_requests`
 --
 ALTER TABLE `certificate_requests`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `family_disabilities`
@@ -836,7 +1200,7 @@ ALTER TABLE `family_disabilities`
 -- AUTO_INCREMENT for table `family_members`
 --
 ALTER TABLE `family_members`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=241;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=242;
 
 --
 -- AUTO_INCREMENT for table `family_organizations`
@@ -866,7 +1230,7 @@ ALTER TABLE `queue_services`
 -- AUTO_INCREMENT for table `queue_tickets`
 --
 ALTER TABLE `queue_tickets`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=108;
 
 --
 -- AUTO_INCREMENT for table `queue_windows`
@@ -878,13 +1242,19 @@ ALTER TABLE `queue_windows`
 -- AUTO_INCREMENT for table `residents`
 --
 ALTER TABLE `residents`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `resident_registrations`
 --
 ALTER TABLE `resident_registrations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=217;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=218;
+
+--
+-- AUTO_INCREMENT for table `resident_status`
+--
+ALTER TABLE `resident_status`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `rfid_access_logs`
@@ -923,8 +1293,26 @@ ALTER TABLE `updates`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT for table `user_reports`
+--
+ALTER TABLE `user_reports`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `access_logs`
+--
+ALTER TABLE `access_logs`
+  ADD CONSTRAINT `access_logs_ibfk_1` FOREIGN KEY (`resident_id`) REFERENCES `residents` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `blotter_attachments`
+--
+ALTER TABLE `blotter_attachments`
+  ADD CONSTRAINT `blotter_attachments_ibfk_1` FOREIGN KEY (`blotter_id`) REFERENCES `barangay_blotter` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `business_applications`
@@ -933,9 +1321,16 @@ ALTER TABLE `business_applications`
   ADD CONSTRAINT `business_applications_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `residents` (`id`) ON DELETE SET NULL;
 
 --
+-- Constraints for table `captain_clearances`
+--
+ALTER TABLE `captain_clearances`
+  ADD CONSTRAINT `captain_clearances_ibfk_1` FOREIGN KEY (`resident_id`) REFERENCES `residents` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `certificate_requests`
 --
 ALTER TABLE `certificate_requests`
+  ADD CONSTRAINT `certificate_requests_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `residents` (`id`),
   ADD CONSTRAINT `fk_cert_queue_ticket` FOREIGN KEY (`queue_ticket_id`) REFERENCES `queue_tickets` (`id`) ON DELETE SET NULL;
 
 --
@@ -983,6 +1378,12 @@ ALTER TABLE `residents`
   ADD CONSTRAINT `fk_residents_created_by` FOREIGN KEY (`created_by`) REFERENCES `residents` (`id`) ON DELETE SET NULL;
 
 --
+-- Constraints for table `resident_status`
+--
+ALTER TABLE `resident_status`
+  ADD CONSTRAINT `resident_status_ibfk_1` FOREIGN KEY (`resident_id`) REFERENCES `residents` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `rfid_access_logs`
 --
 ALTER TABLE `rfid_access_logs`
@@ -993,6 +1394,12 @@ ALTER TABLE `rfid_access_logs`
 --
 ALTER TABLE `scanned_rfid_codes`
   ADD CONSTRAINT `scanned_rfid_codes_ibfk_1` FOREIGN KEY (`scanned_by_admin_id`) REFERENCES `admin_users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `user_reports`
+--
+ALTER TABLE `user_reports`
+  ADD CONSTRAINT `user_reports_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `residents` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

@@ -238,23 +238,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         // Assign the RFID code to this family member
                                         EmailService::assignRFIDCode($pdo, $family_rfid, $family_resident_id, $family_email);
                                         
-                                        // Send activation email to family member
+                                        // Send confirmation email to family member instead of activation email
                                         try {
                                             $emailService = new EmailService();
-                                            $family_activation_sent = $emailService->sendRFIDActivationEmail(
+                                            $family_confirmation_sent = $emailService->sendRegistrationConfirmationEmail(
                                                 $family_email,
-                                                trim($name),
-                                                $family_rfid,
-                                                $family_temp_password
+                                                trim($name)
                                             );
                                             
-                                            if ($family_activation_sent) {
-                                                error_log("Family member activation email sent to: $family_email (" . trim($name) . ")");
+                                            if ($family_confirmation_sent) {
+                                                error_log("Family member confirmation email sent to: $family_email (" . trim($name) . ")");
                                             } else {
-                                                error_log("Failed to send family member activation email to: $family_email");
+                                                error_log("Failed to send family member confirmation email to: $family_email");
                                             }
                                         } catch (Exception $e) {
-                                            error_log("Family member activation email error for $family_email: " . $e->getMessage());
+                                            error_log("Family member confirmation email error for $family_email: " . $e->getMessage());
                                         }
                                     }
                                 }
@@ -314,49 +312,128 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Commit transaction
             $pdo->commit();
             
-            // Send activation email with RFID and password
+            // Add registration to queue system instead of sending RFID credentials
+            $queue_added = false;
+            $queue_ticket_number = null;
+            
+            try {
+                // Include the QueueManager
+                require_once '../includes/QueueManager.php';
+                $queueManager = new QueueManager($pdo);
+                
+                $customer_name = trim($first_name . ' ' . $middle_name . ' ' . $last_name);
+                
+                // Generate queue ticket using enhanced method
+                $queue_result = $queueManager->generateTicketForForm(
+                    'resident_registration',
+                    $customer_name,
+                    $contact_number,
+                    'Resident Census Registration Processing'
+                );
+                
+                if ($queue_result['success']) {
+                    $queue_added = true;
+                    $queue_ticket_number = $queue_result['ticket_number'];
+                    error_log("Registration added to queue successfully. Ticket: " . $queue_ticket_number);
+                } else {
+                    error_log("Failed to add registration to queue: " . ($queue_result['message'] ?? 'Unknown error'));
+                }
+            } catch (Exception $e) {
+                error_log("Queue system error: " . $e->getMessage());
+            }
+            
+            // Send confirmation email instead of RFID activation email
             $email_sent = false;
             if (!empty($email)) {
                 try {
                     $emailService = new EmailService();
                     $full_name = trim($first_name . ' ' . $middle_name . ' ' . $last_name);
-                    $email_sent = $emailService->sendRFIDActivationEmail(
+                    $email_sent = $emailService->sendRegistrationConfirmationEmail(
                         $email,
-                        $full_name,
-                        $generated_rfid,
-                        $temp_password
+                        $full_name
                     );
                 } catch (Exception $e) {
                     error_log("Email sending failed: " . $e->getMessage());
                 }
             }
             
-            error_log("Complete Registration Created - Resident ID: $resident_id, Registration ID: $registration_id, Email Sent: " . ($email_sent ? 'Yes' : 'No') . ", Family Notifications: $family_email_success/$family_email_count, Family Users Created: $family_users_created");
+            error_log("Complete Registration Created - Resident ID: $resident_id, Registration ID: $registration_id, Queue Added: " . ($queue_added ? 'Yes' : 'No') . ", Email Sent: " . ($email_sent ? 'Yes' : 'No') . ", Family Notifications: $family_email_success/$family_email_count, Family Users Created: $family_users_created");
             
-            // Build success message
-            $success_message = "Registration successful! ";
+            // Build success message with enhanced clarity and HTML formatting
+            $success_message = '<div class="success-content">';
+            $success_message .= '<div class="success-header">🎉 <strong>Registration Successfully Completed!</strong></div>';
             
-            if ($email_sent) {
-                $success_message .= "Login credentials have been sent to $email. ";
-            } else {
-                $success_message .= "Login credentials could not be sent via email. Please contact the administrator for your login credentials. ";
+            // Add registrant information section
+            $full_name = trim($first_name . ' ' . $middle_name . ' ' . $last_name);
+            $success_message .= '<div class="success-section">';
+            $success_message .= '<div class="section-title">📝 Registration Details</div>';
+            $success_message .= '<div class="section-content">';
+            $success_message .= '<div class="info-row"><strong>Registrant:</strong> ' . htmlspecialchars($full_name) . '</div>';
+            $success_message .= '<div class="info-row"><strong>House Number:</strong> ' . htmlspecialchars($house_number) . '</div>';
+            $success_message .= '</div></div>';
+            
+            // Queue information section
+            if ($queue_added && isset($queue_result['success']) && $queue_result['success']) {
+                $success_message .= '<div class="success-section highlight-section">';
+                $success_message .= '<div class="section-title">🎫 Queue Information</div>';
+                $success_message .= '<div class="section-content">';
+                $success_message .= '<div class="info-row"><strong>Ticket Number:</strong> <span class="highlight-text">' . htmlspecialchars($queue_result['ticket_number']) . '</span></div>';
+                $success_message .= '<div class="info-row"><strong>Queue Position:</strong> #' . htmlspecialchars($queue_result['queue_position']) . '</div>';
+                $success_message .= '<div class="info-row"><strong>Estimated Processing Time:</strong> ' . htmlspecialchars($queue_result['estimated_time']) . '</div>';
+                $success_message .= '<div class="info-row"><strong>Service:</strong> ' . htmlspecialchars($queue_result['service_name'] ?? 'Resident Registration') . '</div>';
+                $success_message .= '</div></div>';
+                
+                // Store queue information in session for display
+                $_SESSION['queue_ticket_number'] = $queue_result['ticket_number'];
+                $_SESSION['queue_position'] = $queue_result['queue_position'];
+                $_SESSION['service_name'] = $queue_result['service_name'] ?? 'Resident Registration';
+                $_SESSION['estimated_time'] = $queue_result['estimated_time'];
+            } elseif ($queue_added) {
+                $success_message .= '<div class="success-section highlight-section">';
+                $success_message .= '<div class="section-title">🎫 Queue Information</div>';
+                $success_message .= '<div class="section-content">';
+                $success_message .= '<div class="info-row"><strong>Ticket Number:</strong> <span class="highlight-text">' . htmlspecialchars($queue_ticket_number) . '</span></div>';
+                $success_message .= '<div class="info-row">Your registration has been added to the processing queue</div>';
+                $success_message .= '</div></div>';
             }
             
-            // Add family notification info
+            // Email notification section
+            $success_message .= '<div class="success-section">';
+            $success_message .= '<div class="section-title">📧 Email Notifications</div>';
+            $success_message .= '<div class="section-content">';
+            if ($email_sent) {
+                $success_message .= '<div class="info-row success-item">✅ Confirmation email sent to: <strong>' . htmlspecialchars($email) . '</strong></div>';
+            } else {
+                $success_message .= '<div class="info-row warning-item">⚠️ Confirmation email could not be sent - please contact the administrator</div>';
+            }
+            
+            // Family member notifications
             if ($family_email_count > 0) {
                 if ($family_email_success == $family_email_count) {
-                    $success_message .= "Family member notifications have been sent to $family_email_success family member(s). ";
+                    $success_message .= '<div class="info-row success-item">✅ Family notifications sent to ' . $family_email_success . ' member(s)</div>';
                 } else {
-                    $success_message .= "$family_email_success out of $family_email_count family member notifications were sent successfully. ";
+                    $success_message .= '<div class="info-row warning-item">⚠️ Family notifications: ' . $family_email_success . ' of ' . $family_email_count . ' sent successfully</div>';
                 }
             }
             
-            // Add family user creation info
+            // Family user creation info
             if ($family_users_created > 0) {
-                $success_message .= "$family_users_created family member(s) have been registered as users and will receive login credentials via email. ";
+                $success_message .= '<div class="info-row success-item">✅ ' . $family_users_created . ' family member(s) registered as new users</div>';
             }
+            $success_message .= '</div></div>';
             
-            $success_message .= "You can now login with your RFID or email and password once you receive your credentials.";
+            // Next steps section
+            $success_message .= '<div class="success-section next-steps-section">';
+            $success_message .= '<div class="section-title">📋 What Happens Next?</div>';
+            $success_message .= '<div class="section-content">';
+            $success_message .= '<div class="step-item">1. Your registration is being processed by our team</div>';
+            $success_message .= '<div class="step-item">2. You will receive login credentials once approved</div>';
+            $success_message .= '<div class="step-item">3. Keep your queue ticket number for reference</div>';
+            $success_message .= '<div class="step-item">4. Check queue status using the "Queue" link in navigation</div>';
+            $success_message .= '</div></div>';
+            
+            $success_message .= '<div class="success-footer">Thank you for registering with <strong>Barangay Gumaoc East</strong>!</div>';
+            $success_message .= '</div>';
             
             $_SESSION['success'] = $success_message;
             

@@ -64,12 +64,11 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
         }
         
         .navbar-container {
-            max-width: 1200px;
-            margin: 0 auto;
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 20px;
+            padding: 0 30px;
             height: 70px;
         }
         
@@ -78,6 +77,8 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
             align-items: center;
             text-decoration: none;
             color: white;
+            flex-shrink: 0;
+            white-space: nowrap;
         }
         
         .brand-logo {
@@ -605,13 +606,22 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
             }
             
             .brand-text h1 {
-                font-size: 20px;
+                font-size: 16px;
+            }
+            
+            .brand-text p {
+                font-size: 10px;
             }
             
             .brand-logo {
-                width: 40px;
-                height: 40px;
-                font-size: 14px;
+                width: 35px;
+                height: 35px;
+                font-size: 12px;
+                margin-right: 10px;
+            }
+            
+            .navbar-container {
+                padding: 0 15px;
             }
         }
         
@@ -699,6 +709,7 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                         </ul>
                     </li>
                     <li><a href="/GUMAOC/pages/report.php" class="nav-link">🚨 Report</a></li>
+                    <li><a href="/GUMAOC/pages/queue-status.php" class="nav-link">🎫 Queue</a></li>
                     <li><a href="/GUMAOC/pages/contact.php" class="nav-link">📞 Contact</a></li>
                     <li><a href="/GUMAOC/login.php" class="nav-link">🔐 Login</a></li>
                     <li><a href="/GUMAOC/pages/resident-registration.php" class="nav-link">📝 Register</a></li>
@@ -723,6 +734,7 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                         </ul>
                     </li>
                     <li><a href="/GUMAOC/pages/report.php" class="nav-link">🚨 Report</a></li>
+                    <li><a href="/GUMAOC/pages/queue-status.php" class="nav-link">🎫 Queue</a></li>
                     <li><a href="notifications.php" class="nav-link" style="position: relative;">
                         🔔 Notifications
                         <span class="notification-badge">3</span>
@@ -744,9 +756,6 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                             <a href="settings.php" class="dropdown-item">
                                 ⚙️ Account Settings
                             </a>
-                            <a href="/GUMAOC/pages/queue-status.php" class="dropdown-item">
-                                ⏳ Queue Status
-                           </a>
                             <a href="help.php" class="dropdown-item">
                                 ❓ Help & Support
                             </a>

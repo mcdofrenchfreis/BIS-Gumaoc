@@ -168,6 +168,21 @@ $queue_status = $queueManager->getQueueStatus();
                     <a href="queue-status.php" class="btn btn-secondary">
                         📊 View Queue Status
                     </a>
+                    <a href="queue-kiosk.php" class="btn btn-success">
+                        📺 Kiosk Display
+                    </a>
+                </div>
+                
+                <div class="service-links">
+                    <h4>📄 Need to submit a form? Get your ticket here:</h4>
+                    <div class="service-link-buttons">
+                        <a href="certificate-request.php" class="service-link-btn">
+                            📄 Certificate Request
+                        </a>
+                        <a href="resident-registration.php" class="service-link-btn">
+                            👥 Resident Registration
+                        </a>
+                    </div>
                 </div>
             </form>
         </div>
@@ -431,6 +446,66 @@ $queue_status = $queueManager->getQueueStatus();
 .btn-secondary:hover {
     background: #545b62;
     transform: translateY(-2px);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    border: none;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #20c997, #17a2b8);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+/* Service Links Section */
+.service-links {
+    margin-top: 40px;
+    padding: 30px;
+    background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+    border-radius: 15px;
+    border: 2px solid #4caf50;
+    text-align: center;
+}
+
+.service-links h4 {
+    color: #2e7d32;
+    margin: 0 0 20px 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.service-link-buttons {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.service-link-btn {
+    background: linear-gradient(135deg, #4caf50, #66bb6a);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    min-width: 200px;
+    text-align: center;
+}
+
+.service-link-btn:hover {
+    background: linear-gradient(135deg, #66bb6a, #81c784);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    text-decoration: none;
+    color: white;
 }
 
 /* Alerts */

@@ -39,6 +39,11 @@ if ($admin_view) {
 }
 
 include '../includes/header.php';
+
+// Include database connection for blotter checking
+if (!$admin_view) {
+    include '../includes/db_connect.php';
+}
 ?>
 
 <?php if ($admin_view && $readonly): ?>
@@ -797,6 +802,20 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 <?php endif; ?>
 
+<!-- TEMPORARY DEBUG BUTTON FOR TESTING PRIVACY MODAL -->
+<div style="position: fixed; top: 10px; right: 10px; z-index: 99999; background: red; color: white; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold;" onclick="debugShowPrivacyNotice()" id="debugButton">
+  🐛 DEBUG: Show Privacy Modal
+</div>
+
+<script>
+// TEMPORARY DEBUG FUNCTION
+function debugShowPrivacyNotice() {
+  console.log('🐛 DEBUG: Manually triggering privacy notice');
+  sessionStorage.removeItem('privacyNoticeShown');
+  initializePrivacyNotice();
+}
+</script>
+
 <!-- Enhanced Data Privacy Act Notice -->
 <div id="dataPrivacyOverlay" class="privacy-overlay">
   <div id="dataPrivacyModal" class="privacy-modal">
@@ -920,8 +939,10 @@ document.addEventListener('DOMContentLoaded', function() {
         <h4>✅ Registration Successful!</h4>
         <button class="modal-close" onclick="closeModal('successModal')">&times;</button>
       </div>
-      <div class="modal-body">
-        <p><?php echo htmlspecialchars($_SESSION['success']); ?></p>
+      <div class="modal-body success-modal-body">
+        <div class="success-message-container">
+          <?php echo $_SESSION['success']; ?>
+        </div>
       </div>
       <div class="modal-footer">
         <div class="auto-close-timer">
@@ -1544,6 +1565,9 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
           <button type="submit" class="btn btn-primary" id="hiddenSubmitBtn">Submit Census Form<br><small>I-submit ang Census Form</small></button>
           <button type="reset" class="btn">Clear Form<br><small>I-clear ang Form</small></button>
+          <?php if (!$admin_view): ?>
+          <button type="button" class="btn btn-warning" onclick="testBlotterDetection()" title="Test the blotter detection system with a known name">🔍 Test Blotter Detection</button>
+          <?php endif; ?>
         <?php else: ?>
           <a href="../admin/view-resident-registrations.php" class="btn btn-secondary">← Back to Admin Dashboard</a>
           <button type="button" class="btn btn-primary" onclick="window.print()">🖨️ Print Form</button>
@@ -5119,6 +5143,175 @@ body:has(.privacy-overlay.show) .container {
   font-weight: 600; /* Added bold font weight */
 }
 
+/* Enhanced Success Message Styling */
+.success-modal-body {
+  padding: 1.5rem 2.5rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.success-message-container {
+  color: #2c3e50;
+  line-height: 1.6;
+}
+
+.success-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.success-header {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #28a745;
+  padding: 1rem;
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  border-radius: 12px;
+  border: 2px solid #28a745;
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
+}
+
+.success-section {
+  background: rgba(248, 249, 250, 0.8);
+  border-radius: 10px;
+  padding: 1.5rem;
+  border-left: 4px solid #28a745;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.highlight-section {
+  background: linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%);
+  border: 2px solid #28a745;
+  border-left: 6px solid #28a745;
+}
+
+.next-steps-section {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border-left: 4px solid #ffc107;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1b5e20;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.section-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.info-row {
+  padding: 0.6rem 0;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.info-row strong {
+  color: #2d5a27;
+  font-weight: 600;
+}
+
+.highlight-text {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.success-item {
+  color: #155724;
+  font-weight: 600;
+}
+
+.warning-item {
+  color: #856404;
+  font-weight: 600;
+}
+
+.step-item {
+  padding: 0.8rem 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  border-left: 3px solid #ffc107;
+  font-weight: 500;
+  position: relative;
+}
+
+.step-item::before {
+  content: attr(data-step);
+  position: absolute;
+  left: -15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #ffc107;
+  color: white;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.success-footer {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d5a27;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #e8f5e8 0%, #f1f8e9 100%);
+  border-radius: 10px;
+  border: 1px solid #c3e6cb;
+}
+
+/* Mobile responsiveness for success message */
+@media (max-width: 768px) {
+  .success-modal-body {
+    padding: 1rem 1.5rem;
+  }
+  
+  .success-header {
+    font-size: 1.3rem;
+    padding: 0.8rem;
+  }
+  
+  .section-title {
+    font-size: 1.1rem;
+  }
+  
+  .info-row {
+    font-size: 0.95rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.3rem;
+  }
+  
+  .highlight-text {
+    font-size: 1rem;
+  }
+  
+  .step-item {
+    padding: 0.6rem 0.8rem;
+    margin-left: 1rem;
+  }
+}
+
 .modal-footer {
   padding: 2rem 2.5rem; /* Increased padding */
   background: rgba(248, 249, 250, 0.8);
@@ -5192,11 +5385,13 @@ body:has(.privacy-overlay.show) .container {
   }
 }
 
-/* Hide privacy notice when modals are present */
-body:has(.modal-overlay) #dataPrivacyOverlay,
-.modal-overlay ~ #dataPrivacyOverlay {
+/* TEMPORARILY DISABLED - Hide privacy notice when modals are actually visible/active */
+/*
+body:has(.modal-overlay[style*="display: flex"]) #dataPrivacyOverlay,
+body:has(.modal-overlay:not([style*="display: none"])) #dataPrivacyOverlay {
   display: none !important;
-}</style>
+}
+*/</style>
 
 <?php if ($readonly): ?>
 <script>
@@ -5304,67 +5499,83 @@ function closePrivacyNotice() {
 }
 
 // Initialize privacy notice when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('DOM loaded, initializing privacy notice...');
+function initializePrivacyNotice() {
+  console.log('🚀 initializePrivacyNotice() called - DOM loaded, initializing privacy notice...');
   
   const overlay = document.getElementById('dataPrivacyOverlay');
   
   if (!overlay) {
-    console.log('Privacy overlay element not found!');
+    console.error('❌ Privacy overlay element not found! Expected #dataPrivacyOverlay');
     return;
   }
+  console.log('✅ Privacy overlay found:', overlay);
   
   // Check if this is an admin view - don't show privacy notice for admin views
   const isAdminView = <?php echo $admin_view ? 'true' : 'false'; ?>;
-  console.log('Is admin view:', isAdminView);
+  console.log('👥 Is admin view:', isAdminView);
   
   // Check if there are any success or error modals present
   const successModal = document.getElementById('successModal');
   const errorModal = document.getElementById('errorModal');
   const hasActiveModals = successModal || errorModal;
   
-  console.log('Has active modals:', hasActiveModals);
+  console.log('📊 Modal status check:', {
+    successModal: !!successModal,
+    errorModal: !!errorModal,
+    hasActiveModals: hasActiveModals
+  });
   
   // Don't show privacy notice if there are active modals
   if (hasActiveModals) {
-    console.log('Not showing privacy notice - active success/error modal present');
+    console.log('🚫 Not showing privacy notice - active success/error modal present');
     overlay.style.display = 'none';
     // Mark privacy notice as shown since user is getting feedback
     sessionStorage.setItem('privacyNoticeShown', 'true');
     return;
   }
   
-  // Reset privacy notice for testing - comment out for production
-  // sessionStorage.removeItem('privacyNoticeShown');
+  // Reset privacy notice for testing - TEMPORARILY ENABLED FOR DEBUGGING
+  sessionStorage.removeItem('privacyNoticeShown');
+  console.log('🔄 Privacy notice session storage cleared for testing');
   
   // Check if privacy notice was already shown in this session
   const privacyShown = sessionStorage.getItem('privacyNoticeShown');
-  console.log('Privacy notice already shown:', privacyShown);
+  console.log('📋 Privacy notice session status - already shown:', privacyShown);
   
-  if (privacyShown || isAdminView) {
-    console.log('Not showing privacy notice - already shown or admin view');
+  if (privacyShown === 'true') {
+    console.log('🚫 Not showing privacy notice - already shown in this session');
     overlay.style.display = 'none';
     return;
   }
   
-  console.log('Showing privacy notice...');
+  if (isAdminView) {
+    console.log('🚫 Not showing privacy notice - admin view detected');
+    overlay.style.display = 'none';
+    return;
+  }
+  
+  console.log('🎉 All checks passed! Showing privacy notice...');
   
   // Prevent scrolling on body
   document.body.style.overflow = 'hidden';
+  console.log('🔒 Body scroll disabled');
   
   // Show the modal with animation
   overlay.style.display = 'flex';
+  console.log('📺 Overlay display set to flex');
   
   // Trigger the animation after a small delay
   setTimeout(() => {
     overlay.classList.add('show');
+    console.log('✨ Animation class "show" added to overlay');
     
     // Start the countdown timer after modal is fully shown
     setTimeout(() => {
+      console.log('⏰ Starting privacy timer...');
       startPrivacyTimer();
     }, 1000);
   }, 100);
-});
+}
 
 // Close privacy notice when clicking on overlay background (not the modal)
 document.addEventListener('click', function(e) {
@@ -5388,15 +5599,15 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Prevent accidental closure by clicks inside the modal - wait for DOM
-document.addEventListener('DOMContentLoaded', function() {
+// Prevent accidental closure by clicks inside the modal
+function setupPrivacyModalEventHandlers() {
   const modal = document.getElementById('dataPrivacyModal');
   if (modal) {
     modal.addEventListener('click', function(e) {
       e.stopPropagation();
     });
   }
-});
+}
 
 // Tab Navigation Functions
 let currentTab = 1;
@@ -6176,49 +6387,65 @@ function validateName() {
     [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
         input.classList.add('validating');
     });
-    showValidationMessage('nameValidation', 'Checking name availability...', 'loading');
+    showValidationMessage('nameValidation', 'Checking name and blotter records...', 'loading');
     
     // Debounce the API call
     validationTimeout = setTimeout(() => {
-        fetch('../api/validate_registration.php', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                type: 'name',
-                firstName: firstName,
-                middleName: middleName,
-                lastName: lastName
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
-                input.classList.remove('validating');
-            });
-            
-            if (data.valid) {
+        // First, check for blotter records
+        checkBlotterRecord(firstName, middleName, lastName)
+        .then(blotterResult => {
+            if (blotterResult.has_unresolved_issues) {
+                // Show blotter warning modal
+                showBlotterWarningModal();
+                // Still continue with name validation but show warning
                 [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
-                    input.classList.add('valid');
+                    input.classList.remove('validating');
+                    input.classList.add('valid'); // Name is valid but has blotter issues
                 });
-                showValidationMessage('nameValidation', '✓ ' + data.message, 'success');
+                showValidationMessage('nameValidation', '⚠️ Unresolved barangay issues detected', 'warning');
             } else {
-                [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
-                    input.classList.add('invalid');
+                // No blotter issues, proceed with normal name validation
+                return fetch('../api/validate_registration.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'name',
+                        firstName: firstName,
+                        middleName: middleName,
+                        lastName: lastName
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                        input.classList.remove('validating');
+                    });
+                    
+                    if (data.valid) {
+                        [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                            input.classList.add('valid');
+                        });
+                        showValidationMessage('nameValidation', '✓ ' + data.message, 'success');
+                    } else {
+                        [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                            input.classList.add('invalid');
+                        });
+                        showValidationMessage('nameValidation', '✗ ' + data.message, 'error');
+                    }
                 });
-                showValidationMessage('nameValidation', '✗ ' + data.message, 'error');
             }
         })
         .catch(error => {
-            console.error('Name validation error:', error);
+            console.error('Name/Blotter validation error:', error);
             [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
                 input.classList.remove('validating');
                 input.classList.add('invalid');
             });
-            showValidationMessage('nameValidation', 'Error checking name availability', 'error');
+            showValidationMessage('nameValidation', 'Error checking name and records', 'error');
         });
-    }, 800); // 800ms delay for name (longer since it checks multiple fields)
+    }, 1500); // Reduced from 2000ms to 1500ms as per user memory
 }
 
 function showValidationMessage(elementId, message, type) {
@@ -6228,6 +6455,332 @@ function showValidationMessage(elementId, message, type) {
         validationDiv.className = `validation-message ${type} show`;
     }
 }
+
+// Blotter Detection Function
+function checkBlotterRecord(firstName, middleName, lastName) {
+    return fetch('check-blotter.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `action=check_blotter&first_name=${encodeURIComponent(firstName)}&middle_name=${encodeURIComponent(middleName)}&last_name=${encodeURIComponent(lastName)}`
+    })
+    .then(response => response.json())
+    .catch(error => {
+        console.error('Blotter check error:', error);
+        return { has_unresolved_issues: false, message: 'Blotter check unavailable' };
+    });
+}
+
+// Blotter Warning Modal Management
+let blotterModalTimer;
+let blotterCountdown = 60; // 1 minute in seconds
+
+function showBlotterWarningModal() {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('blotterWarningModal');
+    if (!modal) {
+        modal = createBlotterWarningModal();
+        document.body.appendChild(modal);
+    }
+    
+    // Reset countdown
+    blotterCountdown = 60;
+    const countdownElement = modal.querySelector('#blotterCountdown');
+    if (countdownElement) {
+        countdownElement.textContent = blotterCountdown;
+    }
+    
+    // Show modal with animation
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        modal.style.opacity = '1';
+        modal.style.transform = 'scale(1)';
+    }, 10);
+    
+    // Start countdown timer
+    startBlotterModalTimer();
+    
+    // Hide privacy modal if visible to prevent conflicts
+    const privacyModal = document.getElementById('dataPrivacyOverlay');
+    if (privacyModal && privacyModal.style.display !== 'none') {
+        privacyModal.style.display = 'none';
+    }
+}
+
+function createBlotterWarningModal() {
+    const modal = document.createElement('div');
+    modal.id = 'blotterWarningModal';
+    modal.className = 'modal-overlay blotter-warning-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        opacity: 0;
+        transform: scale(0.8);
+        transition: all 0.3s ease;
+        backdrop-filter: blur(5px);
+    `;
+    
+    modal.innerHTML = `
+        <div class="modal-content blotter-warning-content" style="
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 4px solid #f39c12;
+            border-radius: 20px;
+            padding: 0;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(243, 156, 18, 0.4);
+            animation: warningPulse 2s infinite alternate;
+            overflow: hidden;
+        ">
+            <div class="modal-header blotter-warning-header" style="
+                background: linear-gradient(135deg, #f39c12, #e67e22);
+                color: white;
+                padding: 1.5rem 2rem;
+                margin: 0;
+                border-bottom: none;
+            ">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">⚠️</div>
+                <h4 style="
+                    color: white;
+                    font-size: 1.5rem;
+                    font-weight: 800;
+                    margin: 0;
+                    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+                ">Unresolved Barangay Issue Detected</h4>
+            </div>
+            <div class="modal-body blotter-warning-body" style="
+                padding: 2rem;
+                margin: 0;
+                line-height: 1.6;
+                background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            ">
+                <p style="
+                    font-size: 1.2rem;
+                    color: #d35400;
+                    font-weight: 600;
+                    margin: 0 0 1rem 0;
+                ">You still have an unresolved issue with the barangay, please proceed to the help desk</p>
+                <p style="
+                    font-size: 1rem;
+                    color: #8b4513;
+                    margin: 0;
+                ">This modal will automatically close in <span id="blotterCountdown" style="font-weight: 800; color: #d35400;">60</span> seconds</p>
+            </div>
+            <div class="modal-footer blotter-warning-footer" style="
+                background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+                padding: 1.5rem 2rem;
+                margin: 0;
+                border-top: none;
+            ">
+                <button onclick="closeBlotterWarningModal()" style="
+                    background: linear-gradient(135deg, #e67e22, #d35400);
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 25px;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3);
+                    width: auto;
+                    min-width: 120px;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(230, 126, 34, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(230, 126, 34, 0.3)';">I Understand</button>
+            </div>
+        </div>
+    `;
+    
+    // Add CSS animation for warning pulse
+    if (!document.getElementById('blotterWarningStyles')) {
+        const styles = document.createElement('style');
+        styles.id = 'blotterWarningStyles';
+        styles.textContent = `
+            @keyframes warningPulse {
+                0% { box-shadow: 0 20px 60px rgba(243, 156, 18, 0.4); }
+                100% { box-shadow: 0 25px 70px rgba(243, 156, 18, 0.6); }
+            }
+            .validation-message.warning {
+                background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+                color: #856404;
+                border-left: 4px solid #f39c12;
+            }
+        `;
+        document.head.appendChild(styles);
+    }
+    
+    return modal;
+}
+
+function closeBlotterWarningModal() {
+    const modal = document.getElementById('blotterWarningModal');
+    if (modal) {
+        // Clear timer
+        if (blotterModalTimer) {
+            clearInterval(blotterModalTimer);
+            blotterModalTimer = null;
+        }
+        
+        // Animate out
+        modal.style.opacity = '0';
+        modal.style.transform = 'scale(0.8)';
+        
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
+}
+
+function startBlotterModalTimer() {
+    const countdownElement = document.getElementById('blotterCountdown');
+    
+    if (!countdownElement) {
+        return;
+    }
+    
+    blotterModalTimer = setInterval(() => {
+        blotterCountdown--;
+        countdownElement.textContent = blotterCountdown;
+        
+        // Change color when time is running out
+        if (blotterCountdown <= 10) {
+            countdownElement.style.color = '#c0392b';
+            countdownElement.style.fontWeight = '900';
+        } else if (blotterCountdown <= 30) {
+            countdownElement.style.color = '#d35400';
+            countdownElement.style.fontWeight = '800';
+        }
+        
+        if (blotterCountdown <= 0) {
+            clearInterval(blotterModalTimer);
+            closeBlotterWarningModal();
+        }
+    }, 1000);
+}
+
+// Test Blotter Detection Function
+function testBlotterDetection() {
+    // Use test data from memory - Mar Yvan Sagun Dela Cruz
+    const firstNameInput = document.getElementById('firstName');
+    const middleNameInput = document.getElementById('middleName');
+    const lastNameInput = document.getElementById('lastName');
+    
+    // Store original values
+    const originalFirstName = firstNameInput.value;
+    const originalMiddleName = middleNameInput.value;
+    const originalLastName = lastNameInput.value;
+    
+    // Set test values
+    firstNameInput.value = 'Mar Yvan';
+    middleNameInput.value = 'Sagun';
+    lastNameInput.value = 'Dela Cruz';
+    
+    // Show toast notification
+    showToastNotification('🔍 Testing blotter detection with known test case...', 'info');
+    
+    // Test the blotter detection
+    checkBlotterRecord('Mar Yvan', 'Sagun', 'Dela Cruz')
+    .then(result => {
+        console.log('Blotter test result:', result);
+        
+        if (result.has_unresolved_issues) {
+            showToastNotification('✅ Test successful! Blotter warning modal should appear.', 'success');
+            showBlotterWarningModal();
+        } else {
+            showToastNotification('ℹ️ No unresolved issues found for test case. System working correctly.', 'info');
+        }
+        
+        // Reset form values after a short delay
+        setTimeout(() => {
+            firstNameInput.value = originalFirstName;
+            middleNameInput.value = originalMiddleName;
+            lastNameInput.value = originalLastName;
+            showToastNotification('🔄 Form values reset to original state', 'info');
+        }, 3000);
+    })
+    .catch(error => {
+        console.error('Blotter test error:', error);
+        showToastNotification('❌ Test failed: ' + error.message, 'error');
+        
+        // Reset values immediately on error
+        firstNameInput.value = originalFirstName;
+        middleNameInput.value = originalMiddleName;
+        lastNameInput.value = originalLastName;
+    });
+}
+
+// Toast Notification System
+function showToastNotification(message, type = 'info') {
+    // Remove existing toasts
+    const existingToasts = document.querySelectorAll('.toast-notification');
+    existingToasts.forEach(toast => toast.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = `toast-notification toast-${type}`;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${getToastColor(type)};
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        z-index: 10001;
+        transform: translateX(400px);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 350px;
+        word-wrap: break-word;
+    `;
+    
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    // Animate in
+    setTimeout(() => {
+        toast.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Auto remove after 4 seconds
+    setTimeout(() => {
+        toast.style.transform = 'translateX(400px)';
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 400);
+    }, 4000);
+}
+
+function getToastColor(type) {
+    switch (type) {
+        case 'success': return 'linear-gradient(135deg, #28a745, #20c997)';
+        case 'error': return 'linear-gradient(135deg, #dc3545, #c82333)';
+        case 'warning': return 'linear-gradient(135deg, #ffc107, #e0a800)';
+        case 'info': 
+        default: return 'linear-gradient(135deg, #17a2b8, #138496)';
+    }
+}
+
+// Enhanced modal escape key support for blotter warning modal
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const blotterModal = document.getElementById('blotterWarningModal');
+        if (blotterModal && blotterModal.style.display !== 'none') {
+            closeBlotterWarningModal();
+        }
+    }
+});
 
 // Initialize validation when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
@@ -6317,9 +6870,15 @@ function startModalTimer() {
 
 // Initialize modal functionality when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 DOM Content Loaded - Initializing modal system...');
+    
+    // Setup privacy modal event handlers
+    setupPrivacyModalEventHandlers();
+    
     // Check if success modal exists and start timer
     const successModal = document.getElementById('successModal');
     if (successModal) {
+        console.log('✅ Success modal detected - starting timer');
         startModalTimer();
         
         // Hide privacy notice if it's showing
@@ -6327,17 +6886,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (privacyOverlay) {
             privacyOverlay.style.display = 'none';
             sessionStorage.setItem('privacyNoticeShown', 'true');
+            console.log('🔒 Privacy notice hidden due to success modal');
         }
     }
     
     // Check if error modal exists
     const errorModal = document.getElementById('errorModal');
     if (errorModal) {
+        console.log('❌ Error modal detected');
         // Hide privacy notice if it's showing
         const privacyOverlay = document.getElementById('dataPrivacyOverlay');
         if (privacyOverlay) {
             privacyOverlay.style.display = 'none';
             sessionStorage.setItem('privacyNoticeShown', 'true');
+            console.log('🔒 Privacy notice hidden due to error modal');
         }
     }
     
@@ -6362,8 +6924,219 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+    
+    // Always attempt to initialize privacy notice unless there are modals
+    if (!successModal && !errorModal) {
+        console.log('🛡️ No blocking modals - attempting to show privacy notice...');
+        // Small delay to ensure DOM is fully loaded before showing privacy notice
+        setTimeout(() => {
+            console.log('🔍 Delayed privacy notice check starting...');
+            initializePrivacyNotice();
+        }, 150);
+    } else {
+        console.log('🚫 Privacy notice blocked - modal present:', {
+            success: !!successModal,
+            error: !!errorModal
+        });
+    }
 });
 
 </script>
+
+<!-- Queue Information Display for Kiosk -->
+<?php if (isset($_SESSION['queue_ticket_number'])): ?>
+<div class="queue-info-banner kiosk-queue-display">
+    <div class="queue-info-content">
+        <h2>🎫 YOUR QUEUE TICKET</h2>
+        <div class="queue-main-info">
+            <div class="ticket-number-display">
+                <div class="ticket-label">TICKET NUMBER</div>
+                <div class="ticket-number-big"><?php echo htmlspecialchars($_SESSION['queue_ticket_number']); ?></div>
+            </div>
+            <div class="queue-position-display">
+                <div class="position-label">QUEUE POSITION</div>
+                <div class="position-number-big">#<?php echo $_SESSION['queue_position']; ?></div>
+            </div>
+        </div>
+        <div class="queue-service-info">
+            <div class="service-name">Service: <?php echo htmlspecialchars($_SESSION['service_name'] ?? 'Resident Registration'); ?></div>
+            <div class="estimated-time">Estimated processing time: <?php echo $_SESSION['estimated_time'] ?? 'Please check status'; ?></div>
+        </div>
+        <div class="queue-actions">
+            <a href="queue-status.php?lookup=1&ticket_number=<?php echo urlencode($_SESSION['queue_ticket_number']); ?>" class="btn btn-primary btn-large">
+                📊 CHECK QUEUE STATUS
+            </a>
+            <a href="queue-ticket.php" class="btn btn-secondary btn-large">
+                🎫 GET NEW TICKET
+            </a>
+        </div>
+        <div class="queue-instructions">
+            <h4>📋 IMPORTANT INSTRUCTIONS:</h4>
+            <ul>
+                <li>🔹 Keep this ticket number safe - you'll need it to check your status</li>
+                <li>🔹 Monitor the queue display screen for your number</li>
+                <li>🔹 Present this ticket when called at the service counter</li>
+                <li>🔹 Your registration is being processed - please be patient</li>
+                <li>🔹 You will be notified when your registration is complete</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Enhanced Kiosk-Friendly Queue Display */
+.kiosk-queue-display {
+    background: linear-gradient(135deg, #1565c0, #1976d2);
+    border: 4px solid #0d47a1;
+    border-radius: 20px;
+    padding: 40px;
+    margin: 30px 0;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(13, 71, 161, 0.3);
+    color: white;
+}
+
+.kiosk-queue-display h2 {
+    color: white;
+    margin: 0 0 30px 0;
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: 2px;
+}
+
+.queue-main-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin: 30px 0;
+}
+
+.ticket-number-display, .queue-position-display {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 15px;
+    padding: 30px 20px;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.ticket-label, .position-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    opacity: 0.9;
+    letter-spacing: 1px;
+}
+
+.ticket-number-big, .position-number-big {
+    font-size: 4rem;
+    font-weight: 900;
+    font-family: 'Courier New', monospace;
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+    margin: 10px 0;
+    word-break: break-all;
+    line-height: 1;
+}
+
+.queue-service-info {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 25px 0;
+    backdrop-filter: blur(5px);
+}
+
+.service-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.estimated-time {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.queue-actions {
+    display: flex;
+    gap: 20px;
+    margin: 30px 0;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-large {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.queue-instructions {
+    text-align: left;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 25px;
+    margin-top: 30px;
+    backdrop-filter: blur(5px);
+}
+
+.queue-instructions h4 {
+    color: white;
+    font-size: 1.3rem;
+    margin: 0 0 15px 0;
+    text-align: center;
+}
+
+.queue-instructions ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.queue-instructions li {
+    padding: 8px 0;
+    font-size: 1.1rem;
+    line-height: 1.4;
+}
+
+/* Responsive Design for Kiosk */
+@media (max-width: 768px) {
+    .queue-main-info {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .ticket-number-big, .position-number-big {
+        font-size: 3rem;
+    }
+    
+    .kiosk-queue-display h2 {
+        font-size: 2rem;
+    }
+    
+    .queue-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn-large {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+</style>
+<?php endif; ?>
 
 <?php include '../includes/footer.php'; ?>

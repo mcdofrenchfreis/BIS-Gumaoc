@@ -140,20 +140,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_resident'])) {
                 ]);
                 
                 if ($result) {
-                    // Send activation email
+                    // Send confirmation email instead of activation email
                     $emailService = new EmailService();
                     $resident_name = $first_name . ' ' . $last_name;
-                    $email_sent = $emailService->sendRFIDActivationEmail(
+                    $email_sent = $emailService->sendRegistrationConfirmationEmail(
                         $email,
-                        $resident_name,
-                        $final_rfid_code,
-                        $generated_password
+                        $resident_name
                     );
                     
                     if ($email_sent) {
-                        $success = "Resident activated successfully! RFID ({$final_rfid_code}) generated and credentials emailed to {$email}";
+                        $success = "Resident activated successfully! A confirmation email has been sent to {$email}";
                     } else {
-                        $success = "Resident activated with RFID ({$final_rfid_code}), but email delivery failed. Please contact resident manually.";
+                        $success = "Resident activated, but email delivery failed. Please contact resident manually.";
                     }
                 }
                 

@@ -251,6 +251,22 @@ body {
     color: white;
 }
 
+.btn-success {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    border: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #20c997, #17a2b8);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
 .ticket-result {
     margin-top: 30px;
     padding: 25px;
@@ -789,8 +805,9 @@ body {
             <h3>🚀 Quick Actions</h3>
             <div class="action-buttons">
                 <a href="queue-ticket.php" class="btn btn-primary">🎫 Get New Ticket</a>
-                <a href="queue-monitor.php" class="btn btn-secondary">📺 Live Monitor</a>
+                <a href="queue-kiosk.php" class="btn btn-success">📺 Kiosk Display</a>
                 <a href="certificate-request.php" class="btn btn-outline">📄 Request Certificate</a>
+                <a href="resident-registration.php" class="btn btn-outline">👥 Register as Resident</a>
             </div>
         </div>
     </div>

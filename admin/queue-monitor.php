@@ -1,160 +1,153 @@
 <?php
-$base_path = '../';
-$page_title = 'Queue Live Monitor';
-require_once 'auth_check.php';
+session_start();
+include '../includes/db_connect.php';
 
-// Add admin stylesheet and Font Awesome
-$additional_css = [
-	'<link rel="stylesheet" href="' . $base_path . 'assets/css/admin.css">',
-	'<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">'
-];
+// Check admin authentication
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    header('Location: login.php');
+    exit;
+}
+
+$page_title = 'Queue Live Monitor - Admin Dashboard';
+include '../includes/admin_header.php';
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title><?php echo htmlspecialchars($page_title); ?> - Barangay Gumaoc East</title>
-	<?php
-	if (isset($additional_css)) {
-		foreach ($additional_css as $css) {
-			echo $css;
-		}
-	}
-	?>
-	<style>
-		/* Queue Monitor - Enhanced Site Theme Compatible */
-		:root {
-			--primary-green: #2e7d32;
-			--primary-dark: #1b5e20;
-			--primary-light: #388e3c;
-			--success-green: #4caf50;
-			--warning-orange: #ff9800;
-			--danger-red: #f44336;
-			--info-blue: #2196f3;
-			--bg-light: #f4f7f9;
-			--bg-white: #ffffff;
-			--text-primary: #2c3e50;
-			--text-secondary: #546e7a;
-			--text-muted: #90a4ae;
-			--border-light: #e8eaf6;
-			--shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-			--shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-			--shadow-lg: 0 8px 25px rgba(0,0,0,0.15);
-			--border-radius: 12px;
-			--border-radius-sm: 8px;
-			--transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-		}
+<style>
+/* Queue Monitor - Enhanced Admin Theme Compatible */
+:root {
+    --primary-green: #2e7d32;
+    --primary-dark: #1b5e20;
+    --primary-light: #388e3c;
+    --success-green: #4caf50;
+    --warning-orange: #ff9800;
+    --danger-red: #f44336;
+    --info-blue: #2196f3;
+    --bg-light: #f4f7f9;
+    --bg-white: #ffffff;
+    --text-primary: #2c3e50;
+    --text-secondary: #546e7a;
+    --text-muted: #90a4ae;
+    --border-light: #e8eaf6;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+    --shadow-lg: 0 8px 25px rgba(0,0,0,0.15);
+    --border-radius: 12px;
+    --border-radius-sm: 8px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-		/* Reset all potential space-causing elements */
-		* {
-			box-sizing: border-box;
-		}
-		
-		html {
-			margin: 0 !important;
-			padding: 0 !important;
-			width: 100vw !important;
-			height: 100vh !important;
-			overflow-x: hidden !important;
-			background: var(--bg-light) !important;
-		}
-		
-		body {
-			font-family: 'Roboto', sans-serif;
-			background: var(--bg-light) !important;
-			margin: 0 !important;
-			padding: 0 !important;
-			width: 100vw !important;
-			height: 100vh !important;
-			overflow-x: hidden !important;
-			position: relative;
-		}
+/* Override admin header text layout issues */
+.admin-brand-text {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: center !important;
+    line-height: 1.2 !important;
+    min-height: 44px !important;
+}
 
-		/* Force full viewport usage - override any admin.css conflicts */
-		.admin-wrapper { 
-			width: 100vw !important; 
-			max-width: 100vw !important; 
-			min-width: 100vw !important;
-			margin: 0 !important;
-			padding: 0 !important;
-			overflow-x: hidden !important;
-			left: 0 !important;
-			top: 0 !important;
-			right: 0 !important;
-			position: absolute !important;
-			background: var(--bg-light) !important;
-			display: block !important;
-			flex: none !important;
-			flex-direction: unset !important;
-		}
-		
-		.admin-main { 
-			width: 100vw !important; 
-			max-width: 100vw !important; 
-			min-width: 100vw !important;
-			padding: 0 !important; 
-			margin: 0 !important;
-			left: 0 !important;
-			top: 0 !important;
-			right: 0 !important;
-			position: relative !important;
-			margin-left: 0 !important;
-			flex: none !important;
-			min-height: 100vh !important;
-			background: var(--bg-light) !important;
-		}
+.admin-brand-text h1 {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    margin: 0 0 2px 0 !important;
+    color: white !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+}
 
-		.content-wrapper {
-			padding: 20px;
-			width: calc(100vw - 40px) !important;
-			max-width: calc(100vw - 40px) !important;
-			margin: 0 20px !important;
-			position: relative;
-			left: 0 !important;
-			right: 0 !important;
-			background: transparent !important;
-		}
+.admin-brand-text p {
+    font-size: 11px !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    margin: 0 !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+}
 
-		.content-header {
-			background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-light) 50%, var(--primary-dark) 100%);
-			color: white;
-			border-radius: var(--border-radius);
-			box-shadow: var(--shadow-lg);
-			margin: 20px 20px 30px 20px !important;
-			padding: 25px 35px;
-			display: flex;
-			justify-content: space-between;
-			align-items: center;
-			width: calc(100vw - 40px) !important;
-			max-width: calc(100vw - 40px) !important;
-			position: relative;
-			left: 0 !important;
-			right: 0 !important;
-			border: 1px solid rgba(255,255,255,0.1);
-			backdrop-filter: blur(10px);
-		}
+.admin-brand {
+    display: flex !important;
+    align-items: center !important;
+    text-decoration: none !important;
+    color: white !important;
+    transition: all 0.3s ease !important;
+    padding: 8px 12px !important;
+    border-radius: 8px !important;
+    min-width: 200px !important;
+    height: 54px !important;
+}
 
-		.content-header h2 { 
-			color: white; 
-			font-weight: 700; 
-			margin: 0; 
-			font-size: 28px;
-			letter-spacing: -0.5px;
-			text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-		}
-		.content-header h2::before { 
-			content: '📊'; 
-			font-size: 32px; 
-			margin-right: 12px; 
-			filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-		}
+.admin-brand-logo {
+    width: 36px !important;
+    height: 36px !important;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.15)) !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-weight: bold !important;
+    font-size: 16px !important;
+    margin-right: 10px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
+    transition: all 0.3s ease !important;
+    flex-shrink: 0 !important;
+}
 
-		.header-actions { 
-			display: flex; 
-			gap: 18px; 
-			align-items: center; 
-		}
+/* Ensure proper page layout for footer positioning */
+body {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100vh !important;
+}
+
+.admin-main-content {
+    flex: 1 !important;
+    margin-top: 90px !important;
+    min-height: calc(100vh - 160px) !important;
+}
+
+/* Queue Monitor Container */
+.queue-monitor-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: calc(100vh - 200px); /* Ensure minimum height for footer positioning */
+}
+
+.queue-monitor-header {
+    background: linear-gradient(135deg, var(--primary-green) 0%, var(--primary-light) 50%, var(--primary-dark) 100%);
+    color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 30px;
+    padding: 25px 35px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+}
+
+.queue-monitor-header h2 { 
+    color: white; 
+    font-weight: 700; 
+    margin: 0; 
+    font-size: 28px;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.queue-monitor-header h2::before { 
+    content: '📊'; 
+    font-size: 32px; 
+    margin-right: 12px; 
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.header-actions { 
+    display: flex; 
+    gap: 18px; 
+    align-items: center; 
+}
 
 		.refresh-indicator {
 			background: rgba(255,255,255,0.15);
@@ -197,13 +190,13 @@ $additional_css = [
 			box-shadow: var(--shadow-md);
 		}
 
-		.monitor-grid { 
-			display: grid; 
-			grid-template-columns: 1fr 1fr; 
-			gap: 25px; 
-			margin-top: 25px; 
-			width: 100%; 
-		}
+.monitor-grid { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 25px; 
+    margin-top: 25px; 
+    width: 100%; 
+}
 
 		.panel {
 			background: var(--bg-white);
@@ -539,17 +532,14 @@ $additional_css = [
 				gap: 15px; 
 			}
 			
-			.content-header { 
+			.queue-monitor-header { 
 				flex-direction: column; 
 				text-align: center; 
 				gap: 20px;
-				margin: 15px 15px 25px 15px !important;
 				padding: 20px 25px;
-				width: calc(100vw - 30px) !important;
-				max-width: calc(100vw - 30px) !important;
 			}
 			
-			.content-header h2 {
+			.queue-monitor-header h2 {
 				font-size: 24px;
 			}
 			
@@ -559,11 +549,9 @@ $additional_css = [
 				gap: 15px;
 			}
 			
-			.content-wrapper { 
+			.queue-monitor-container { 
 				padding: 15px; 
-				width: calc(100vw - 30px) !important;
-				max-width: calc(100vw - 30px) !important;
-				margin: 0 15px !important;
+				min-height: calc(100vh - 180px);
 			}
 			
 			.panel { 
@@ -592,131 +580,143 @@ $additional_css = [
 				font-size: 28px;
 			}
 			
-			/* Ensure no space on mobile */
-			html, body {
+			/* Fix admin header text stacking on mobile */
+			.admin-brand-text {
+				display: flex;
+				flex-direction: column;
+				align-items: flex-start;
+				line-height: 1.2;
+			}
+			
+			.admin-brand-text h1 {
+				font-size: 16px !important;
+				margin-bottom: 2px !important;
+				white-space: nowrap;
+			}
+			
+			.admin-brand-text p {
+				font-size: 10px !important;
+				white-space: nowrap;
 				margin: 0 !important;
-				padding: 0 !important;
-				width: 100vw !important;
 			}
-			.admin-wrapper, .admin-main {
-				width: 100vw !important;
-				margin: 0 !important;
-				padding: 0 !important;
+			
+			.admin-brand {
+				min-width: 180px !important;
+				padding: 8px 12px !important;
+			}
+			
+			.admin-brand-logo {
+				width: 32px !important;
+				height: 32px !important;
+				margin-right: 8px !important;
+				flex-shrink: 0;
 			}
 		}
 
-		@media (max-width: 480px) {
-			.stats { 
-				grid-template-columns: 1fr; 
-				gap: 12px;
-			}
-			
-			.content-wrapper { 
-				padding: 12px; 
-				width: calc(100vw - 24px) !important;
-				max-width: calc(100vw - 24px) !important;
-				margin: 0 12px !important;
-			}
-			
-			.content-header { 
-				margin: 12px 12px 20px 12px !important;
-				padding: 18px 20px;
-				width: calc(100vw - 24px) !important;
-				max-width: calc(100vw - 24px) !important;
-			}
-			
-			.content-header h2 {
-				font-size: 22px;
-			}
-			
-			.panel {
-				padding: 20px 15px;
-			}
-			
-			.stat {
-				padding: 20px 15px;
-			}
-			
-			.stat .num {
-				font-size: 26px;
-			}
-			
-			.ticket {
-				padding: 15px;
-			}
-			
-			.ticket-number {
-				font-size: 16px;
-			}
-			
-			.monitor-grid {
-				gap: 15px;
-			}
-		}
-		
-		/* Additional overrides to prevent any orange space */
-		/* Target any potential conflicting elements */
-		main, section, div, header, footer {
-			box-sizing: border-box !important;
-		}
-		
-		/* Ensure no browser default margins */
-		@page {
-			margin: 0;
-		}
-		
-		/* Force remove any potential left margins or padding */
-		.admin-wrapper > *, 
-		.admin-main > *,
-		body > *,
-		html > * {
-			margin-left: 0 !important;
-			padding-left: initial !important;
-		}
-		
-		/* Ensure full width for all child elements */
-		.admin-wrapper .admin-main .content-header,
-		.admin-wrapper .admin-main .content-wrapper {
-			max-width: none !important;
-			left: 0 !important;
-			right: 0 !important;
-		}
-	</style>
-</head>
-<body>
-	<div class="admin-wrapper">
-		<?php include '../includes/admin_navigation.php'; ?>
+@media (max-width: 480px) {
+    .stats { 
+        grid-template-columns: 1fr; 
+        gap: 12px;
+    }
+    
+    .queue-monitor-container { 
+        padding: 12px;
+        min-height: calc(100vh - 160px);
+    }
+    
+    .queue-monitor-header { 
+        margin-bottom: 20px;
+        padding: 18px 20px;
+    }
+    
+    .queue-monitor-header h2 {
+        font-size: 22px;
+    }
+    
+    .panel {
+        padding: 20px 15px;
+    }
+    
+    .stat {
+        padding: 20px 15px;
+    }
+    
+    .stat .num {
+        font-size: 26px;
+    }
+    
+    .ticket {
+        padding: 15px;
+    }
+    
+    .ticket-number {
+        font-size: 16px;
+    }
+    
+    .monitor-grid {
+        gap: 15px;
+    }
+    
+    /* Further optimize admin header for very small screens */
+    .admin-brand-text h1 {
+        font-size: 14px !important;
+    }
+    
+    .admin-brand-text p {
+        font-size: 9px !important;
+    }
+    
+    .admin-brand {
+        min-width: 160px !important;
+        padding: 6px 10px !important;
+    }
+    
+    .admin-brand-logo {
+        width: 28px !important;
+        height: 28px !important;
+        margin-right: 6px !important;
+    }
+    
+    .admin-navbar {
+        height: auto !important;
+        min-height: 60px;
+    }
+    
+    .admin-navbar-container {
+        height: auto !important;
+        min-height: 60px;
+        padding: 8px 10px !important;
+    }
+}
+</style>
 
-		<main class="admin-main">
-			<header class="content-header">
-				<h2><?php echo htmlspecialchars($page_title); ?></h2>
-				<div class="header-actions">
-					<span class="refresh-indicator" id="refreshTime">—</span>
-					<button id="manualRefresh" class="btn btn-secondary">Refresh</button>
-				</div>
-			</header>
+<div class="queue-monitor-container">
+    <header class="queue-monitor-header">
+        <h2>Queue Live Monitor</h2>
+        <div class="header-actions">
+            <span class="refresh-indicator" id="refreshTime">—</span>
+            <button id="manualRefresh" class="btn btn-secondary">Refresh</button>
+        </div>
+    </header>
 
-			<div class="content-wrapper">
-				<div class="panel">
-					<div class="stats" id="stats"></div>
-				</div>
-				<div class="monitor-grid">
-					<div class="panel">
-						<h3 class="serving-title">Currently Serving / Ready for Pick-up</h3>
-						<div class="serving-list" id="servingList"></div>
-					</div>
-					<div class="panel">
-						<h3 class="waiting-title">Waiting Queue</h3>
-						<div class="waiting-list" id="waitingList"></div>
-					</div>
-				</div>
-			</div>
-		</main>
-	</div>
+    <div class="panel">
+        <div class="stats" id="stats"></div>
+    </div>
+    <div class="monitor-grid">
+        <div class="panel">
+            <h3 class="serving-title">Currently Serving / Ready for Pick-up</h3>
+            <div class="serving-list" id="servingList"></div>
+        </div>
+        <div class="panel">
+            <h3 class="waiting-title">Waiting Queue</h3>
+            <div class="waiting-list" id="waitingList"></div>
+        </div>
+    </div>
+</div>
 
 	<script>
 	// Ensure base path is properly set
-	const basePath = '<?php echo $base_path; ?>';
+	const basePath = '../';
 	const apiUrl = basePath + 'api/queue-state.php';
 	const statsEl = document.getElementById('stats');
 	const servingEl = document.getElementById('servingList');
@@ -987,7 +987,8 @@ $additional_css = [
 		initializeMonitor();
 	}
 	</script>
-</body>
-</html>
+</div>
+
+<?php include '../includes/admin_footer.php'; ?>
 
 

@@ -226,17 +226,14 @@ try {
                 }
             }
             
-            // Generate queue ticket for business application
+            // Generate queue ticket for business application using enhanced method
             $queueManager = new QueueManager($pdo);
-            $service_id = 6; // Business Application service ID
             
-            $queue_result = $queueManager->generateTicket(
-                $service_id,
+            $queue_result = $queueManager->generateTicketForForm(
+                'business_application',
                 $full_name,
                 $mobile_number,
-                null,
-                "Business Application: {$business_name}",
-                'normal'
+                "Business Application: {$business_name}"
             );
             
             if ($queue_result['success']) {
@@ -310,28 +307,29 @@ try {
     if ($stmt->execute()) {
         $request_id = $pdo->lastInsertId();
         
-        // NEW: Generate queue ticket automatically
+        // NEW: Generate queue ticket automatically using enhanced method
         $queueManager = new QueueManager($pdo);
         
-        // Map certificate types to queue services (using the IDs from our inserted data)
+        // Determine the specific form type for better queue categorization
+        $form_type = strtolower(str_replace([' ', '.'], '_', $certificate_type));
+        $queue_form_type = $form_type;
+        
+        // Map to more specific queue services
         $service_mapping = [
-            'BRGY. CLEARANCE' => 1,      // Barangay Clearance
-            'BRGY. INDIGENCY' => 2,      // Barangay Indigency  
-            'TRICYCLE PERMIT' => 3,      // Tricycle Permit
-            'PROOF OF RESIDENCY' => 4,   // Proof of Residency
-            'BUSINESS APPLICATION' => 6  // Business Application
+            'brgy_clearance' => 'brgy_clearance',
+            'brgy_indigency' => 'brgy_indigency', 
+            'tricycle_permit' => 'tricycle_permit',
+            'proof_of_residency' => 'proof_residency',
+            'business_application' => 'business_application'
         ];
         
-        $service_id = $service_mapping[$certificate_type] ?? 5; // Default to General Services
+        $final_form_type = $service_mapping[$form_type] ?? 'certificate_request';
         
-        // Generate queue ticket
-        $queue_result = $queueManager->generateTicket(
-            $service_id,
+        $queue_result = $queueManager->generateTicketForForm(
+            $final_form_type,
             $full_name,
             $mobile_number,
-            null, // user_id (for guest users)
-            "Certificate Request: {$certificate_type}",
-            'normal' // priority level
+            "Certificate Request: {$certificate_type}"
         );
         
         if ($queue_result['success']) {

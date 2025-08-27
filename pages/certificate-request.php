@@ -8,6 +8,11 @@ $header_subtitle = 'Request for Barangay Certificates';
 // Initialize database connection
 include '../includes/db_connect.php';
 
+// Include database connection for blotter checking
+if (!$admin_view) {
+    include '../includes/db_connect.php';
+}
+
 // Check if this is an admin view
 $admin_view = isset($_GET['admin_view']) ? (int)$_GET['admin_view'] : null;
 $readonly = isset($_GET['readonly']) && $_GET['readonly'] === '1';
@@ -652,6 +657,8 @@ document.addEventListener('keydown', function(event) {
         </div>
       </fieldset>
 
+
+
       <fieldset>
         <legend>Personal Information</legend>
         
@@ -704,6 +711,9 @@ document.addEventListener('keydown', function(event) {
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
         </div>
+        
+        <!-- Name validation message -->
+        <div id="nameValidation" class="validation-message"></div>
 
         <div class="form-grid-two">
           <div class="form-group">
@@ -899,29 +909,197 @@ document.addEventListener('keydown', function(event) {
 </div>
 
 <?php if (isset($_SESSION['queue_ticket_number'])): ?>
-<div class="queue-info-banner">
+<div class="queue-info-banner kiosk-queue-display">
     <div class="queue-info-content">
-        <h3>🎫 Your Queue Ticket</h3>
-        <div class="queue-details">
-            <div class="queue-item">
-                <strong>Ticket Number:</strong> <?php echo htmlspecialchars($_SESSION['queue_ticket_number']); ?>
+        <h2>🎫 YOUR QUEUE TICKET</h2>
+        <div class="queue-main-info">
+            <div class="ticket-number-display">
+                <div class="ticket-label">TICKET NUMBER</div>
+                <div class="ticket-number-big"><?php echo htmlspecialchars($_SESSION['queue_ticket_number']); ?></div>
             </div>
-            <div class="queue-item">
-                <strong>Queue Position:</strong> #<?php echo $_SESSION['queue_position']; ?>
+            <div class="queue-position-display">
+                <div class="position-label">QUEUE POSITION</div>
+                <div class="position-number-big">#<?php echo $_SESSION['queue_position']; ?></div>
             </div>
-            <div class="queue-actions">
-                <a href="queue-status.php?lookup=1&ticket_number=<?php echo urlencode($_SESSION['queue_ticket_number']); ?>" class="btn btn-primary">
-                    📊 Check Queue Status
-                </a>
-                <a href="queue-ticket.php" class="btn btn-secondary">
-                    🎫 Get New Ticket
-                </a>
-            </div>
+        </div>
+        <div class="queue-service-info">
+            <div class="service-name">Service: <?php echo htmlspecialchars($_SESSION['service_name'] ?? 'Certificate Request'); ?></div>
+            <div class="estimated-time">Estimated processing time: <?php echo $_SESSION['estimated_time'] ?? 'Please check status'; ?></div>
+        </div>
+        <div class="queue-actions">
+            <a href="queue-status.php?lookup=1&ticket_number=<?php echo urlencode($_SESSION['queue_ticket_number']); ?>" class="btn btn-primary btn-large">
+                📊 CHECK QUEUE STATUS
+            </a>
+            <a href="queue-ticket.php" class="btn btn-secondary btn-large">
+                🎫 GET NEW TICKET
+            </a>
+        </div>
+        <div class="queue-instructions">
+            <h4>📋 IMPORTANT INSTRUCTIONS:</h4>
+            <ul>
+                <li>🔹 Keep this ticket number safe - you'll need it to check your status</li>
+                <li>🔹 Monitor the queue display screen for your number</li>
+                <li>🔹 Present this ticket when called at the service counter</li>
+                <li>🔹 Arrive at the office when your number is close to being called</li>
+            </ul>
         </div>
     </div>
 </div>
 
 <style>
+/* Enhanced Kiosk-Friendly Queue Display */
+.kiosk-queue-display {
+    background: linear-gradient(135deg, #1565c0, #1976d2);
+    border: 4px solid #0d47a1;
+    border-radius: 20px;
+    padding: 40px;
+    margin: 30px 0;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(13, 71, 161, 0.3);
+    color: white;
+}
+
+.kiosk-queue-display h2 {
+    color: white;
+    margin: 0 0 30px 0;
+    font-size: 2.5rem;
+    font-weight: 900;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: 2px;
+}
+
+.queue-main-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin: 30px 0;
+}
+
+.ticket-number-display, .queue-position-display {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 15px;
+    padding: 30px 20px;
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.ticket-label, .position-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    opacity: 0.9;
+    letter-spacing: 1px;
+}
+
+.ticket-number-big, .position-number-big {
+    font-size: 4rem;
+    font-weight: 900;
+    font-family: 'Courier New', monospace;
+    text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+    margin: 10px 0;
+    word-break: break-all;
+    line-height: 1;
+}
+
+.queue-service-info {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 25px 0;
+    backdrop-filter: blur(5px);
+}
+
+.service-name {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.estimated-time {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.queue-actions {
+    display: flex;
+    gap: 20px;
+    margin: 30px 0;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-large {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn-large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.queue-instructions {
+    text-align: left;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 25px;
+    margin-top: 30px;
+    backdrop-filter: blur(5px);
+}
+
+.queue-instructions h4 {
+    color: white;
+    font-size: 1.3rem;
+    margin: 0 0 15px 0;
+    text-align: center;
+}
+
+.queue-instructions ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.queue-instructions li {
+    padding: 8px 0;
+    font-size: 1.1rem;
+    line-height: 1.4;
+}
+
+/* Responsive Design for Kiosk */
+@media (max-width: 768px) {
+    .queue-main-info {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .ticket-number-big, .position-number-big {
+        font-size: 3rem;
+    }
+    
+    .kiosk-queue-display h2 {
+        font-size: 2rem;
+    }
+    
+    .queue-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .btn-large {
+        width: 100%;
+        max-width: 300px;
+    }
+}
+
 .queue-info-banner {
     background: linear-gradient(135deg, #e3f2fd, #bbdefb);
     border: 2px solid #2196f3;
@@ -1521,6 +1699,74 @@ legend {
   cursor: pointer;
   font-weight: 600;
   margin-bottom: 20px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+}
+
+.back-to-selection:hover {
+  background: linear-gradient(135deg, #495057, #343a40);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+}
+
+/* Validation Message Styles */
+.validation-message {
+  margin-top: 0.5rem;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: none;
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+}
+
+.validation-message.show {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.validation-message.success {
+  background: rgba(40, 167, 69, 0.1);
+  color: #155724;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.validation-message.error {
+  background: rgba(220, 53, 69, 0.1);
+  color: #721c24;
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.validation-message.warning {
+  background: rgba(255, 193, 7, 0.1);
+  color: #856404;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.validation-message.loading {
+  background: rgba(108, 117, 125, 0.1);
+  color: #495057;
+  border: 1px solid rgba(108, 117, 125, 0.3);
+}
+
+/* Input validation states */
+.form-group input.validating {
+  border-color: #ffc107 !important;
+  box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.15) !important;
+}
+
+.form-group input.valid {
+  border-color: #28a745 !important;
+  box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.15) !important;
+}
+
+.form-group input.invalid {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.15) !important;
+}
   transition: all 0.3s ease;
   display: inline-flex;
   align-items: center;
@@ -3010,6 +3256,372 @@ function checkPreSelectedCertificateType() {
   }
 }
 
+// Blotter Detection Function
+function checkBlotterRecord(firstName, middleName, lastName) {
+    return fetch('check-blotter.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `action=check_blotter&first_name=${encodeURIComponent(firstName)}&middle_name=${encodeURIComponent(middleName)}&last_name=${encodeURIComponent(lastName)}`
+    })
+    .then(response => response.json())
+    .catch(error => {
+        console.error('Blotter check error:', error);
+        return { has_unresolved_issues: false, message: 'Blotter check unavailable' };
+    });
+}
+
+// Blotter Warning Modal Management
+let blotterModalTimer;
+let blotterCountdown = 60; // 1 minute in seconds
+
+function showBlotterWarningModal() {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('blotterWarningModal');
+    if (!modal) {
+        modal = createBlotterWarningModal();
+        document.body.appendChild(modal);
+    }
+    
+    // Reset countdown
+    blotterCountdown = 60;
+    const countdownElement = modal.querySelector('#blotterCountdown');
+    if (countdownElement) {
+        countdownElement.textContent = blotterCountdown;
+    }
+    
+    // Show modal with animation
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        modal.style.opacity = '1';
+        modal.style.transform = 'scale(1)';
+    }, 10);
+    
+    // Start countdown timer
+    startBlotterModalTimer();
+    
+    // Hide other modals if visible to prevent conflicts
+    const toastOverlay = document.getElementById('toastOverlay');
+    if (toastOverlay && toastOverlay.style.display !== 'none') {
+        toastOverlay.style.display = 'none';
+    }
+}
+
+function createBlotterWarningModal() {
+    const modal = document.createElement('div');
+    modal.id = 'blotterWarningModal';
+    modal.className = 'modal-overlay blotter-warning-modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        opacity: 0;
+        transform: scale(0.8);
+        transition: all 0.3s ease;
+        backdrop-filter: blur(5px);
+    `;
+    
+    modal.innerHTML = `
+        <div class="modal-content blotter-warning-content" style="
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 4px solid #f39c12;
+            border-radius: 20px;
+            padding: 0;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(243, 156, 18, 0.4);
+            animation: warningPulse 2s infinite alternate;
+            overflow: hidden;
+        ">
+            <div class="modal-header blotter-warning-header" style="
+                background: linear-gradient(135deg, #f39c12, #e67e22);
+                color: white;
+                padding: 1.5rem 2rem;
+                margin: 0;
+                border-bottom: none;
+            ">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">⚠️</div>
+                <h4 style="
+                    color: white;
+                    font-size: 1.5rem;
+                    font-weight: 800;
+                    margin: 0;
+                    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+                ">Unresolved Barangay Issue Detected</h4>
+            </div>
+            <div class="modal-body blotter-warning-body" style="
+                padding: 2rem;
+                margin: 0;
+                line-height: 1.6;
+                background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            ">
+                <p style="
+                    font-size: 1.2rem;
+                    color: #d35400;
+                    font-weight: 600;
+                    margin: 0 0 1rem 0;
+                ">You still have an unresolved issue with the barangay, please proceed to the help desk</p>
+                <p style="
+                    font-size: 1rem;
+                    color: #8b4513;
+                    margin: 0;
+                ">This modal will automatically close in <span id="blotterCountdown" style="font-weight: 800; color: #d35400;">60</span> seconds</p>
+            </div>
+            <div class="modal-footer blotter-warning-footer" style="
+                background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+                padding: 1.5rem 2rem;
+                margin: 0;
+                border-top: none;
+            ">
+                <button onclick="closeBlotterWarningModal()" style="
+                    background: linear-gradient(135deg, #e67e22, #d35400);
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 25px;
+                    font-size: 1rem;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3);
+                    width: auto;
+                    min-width: 120px;
+                " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(230, 126, 34, 0.4)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(230, 126, 34, 0.3)';">I Understand</button>
+            </div>
+        </div>
+    `;
+    
+    // Add CSS animation for warning pulse
+    if (!document.getElementById('blotterWarningStyles')) {
+        const styles = document.createElement('style');
+        styles.id = 'blotterWarningStyles';
+        styles.textContent = `
+            @keyframes warningPulse {
+                0% { box-shadow: 0 20px 60px rgba(243, 156, 18, 0.4); }
+                100% { box-shadow: 0 25px 70px rgba(243, 156, 18, 0.6); }
+            }
+        `;
+        document.head.appendChild(styles);
+    }
+    
+    return modal;
+}
+
+function closeBlotterWarningModal() {
+    const modal = document.getElementById('blotterWarningModal');
+    if (modal) {
+        // Clear timer
+        if (blotterModalTimer) {
+            clearInterval(blotterModalTimer);
+            blotterModalTimer = null;
+        }
+        
+        // Animate out
+        modal.style.opacity = '0';
+        modal.style.transform = 'scale(0.8)';
+        
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    }
+}
+
+function startBlotterModalTimer() {
+    const countdownElement = document.getElementById('blotterCountdown');
+    
+    if (!countdownElement) {
+        return;
+    }
+    
+    blotterModalTimer = setInterval(() => {
+        blotterCountdown--;
+        countdownElement.textContent = blotterCountdown;
+        
+        // Change color when time is running out
+        if (blotterCountdown <= 10) {
+            countdownElement.style.color = '#c0392b';
+            countdownElement.style.fontWeight = '900';
+        } else if (blotterCountdown <= 30) {
+            countdownElement.style.color = '#d35400';
+            countdownElement.style.fontWeight = '800';
+        }
+        
+        if (blotterCountdown <= 0) {
+            clearInterval(blotterModalTimer);
+            closeBlotterWarningModal();
+        }
+    }, 1000);
+}
+
+
+
+// Enhanced modal escape key support for blotter warning modal
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const blotterModal = document.getElementById('blotterWarningModal');
+        if (blotterModal && blotterModal.style.display !== 'none') {
+            closeBlotterWarningModal();
+        }
+    }
+});
+
+
+
+// Validate user eligibility (blotter check) before form submission
+function validateUserEligibility() {
+    const firstName = document.getElementById('firstName')?.value?.trim();
+    const middleName = document.getElementById('middleName')?.value?.trim() || '';
+    const lastName = document.getElementById('lastName')?.value?.trim();
+    
+    if (!firstName || !lastName) {
+        console.log('Skipping blotter check - insufficient name data');
+        return Promise.resolve({ eligible: true, message: 'Insufficient name data for blotter check' });
+    }
+    
+    return checkBlotterRecord(firstName, middleName, lastName)
+        .then(blotterResult => {
+            if (blotterResult.has_unresolved_issues) {
+                showBlotterWarningModal();
+                return {
+                    eligible: false,
+                    message: 'User has unresolved barangay issues - certificate request blocked',
+                    blotterDetails: blotterResult
+                };
+            } else {
+                return {
+                    eligible: true,
+                    message: 'No blotter issues found - user eligible for certificate request'
+                };
+            }
+        })
+        .catch(error => {
+            console.error('Blotter validation error:', error);
+            // On error, allow submission but log the issue
+            return {
+                eligible: true,
+                message: 'Blotter check failed - allowing submission'
+            };
+        });
+}
+
+// Variables for blotter validation debounce
+let validationTimeout;
+
+// Show validation message helper function
+function showValidationMessage(elementId, message, type) {
+    const validationDiv = document.getElementById(elementId);
+    if (validationDiv) {
+        validationDiv.textContent = message;
+        validationDiv.className = `validation-message ${type} show`;
+    }
+}
+
+// Real-time name validation with blotter checking
+function validateNameAndBlotter() {
+    const firstNameInput = document.getElementById('firstName');
+    const middleNameInput = document.getElementById('middleName');
+    const lastNameInput = document.getElementById('lastName');
+    const validationDiv = document.getElementById('nameValidation');
+    
+    // Skip validation in readonly mode or admin view
+    const readonly = <?php echo $readonly ? 'true' : 'false'; ?>;
+    const adminView = <?php echo $admin_view ? 'true' : 'false'; ?>;
+    
+    if (readonly || adminView) {
+        return;
+    }
+    
+    // Clear previous timeout
+    if (validationTimeout) {
+        clearTimeout(validationTimeout);
+    }
+    
+    // Reset states
+    [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+        if (input) {
+            input.classList.remove('validating', 'valid', 'invalid');
+        }
+    });
+    if (validationDiv) {
+        validationDiv.classList.remove('show');
+    }
+    
+    const firstName = firstNameInput?.value?.trim() || '';
+    const middleName = middleNameInput?.value?.trim() || '';
+    const lastName = lastNameInput?.value?.trim() || '';
+    
+    // Check if required fields are filled
+    if (!firstName || !lastName) {
+        if (!firstName && firstNameInput) firstNameInput.classList.add('invalid');
+        if (!lastName && lastNameInput) lastNameInput.classList.add('invalid');
+        if (firstName || lastName) { // Only show message if at least one field has content
+            showValidationMessage('nameValidation', 'First name and last name are required', 'error');
+        }
+        return;
+    }
+    
+    // Show loading state
+    [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+        if (input) {
+            input.classList.add('validating');
+        }
+    });
+    showValidationMessage('nameValidation', 'Checking name and blotter records...', 'loading');
+    
+    // Debounce the API call (1.5 seconds as per specifications)
+    validationTimeout = setTimeout(async () => {
+        try {
+            // Check for blotter records
+            const blotterResult = await checkBlotterRecord(firstName, middleName, lastName);
+            
+            [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                if (input) {
+                    input.classList.remove('validating');
+                }
+            });
+            
+            if (blotterResult.has_unresolved_issues) {
+                // Show blotter warning modal
+                showBlotterWarningModal();
+                // Mark name as valid but show warning
+                [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                    if (input) {
+                        input.classList.add('valid');
+                    }
+                });
+                showValidationMessage('nameValidation', '⚠️ Unresolved barangay issues detected - please visit help desk', 'warning');
+            } else {
+                // No blotter issues found
+                [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                    if (input) {
+                        input.classList.add('valid');
+                    }
+                });
+                showValidationMessage('nameValidation', '✓ Name verified, no barangay issues found', 'success');
+            }
+            
+        } catch (error) {
+            console.error('Name/Blotter validation error:', error);
+            [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                if (input) {
+                    input.classList.remove('validating');
+                    input.classList.add('invalid');
+                }
+            });
+            showValidationMessage('nameValidation', 'Error checking name and records', 'error');
+        }
+    }, 1500); // 1.5 seconds as per specifications
+}
+
 // Main DOM ready function
 document.addEventListener('DOMContentLoaded', function() {
   console.log('DOM Content Loaded - Starting initialization');
@@ -3057,6 +3669,27 @@ document.addEventListener('DOMContentLoaded', function() {
   // Initialize tax calculations if cedula is selected
   updateBasicTax();
   updateTaxCalculations();
+  
+  // Setup real-time blotter validation for name fields
+  const readonly = <?php echo $readonly ? 'true' : 'false'; ?>;
+  const adminView = <?php echo $admin_view ? 'true' : 'false'; ?>;
+  
+  if (!readonly && !adminView) {
+    const nameInputs = ['firstName', 'middleName', 'lastName'];
+    nameInputs.forEach(inputId => {
+      const input = document.getElementById(inputId);
+      if (input) {
+        // Add both input and blur event listeners as per specifications
+        input.addEventListener('input', function() {
+          validateNameAndBlotter();
+        });
+        
+        input.addEventListener('blur', function() {
+          validateNameAndBlotter();
+        });
+      }
+    });
+  }
   
   console.log('Initialization complete');
   
@@ -3203,96 +3836,124 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', function(e) {
       console.log('Form submission started');
       
-      // Mobile number validation
-      const mobileInput = document.getElementById('mobileNumber');
-      if (mobileInput && mobileInput.value) {
-        const mobilePattern = /^9[0-9]{9}$/;
-        if (!mobilePattern.test(mobileInput.value)) {
-          e.preventDefault();
-          alert('Please enter a valid Philippine mobile number starting with 9 (10 digits total)');
-          mobileInput.focus();
-          return;
-        }
-        
-        const fullNumber = '+63' + mobileInput.value;
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'full_mobile_number';
-        hiddenInput.value = fullNumber;
-        this.appendChild(hiddenInput);
-      }
+      // Prevent default form submission initially
+      e.preventDefault();
       
-      // Validate tricycle permit fields if selected
-      const tricycleOption = document.querySelector('input[value="TRICYCLE PERMIT"]');
-      if (tricycleOption && tricycleOption.checked) {
-        const yearModel = document.getElementById('yearModel').value;
-        
-        if (yearModel) {
-          if (!/^\d+$/.test(yearModel)) {
-            e.preventDefault();
-            alert('Year Model should contain only numbers');
-            document.getElementById('yearModel').focus();
-            return;
+      // Store form reference for later submission
+      const formElement = this;
+      
+      // First, validate user eligibility (blotter check)
+      console.log('Starting blotter validation...');
+      validateUserEligibility()
+        .then(eligibilityResult => {
+          console.log('Blotter validation result:', eligibilityResult);
+          
+          if (!eligibilityResult.eligible) {
+            console.log('User not eligible due to blotter issues - blocking submission');
+            // Show error message or handle as needed
+            alert('Certificate request blocked: You have unresolved barangay issues. Please visit the help desk first.');
+            return; // Stop form submission
           }
           
-          const year = parseInt(yearModel);
-          const currentYear = new Date().getFullYear();
+          console.log('User eligible - continuing with form validation');
           
-          if (isNaN(year) || year < 1980 || year > currentYear) {
-            e.preventDefault();
-            alert(`Please enter a valid year between 1980 and ${currentYear}`);
-            document.getElementById('yearModel').focus();
-            return;
+          // Continue with existing form validation
+          // Mobile number validation
+          const mobileInput = document.getElementById('mobileNumber');
+          if (mobileInput && mobileInput.value) {
+            const mobilePattern = /^9[0-9]{9}$/;
+            if (!mobilePattern.test(mobileInput.value)) {
+              alert('Please enter a valid Philippine mobile number starting with 9 (10 digits total)');
+              mobileInput.focus();
+              return;
+            }
+            
+            const fullNumber = '+63' + mobileInput.value;
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'full_mobile_number';
+            hiddenInput.value = fullNumber;
+            formElement.appendChild(hiddenInput);
           }
-        }
-      }
-      
-      // Validate cedula fields if selected
-      const cedulaOption = document.querySelector('input[value="CEDULA/CTC"]');
-      if (cedulaOption && cedulaOption.checked) {
-        const additionalTaxInputs = [
-          document.getElementById('grossReceiptsBusiness'),
-          document.getElementById('salariesProfession'),
-          document.getElementById('incomeRealProperty')
-        ];
-        
-        let totalAdditionalTax = 0;
-        additionalTaxInputs.forEach(input => {
-          if (input && input.value) {
-            totalAdditionalTax += calculateAdditionalTax(parseFloat(input.value));
+          
+          // Validate tricycle permit fields if selected
+          const tricycleOption = document.querySelector('input[value="TRICYCLE PERMIT"]');
+          if (tricycleOption && tricycleOption.checked) {
+            const yearModel = document.getElementById('yearModel').value;
+            
+            if (yearModel) {
+              if (!/^\d+$/.test(yearModel)) {
+                alert('Year Model should contain only numbers');
+                document.getElementById('yearModel').focus();
+                return;
+              }
+              
+              const year = parseInt(yearModel);
+              const currentYear = new Date().getFullYear();
+              
+              if (isNaN(year) || year < 1980 || year > currentYear) {
+                alert(`Please enter a valid year between 1980 and ${currentYear}`);
+                document.getElementById('yearModel').focus();
+                return;
+              }
+            }
           }
+          
+          // Validate cedula fields if selected
+          const cedulaOption = document.querySelector('input[value="CEDULA/CTC"]');
+          if (cedulaOption && cedulaOption.checked) {
+            const additionalTaxInputs = [
+              document.getElementById('grossReceiptsBusiness'),
+              document.getElementById('salariesProfession'),
+              document.getElementById('incomeRealProperty')
+            ];
+            
+            let totalAdditionalTax = 0;
+            additionalTaxInputs.forEach(input => {
+              if (input && input.value) {
+                totalAdditionalTax += calculateAdditionalTax(parseFloat(input.value));
+              }
+            });
+            
+            if (totalAdditionalTax > 5000) {
+              alert('Additional Community Tax cannot exceed ₱5,000.00. Please adjust your income amounts.');
+              return;
+            }
+          }
+          
+          // Validate business application fields if selected
+          const selectedCertificateType = document.getElementById('selectedCertificateType');
+          if (selectedCertificateType && selectedCertificateType.value === 'BUSINESS APPLICATION') {
+            const requiredBusinessFields = [
+              { id: 'businessName', name: 'Business Name' },
+              { id: 'businessLocation', name: 'Business Location' },
+              { id: 'businessOwnerAddress', name: 'Owner Address' },
+              { id: 'businessOrNumber', name: 'OR Number' },
+              { id: 'businessCtcNumber', name: 'CTC Number' }
+            ];
+            
+            for (const field of requiredBusinessFields) {
+              const element = document.getElementById(field.id);
+              if (element && !element.value.trim()) {
+                alert(`${field.name} is required for business applications.`);
+                element.focus();
+                return;
+              }
+            }
+          }
+          
+          console.log('All form validation passed - submitting form');
+          
+          // All validations passed - submit the form
+          formElement.submit();
+          
+        })
+        .catch(error => {
+          console.error('Error during eligibility validation:', error);
+          // On error, allow submission but log the issue
+          alert('Unable to verify eligibility at this time. Your request will be reviewed manually.');
+          formElement.submit();
         });
-        
-        if (totalAdditionalTax > 5000) {
-          e.preventDefault();
-          alert('Additional Community Tax cannot exceed ₱5,000.00. Please adjust your income amounts.');
-          return;
-        }
-      }
-      
-      // Validate business application fields if selected
-      const selectedCertificateType = document.getElementById('selectedCertificateType');
-      if (selectedCertificateType && selectedCertificateType.value === 'BUSINESS APPLICATION') {
-        const requiredBusinessFields = [
-          { id: 'businessName', name: 'Business Name' },
-          { id: 'businessLocation', name: 'Business Location' },
-          { id: 'businessOwnerAddress', name: 'Owner Address' },
-          { id: 'businessOrNumber', name: 'OR Number' },
-          { id: 'businessCtcNumber', name: 'CTC Number' }
-        ];
-        
-        for (const field of requiredBusinessFields) {
-          const element = document.getElementById(field.id);
-          if (element && !element.value.trim()) {
-            e.preventDefault();
-            alert(`${field.name} is required for business applications.`);
-            element.focus();
-            return;
-          }
-        }
-      }
-      
-      console.log('Form validation passed');
     });
   }
 });

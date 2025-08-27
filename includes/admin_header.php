@@ -112,7 +112,8 @@ $page_description = $page_description ?? 'Administration Panel for Barangay Guma
             transition: all 0.3s ease;
             padding: 6px 10px;
             border-radius: 8px;
-            min-width: 180px;
+            flex: 0 0 auto;
+            max-width: 250px;
         }
         
         .admin-brand:hover {
@@ -144,17 +145,25 @@ $page_description = $page_description ?? 'Administration Panel for Barangay Guma
         }
         
         .admin-brand-text h1 {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             margin-bottom: 2px;
             color: white;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .admin-brand-text p {
             font-size: 11px;
             color: rgba(255, 255, 255, 0.8);
             margin: 0;
+            line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .admin-nav-menu {
@@ -264,8 +273,9 @@ $page_description = $page_description ?? 'Administration Panel for Barangay Guma
         
         /* Main content spacing */
         .admin-main-content {
-            margin-top: 90px;
-            min-height: calc(100vh - 90px);
+            margin-top: 70px;
+            min-height: calc(100vh - 70px);
+            padding-top: 0;
         }
         
         /* Success/Error Messages */
@@ -325,65 +335,86 @@ $page_description = $page_description ?? 'Administration Panel for Barangay Guma
             }
             
             .admin-nav-link {
-                padding: 6px 10px;
+                padding: 6px 8px;
                 font-size: 0.8rem;
             }
             
             .dashboard-btn {
-                padding: 6px 10px;
+                padding: 6px 8px;
                 font-size: 0.8rem;
             }
             
             .admin-brand {
                 padding: 4px 8px;
-                min-width: 160px;
+                max-width: 200px;
             }
             
             .admin-brand-text h1 {
-                font-size: 18px;
+                font-size: 16px;
+            }
+            
+            .admin-brand-text p {
+                font-size: 10px;
             }
             
             .admin-brand-logo {
                 width: 35px;
                 height: 35px;
                 margin-right: 8px;
+                font-size: 14px;
             }
             
             .admin-user-info {
                 font-size: 0.75rem;
-                padding: 6px 10px;
+                padding: 6px 8px;
             }
         }
         
         @media (max-width: 480px) {
+            .admin-navbar {
+                height: auto;
+                min-height: 70px;
+            }
+            
             .admin-navbar-container {
                 flex-direction: column;
                 height: auto;
                 padding: 8px 10px;
+                gap: 8px;
             }
             
             .admin-brand {
-                margin-bottom: 8px;
-                min-width: auto;
+                margin-bottom: 0;
+                max-width: none;
+                align-self: center;
+            }
+            
+            .admin-brand-text h1 {
+                font-size: 14px;
+            }
+            
+            .admin-brand-text p {
+                font-size: 9px;
             }
             
             .admin-nav-menu {
                 justify-content: center;
                 gap: 3px;
+                width: 100%;
             }
             
             .admin-nav-link {
-                padding: 5px 8px;
-                font-size: 0.75rem;
+                padding: 5px 6px;
+                font-size: 0.7rem;
             }
             
             .dashboard-btn {
-                padding: 5px 8px;
-                font-size: 0.75rem;
+                padding: 5px 6px;
+                font-size: 0.7rem;
             }
             
             .admin-main-content {
-                margin-top: 110px;
+                margin-top: 90px;
             }
         }
     </style>
@@ -404,6 +435,7 @@ $page_description = $page_description ?? 'Administration Panel for Barangay Guma
             <ul class="admin-nav-menu">
                 <li><a href="javascript:history.back()" class="admin-nav-link" title="Go Back"><i class="fas fa-arrow-left"></i> Back</a></li>
                 <li><a href="dashboard.php" class="dashboard-btn"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="queue-admin.php" class="admin-nav-link"><i class="fas fa-list-ol"></i> Queue Management</a></li>
                 <li><a href="rfid-scanner.php" class="admin-nav-link"><i class="fas fa-qrcode"></i> RFID Scanner</a></li>
                 <li><a href="manage-rfid.php" class="admin-nav-link"><i class="fas fa-id-card"></i> RFID Management</a></li>
                 <li><a href="view-resident-registrations.php" class="admin-nav-link"><i class="fas fa-users"></i> Residents</a></li>

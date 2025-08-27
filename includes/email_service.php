@@ -262,28 +262,100 @@ class EmailService {
         return $password;
     }
     
-    public function sendFamilyMemberNotification($email, $familyMemberName, $registrantName, $relationship = '') {
+    public function sendRegistrationConfirmationEmail($email, $name) {
         try {
+            // Check if email is configured
+            if (SMTP_USERNAME === 'your-gmail@gmail.com' || SMTP_PASSWORD === 'your-app-password') {
+                error_log("Email not configured - Registration confirmation for $email ($name)");
+                return false;
+            }
+            
             // Recipients
-            $this->mailer->addAddress($email, $familyMemberName);
+            $this->mailer->addAddress($email, $name);
             
             // Content
             $this->mailer->isHTML(true);
-            $this->mailer->Subject = 'Family Member Registration - GUMAOC East Barangay Information System';
+            $this->mailer->Subject = 'GUMAOC Registration Confirmation';
             
-            $htmlBody = $this->getFamilyMemberNotificationTemplate($familyMemberName, $registrantName, $relationship);
+            $htmlBody = $this->getRegistrationConfirmationEmailTemplate($name);
             $this->mailer->Body = $htmlBody;
-            $this->mailer->AltBody = "Dear $familyMemberName,\n\n$registrantName has added you as a family member" . ($relationship ? " ($relationship)" : '') . " in the GUMAOC East Barangay Information System resident registration.\n\nThis registration helps our barangay maintain accurate records for better service delivery to our community.\n\nIf you have any questions, please contact the barangay office.\n\nBest regards,\nGUMAOC East Barangay Office";
+            $this->mailer->AltBody = "Dear $name,\n\nThank you for registering with GUMAOC Barangay Information System. Your registration has been received and will be processed as soon as possible.\n\nYou will receive your login credentials once your registration is approved.\n\nBest regards,\nGUMAOC Team";
             
-            $this->mailer->send();
-            return true;
+            $result = $this->mailer->send();
+            error_log("Registration confirmation email sent successfully to $email ($name)");
+            return $result;
             
         } catch (Exception $e) {
-            error_log("Family member notification email failed: " . $e->getMessage());
+            error_log("Registration confirmation email failed for $email: " . $e->getMessage());
             return false;
         } finally {
             $this->mailer->clearAddresses();
         }
+    }
+    
+    private function getRegistrationConfirmationEmailTemplate($name) {
+        return "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%); color: white; padding: 20px; text-align: center; }
+                .content { padding: 30px 20px; background: #f9f9f9; }
+                .confirmation-box { background: white; border: 2px solid #4caf50; border-radius: 8px; padding: 20px; margin: 20px 0; }
+                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+                .important { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 5px; padding: 15px; margin: 20px 0; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1>🏛️ GUMAOC System</h1>
+                    <p>Registration Confirmation</p>
+                </div>
+                <div class='content'>
+                    <h2>Hello $name,</h2>
+                    <p>Thank you for registering with the GUMAOC East Barangay Information System!</p>
+                    
+                    <div class='confirmation-box'>
+                        <h3>✅ Registration Received</h3>
+                        <p>Your registration has been successfully submitted and is now in our processing queue.</p>
+                        <p><strong>What happens next:</strong></p>
+                        <ul>
+                            <li>Your registration will be reviewed by our staff</li>
+                            <li>You will receive your login credentials via email once approved</li>
+                            <li>You'll be notified when your account is ready for use</li>
+                        </ul>
+                    </div>
+                    
+                    <div class='important'>
+                        <h4>📋 Important Information:</h4>
+                        <ul>
+                            <li>Please keep this email for your records</li>
+                            <li>Processing typically takes 1-2 business days</li>
+                            <li>If you don't receive credentials within 3 days, please contact the barangay office</li>
+                        </ul>
+                    </div>
+                    
+                    <p><strong>Available Services (After Approval):</strong></p>
+                    <ul>
+                        <li>📄 Certificate Requests</li>
+                        <li>🏢 Business Applications</li>
+                        <li>📋 Document Processing</li>
+                        <li>🎫 Queue Management</li>
+                        <li>👤 Profile Management</li>
+                    </ul>
+                </div>
+                <div class='footer'>
+                    <p>This is an automated message from GUMAOC System. Please do not reply to this email.</p>
+                    <p>For support, visit the barangay office or contact your administrator.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
     }
     
     private function getRFIDActivationEmailTemplate($name, $rfidCode, $tempPassword) {
@@ -354,6 +426,30 @@ class EmailService {
         </body>
         </html>
         ";
+    }
+    
+    public function sendFamilyMemberNotification($email, $familyMemberName, $registrantName, $relationship = '') {
+        try {
+            // Recipients
+            $this->mailer->addAddress($email, $familyMemberName);
+            
+            // Content
+            $this->mailer->isHTML(true);
+            $this->mailer->Subject = 'Family Member Registration - GUMAOC East Barangay Information System';
+            
+            $htmlBody = $this->getFamilyMemberNotificationTemplate($familyMemberName, $registrantName, $relationship);
+            $this->mailer->Body = $htmlBody;
+            $this->mailer->AltBody = "Dear $familyMemberName,\n\n$registrantName has added you as a family member" . ($relationship ? " ($relationship)" : '') . " in the GUMAOC East Barangay Information System resident registration.\n\nThis registration helps our barangay maintain accurate records for better service delivery to our community.\n\nIf you have any questions, please contact the barangay office.\n\nBest regards,\nGUMAOC East Barangay Office";
+            
+            $this->mailer->send();
+            return true;
+            
+        } catch (Exception $e) {
+            error_log("Family member notification email failed: " . $e->getMessage());
+            return false;
+        } finally {
+            $this->mailer->clearAddresses();
+        }
     }
     
     private function getWelcomeEmailTemplate($name, $tempPassword) {

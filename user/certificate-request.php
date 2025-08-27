@@ -617,6 +617,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
+        /* Validation styling */
+        .validation-message {
+            margin-top: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        .validation-message.show {
+            display: block;
+        }
+
+        .validation-message.warning {
+            background: rgba(255, 193, 7, 0.1);
+            color: #856404;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+
+        .validation-message.valid {
+            background: rgba(40, 167, 69, 0.1);
+            color: #155724;
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+
+        .validation-message.error {
+            background: rgba(220, 53, 69, 0.1);
+            color: #721c24;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        .form-group input.validating {
+            border-color: #ffc107;
+            background: rgba(255, 193, 7, 0.05);
+        }
+
+        .form-group input.valid {
+            border-color: #28a745;
+            background: rgba(40, 167, 69, 0.05);
+        }
+
+        .form-group input.invalid {
+            border-color: #dc3545;
+            background: rgba(220, 53, 69, 0.05);
+        }
+
         /* Enhanced mobile responsiveness */
         @media (max-width: 768px) {
             .radio-group {
@@ -635,7 +683,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             .tax-section {
                 padding: 15px;
             }
-        }
 
         @media (max-width: 768px) {
             .container {
@@ -743,20 +790,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label for="firstName">First Name *</label>
                                 <input type="text" id="firstName" name="firstName" required 
                                        value="<?php echo htmlspecialchars($current_user['first_name'] ?? ''); ?>">
+                                <div id="firstNameValidation" class="validation-message"></div>
                             </div>
                             
                             <div class="form-group">
                                 <label for="middleName">Middle Name</label>
                                 <input type="text" id="middleName" name="middleName" 
                                        value="<?php echo htmlspecialchars($current_user['middle_name'] ?? ''); ?>">
+                                <div id="middleNameValidation" class="validation-message"></div>
                             </div>
                             
                             <div class="form-group">
                                 <label for="lastName">Last Name *</label>
                                 <input type="text" id="lastName" name="lastName" required 
                                        value="<?php echo htmlspecialchars($current_user['last_name'] ?? ''); ?>">
+                                <div id="lastNameValidation" class="validation-message"></div>
                             </div>
                         </div>
+                        
+                        <div id="nameValidation" class="validation-message"></div>
                         
                         <div class="form-grid">
                             <div class="form-group">
@@ -1053,6 +1105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setupMobileValidation();
             setupTaxCalculation();
             setupFileUpload();
+            setupNameValidation(); // Add blotter detection
             
             // Ensure all certificate sections are hidden initially
             hideCertificateSections();
@@ -1270,6 +1323,156 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             });
         }
 
+        // Blotter Detection and Name Validation Setup
+        function setupNameValidation() {
+            const firstNameInput = document.getElementById('firstName');
+            const middleNameInput = document.getElementById('middleName');
+            const lastNameInput = document.getElementById('lastName');
+            
+            let validationTimeout;
+            
+            function handleNameChange() {
+                clearTimeout(validationTimeout);
+                
+                const firstName = firstNameInput.value.trim();
+                const middleName = middleNameInput.value.trim();
+                const lastName = lastNameInput.value.trim();
+                
+                // Only validate if we have at least first and last name
+                if (firstName && lastName) {
+                    validationTimeout = setTimeout(() => {
+                        validateNameWithBlotter(firstName, middleName, lastName);
+                    }, 1500); // Reduced from 2000ms as per user memory
+                }
+            }
+            
+            // Add event listeners
+            firstNameInput.addEventListener('input', handleNameChange);
+            middleNameInput.addEventListener('input', handleNameChange);
+            lastNameInput.addEventListener('input', handleNameChange);
+        }
+
+        function validateNameWithBlotter(firstName, middleName, lastName) {
+            const firstNameInput = document.getElementById('firstName');
+            const middleNameInput = document.getElementById('middleName');
+            const lastNameInput = document.getElementById('lastName');
+            
+            // Show validating state
+            [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                input.classList.remove('valid', 'invalid');
+                input.classList.add('validating');
+            });
+            showValidationMessage('nameValidation', 'Checking name and barangay records...', 'warning');
+            
+            // Check blotter record first
+            checkBlotterRecord(firstName, middleName, lastName)
+                .then(blotterResult => {
+                    if (blotterResult.has_unresolved_issues) {
+                        // Show blotter warning toast notification
+                        showToastNotification('⚠️ Unresolved barangay issues detected! Please visit the help desk to resolve before requesting certificates.', 'warning');
+                        // Still mark name as valid but show warning
+                        [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                            input.classList.remove('validating');
+                            input.classList.add('valid'); // Name is valid but has blotter issues
+                        });
+                        showValidationMessage('nameValidation', '⚠️ Unresolved barangay issues detected', 'warning');
+                    } else {
+                        // No blotter issues, proceed with normal name validation
+                        [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                            input.classList.remove('validating');
+                            input.classList.add('valid');
+                        });
+                        showValidationMessage('nameValidation', '✓ Name verified, no barangay issues found', 'valid');
+                    }
+                })
+                .catch(error => {
+                    console.error('Name validation error:', error);
+                    [firstNameInput, middleNameInput, lastNameInput].forEach(input => {
+                        input.classList.remove('validating');
+                        input.classList.add('invalid');
+                    });
+                    showValidationMessage('nameValidation', 'Error checking name and records', 'error');
+                });
+        }
+
+        function showValidationMessage(elementId, message, type) {
+            const validationDiv = document.getElementById(elementId);
+            if (validationDiv) {
+                validationDiv.textContent = message;
+                validationDiv.className = `validation-message ${type} show`;
+            }
+        }
+
+        // Blotter Detection Function
+        function checkBlotterRecord(firstName, middleName, lastName) {
+            return fetch('../pages/check-blotter.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: `action=check_blotter&first_name=${encodeURIComponent(firstName)}&middle_name=${encodeURIComponent(middleName)}&last_name=${encodeURIComponent(lastName)}`
+            })
+            .then(response => response.json())
+            .catch(error => {
+                console.error('Blotter check error:', error);
+                return { has_unresolved_issues: false, message: 'Blotter check unavailable' };
+            });
+        }
+
+        // Toast Notification System
+        function showToastNotification(message, type = 'info') {
+            // Remove existing toasts
+            const existingToasts = document.querySelectorAll('.toast-notification');
+            existingToasts.forEach(toast => toast.remove());
+            
+            const toast = document.createElement('div');
+            toast.className = `toast-notification toast-${type}`;
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${getToastColor(type)};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                font-weight: 600;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                z-index: 10001;
+                transform: translateX(400px);
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                max-width: 350px;
+                word-wrap: break-word;
+            `;
+            
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.style.transform = 'translateX(0)';
+            }, 10);
+            
+            // Auto remove after 4 seconds
+            setTimeout(() => {
+                toast.style.transform = 'translateX(400px)';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.parentNode.removeChild(toast);
+                    }
+                }, 400);
+            }, 4000);
+        }
+
+        function getToastColor(type) {
+            switch (type) {
+                case 'success': return 'linear-gradient(135deg, #28a745, #20c997)';
+                case 'error': return 'linear-gradient(135deg, #dc3545, #c82333)';
+                case 'warning': return 'linear-gradient(135deg, #ffc107, #e0a800)';
+                case 'info': 
+                default: return 'linear-gradient(135deg, #17a2b8, #138496)';
+            }
+        }
+
         function setupTaxCalculation() {
             // Tax type radio buttons
             const taxTypeRadios = document.querySelectorAll('input[name="basicCommunityTaxType"]');
@@ -1416,13 +1619,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Enhanced form validation
         document.getElementById('certificateForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default submission initially
+            
+            const firstName = document.getElementById('firstName').value.trim();
+            const middleName = document.getElementById('middleName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
             const mobileInput = document.getElementById('mobileNumber');
             
+            // First check for blotter issues
+            if (firstName && lastName) {
+                checkBlotterRecord(firstName, middleName, lastName)
+                    .then(blotterResult => {
+                        if (blotterResult.has_unresolved_issues) {
+                            // Show blotter warning toast but allow submission to continue
+                            showToastNotification('⚠️ WARNING: You have unresolved barangay issues. Please resolve them at the help desk before requesting certificates.', 'warning');
+                            // Show additional warning after a delay
+                            setTimeout(() => {
+                                showToastNotification('❌ Certificate request may be delayed or rejected due to unresolved issues.', 'error');
+                            }, 4500);
+                        }
+                        
+                        // Continue with form submission regardless
+                        proceedWithFormValidation(e, mobileInput);
+                    })
+                    .catch(error => {
+                        console.error('Blotter check error during submission:', error);
+                        // Continue with form submission if blotter check fails
+                        proceedWithFormValidation(e, mobileInput);
+                    });
+            } else {
+                // No name provided, proceed with other validations
+                proceedWithFormValidation(e, mobileInput);
+            }
+        });
+        
+        function proceedWithFormValidation(e, mobileInput) {
             // Mobile number validation
             if (mobileInput.value) {
                 const mobilePattern = /^9[0-9]{9}$/;
                 if (!mobilePattern.test(mobileInput.value)) {
-                    e.preventDefault();
                     alert('Please enter a valid Philippine mobile number starting with 9 (10 digits total)');
                     mobileInput.focus();
                     return;
@@ -1434,7 +1669,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 hiddenInput.type = 'hidden';
                 hiddenInput.name = 'full_mobile_number';
                 hiddenInput.value = fullNumber;
-                this.appendChild(hiddenInput);
+                document.getElementById('certificateForm').appendChild(hiddenInput);
             }
             
             // Validate certificate-specific fields
@@ -1446,7 +1681,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     const year = parseInt(yearModel);
                     const currentYear = new Date().getFullYear();
                     if (year < 1980 || year > currentYear) {
-                        e.preventDefault();
                         alert(`Please enter a valid year between 1980 and ${currentYear}`);
                         document.getElementById('yearModel').focus();
                         return;
@@ -1457,12 +1691,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (certificateType === 'CEDULA/CTC') {
                 const totalTax = parseFloat(document.getElementById('totalTax').value) || 0;
                 if (totalTax > 5005) { // 5000 max additional + 5 basic
-                    e.preventDefault();
                     alert('Total tax cannot exceed ₱5,005.00. Please check your income amounts.');
                     return;
                 }
             }
-        });
+            
+            // All validations passed, submit the form
+            document.getElementById('certificateForm').submit();
+        }
     </script>
 </body>
 </html>

@@ -835,6 +835,12 @@ try {
                         <a href="rfid-scanner.php" class="admin-btn">Open Scanner</a>
                     </div>
                     
+                    <div class="action-card">
+                        <div class="action-icon">🎫</div>
+                        <h3>Queue Management</h3>
+                        <p>Monitor and control the queue system, manage service counters and tickets</p>
+                        <a href="queue-admin.php" class="admin-btn">Manage Queue</a>
+                    </div>
                     
                     <div class="action-card">
                         <div class="action-icon">📋</div>

@@ -49,39 +49,36 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
                     $result = $stmt->execute([$new_status, $generated_rfid, $hashed_password, $id]);
                     
                     if ($result) {
-                        // Send activation email with RFID and password
+                        // Send confirmation email instead of activation email
                         $emailService = new EmailService();
                         $resident_name = $current_data['first_name'] . ' ' . $current_data['last_name'];
-                        $email_sent = $emailService->sendRFIDActivationEmail(
+                        $email_sent = $emailService->sendRegistrationConfirmationEmail(
                             $current_data['email'],
-                            $resident_name,
-                            $generated_rfid,
-                            $temp_password
+                            $resident_name
                         );
                         
-                        // Enhanced logging with RFID generation details
+                        // Enhanced logging with confirmation email details
                         $logger->log(
-                            'activation_with_rfid',
+                            'activation_with_confirmation',
                             'resident',
-                            "Activated resident {$resident_name} (ID: {$id}) with auto-generated RFID and credentials",
+                            "Activated resident {$resident_name} (ID: {$id}) with confirmation email",
                             $id,
                             [
                                 'old_status' => $current_status,
                                 'new_status' => $new_status,
-                                'generated_rfid' => $generated_rfid,
                                 'email_sent' => $email_sent,
                                 'resident_name' => $resident_name,
                                 'resident_email' => $current_data['email'],
-                                'auto_generated' => true,
+                                'confirmation_email' => true,
                                 'admin_action' => true
                             ]
                         );
                         
                         if ($email_sent) {
-                            $_SESSION['toast_message'] = "Resident ID #$id activated successfully! RFID ($generated_rfid) generated and credentials emailed to {$current_data['email']}";
+                            $_SESSION['toast_message'] = "Resident ID #$id activated successfully! A confirmation email has been sent to {$current_data['email']}";
                             $_SESSION['toast_type'] = 'success';
                         } else {
-                            $_SESSION['toast_message'] = "Resident ID #$id activated with RFID ($generated_rfid), but email delivery failed. Please contact resident manually.";
+                            $_SESSION['toast_message'] = "Resident ID #$id activated, but email delivery failed. Please contact resident manually.";
                             $_SESSION['toast_type'] = 'warning';
                         }
                     } else {
