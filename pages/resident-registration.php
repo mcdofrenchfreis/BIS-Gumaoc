@@ -10,6 +10,12 @@ $admin_view = isset($_GET['admin_view']) ? (int)$_GET['admin_view'] : null;
 $readonly = isset($_GET['readonly']) && $_GET['readonly'] === '1';
 $registration_data = null;
 
+// If this is an admin view in readonly mode, redirect to the summary page
+if ($admin_view && $readonly) {
+    header("Location: ../admin/resident-summary.php?id=" . $admin_view);
+    exit;
+}
+
 if ($admin_view) {
     include '../includes/db_connect.php';
     $stmt = $pdo->prepare("SELECT * FROM resident_registrations WHERE id = ?");
@@ -1073,6 +1079,13 @@ function debugShowPrivacyNotice() {
             <label for="birthday">Date of Birth *<br><small>Petsa ng Kapanganakan *</small></label>
             <input type="date" id="birthday" name="birthday" required
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['birth_date']) : ''; ?>"
+                   <?php echo $readonly ? 'readonly' : ''; ?> onchange="calculateAgeFromCard(this)">
+          </div>
+
+          <div class="form-group">
+            <label for="age">Age<br><small>Edad</small></label>
+            <input type="number" id="age" name="age" class="age-display" placeholder="Edad" min="0" max="120" readonly
+                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['age'] ?? '') : ''; ?>"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
 
@@ -1125,15 +1138,15 @@ function debugShowPrivacyNotice() {
 
         <div class="form-grid">
           <div class="form-group">
-            <label for="interviewer">Interviewer Name *<br><small>Pangalan ng Nakapanayam *</small></label>
-            <input type="text" id="interviewer" name="interviewer" required placeholder="Buong pangalan ng nakapanayam"
+            <label for="interviewer">Interviewer Name<br><small>Pangalan ng Nakapanayam</small></label>
+            <input type="text" id="interviewer" name="interviewer" placeholder="Buong pangalan ng nakapanayam"
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['interviewer']) : ''; ?>"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
 
           <div class="form-group">
-            <label for="interviewerTitle">Interviewer Position *<br><small>Taga-panayam *</small></label>
-            <input type="text" id="interviewerTitle" name="interviewerTitle" required placeholder="Posisyon/Tungkulin"
+            <label for="interviewerTitle">Interviewer Position<br><small>Taga-panayam</small></label>
+            <input type="text" id="interviewerTitle" name="interviewerTitle" placeholder="Posisyon/Tungkulin"
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['interviewer_title']) : ''; ?>"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
@@ -1143,35 +1156,28 @@ function debugShowPrivacyNotice() {
         
         <!-- Tab 2: Family Members -->
         <div class="tab-content" id="tab-content-2">
-          <fieldset>
-            <legend>Family Members<br><small>Mga Kasapi ng Pamilya</small></legend>
-            
-        <div class="family-section">
-          <div class="table-wrapper">
-            <div class="table-responsive">
-              <table class="family-table">
-                <thead>
-                  <tr>
-                    <th>Name<br><small>Pangalan</small></th>
-                    <th>Relationship to Head<br><small>Relasyon sa Puno</small></th>
-                    <th>Birth Date<br><small>Petsa ng Kapanganakan</small></th>
-                    <th>Age<br><small>Edad</small></th>
-                    <th>Gender<br><small>Kasarian</small></th>
-                    <th>Civil Status<br><small>Katayuang Sibil</small></th>
-                    <th>Email Address<br><small>Email Address</small></th>
-                    <th>Occupation<br><small>Hanapbuhay</small></th>
-                    <?php if (!$readonly): ?>
-                    <th>Action<br><small>Aksyon</small></th>
-                    <?php endif; ?>
-                  </tr>
-                </thead>
-                <tbody id="familyMembersBody">
-                <?php if (!empty($family_members)): ?>
-                  <?php foreach ($family_members as $index => $member): ?>
-                    <tr class="family-member-row">
-                      <td data-label="Name" class="scrollable-name-cell"><input type="text" name="familyName[]" class="table-input scrollable-name-input" placeholder="Pangalan" value="<?php echo htmlspecialchars($member['full_name']); ?>" <?php echo $readonly ? 'readonly' : ''; ?>></td>
-                      <td data-label="Relationship">
-                        <select name="familyRelation[]" class="table-input" <?php echo $readonly ? 'disabled' : ''; ?>>
+           <fieldset>
+             <legend>Family Members<br><small>Mga Kasapi ng Pamilya</small></legend>
+
+        <div class="subsection">
+           <div class="family-members-container" id="familyMembersContainer">
+            <?php if (!empty($family_members)): ?>
+              <?php foreach ($family_members as $index => $member): ?>
+                <div class="family-member-card">
+                  <div class="family-member-header" onclick="toggleFamilyCard(this)">
+                    <span class="family-member-name"><?php echo !empty($member['full_name']) ? htmlspecialchars($member['full_name']) : 'Family Member ' . ($index + 1); ?></span>
+                    <span class="toggle-icon">▼</span>
+                  </div>
+                  <div class="family-member-content">
+                    <div class="form-grid">
+                      <div class="form-group">
+                        <label for="familyName<?php echo $index; ?>">Name<br><small>Pangalan</small></label>
+                        <input type="text" id="familyName<?php echo $index; ?>" name="familyName[]" class="form-control" placeholder="Full Name" value="<?php echo htmlspecialchars($member['full_name'] ?? ''); ?>" <?php echo $readonly ? 'readonly' : ''; ?> onchange="updateCardHeader(this)">
+                      </div>
+                      
+                      <div class="form-group">
+                        <label for="familyRelation<?php echo $index; ?>">Relationship to Head<br><small>Relasyon sa Puno</small></label>
+                        <select id="familyRelation<?php echo $index; ?>" name="familyRelation[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
                           <option value="">Piliin ang Relasyon</option>
                           <option value="Asawa" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Asawa') ? 'selected' : ''; ?>>Asawa (Spouse)</option>
                           <option value="Anak" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Anak') ? 'selected' : ''; ?>>Anak (Child)</option>
@@ -1194,37 +1200,67 @@ function debugShowPrivacyNotice() {
                           <option value="Boarder" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Boarder') ? 'selected' : ''; ?>>Boarder</option>
                           <option value="Iba pa" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Iba pa') ? 'selected' : ''; ?>>Iba pa (Others)</option>
                         </select>
-                      </td>
-                      <td data-label="Birth Date"><input type="date" name="familyBirthDate[]" class="table-input" onchange="calculateAge(this)" value="<?php echo isset($member['birth_date']) ? htmlspecialchars($member['birth_date']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>></td>
-                      <td data-label="Age"><input type="number" name="familyAge[]" class="table-input age-display" placeholder="Edad" min="0" max="120" value="<?php echo $member['age']; ?>" readonly></td>
-                      <td data-label="Gender">
-                        <select name="familyGender[]" class="table-input" <?php echo $readonly ? 'disabled' : ''; ?>>
+                      </div>
+                      
+                      <div class="form-group">
+                        <label for="familyBirthDate<?php echo $index; ?>">Birth Date<br><small>Petsa ng Kapanganakan</small></label>
+                        <input type="date" id="familyBirthDate<?php echo $index; ?>" name="familyBirthDate[]" class="form-control" onchange="calculateAgeFromCard(this)" value="<?php echo isset($member['birth_date']) ? htmlspecialchars($member['birth_date']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
+                      </div>
+                      
+                      <div class="form-group">
+                        <label for="familyAge<?php echo $index; ?>">Age<br><small>Edad</small></label>
+                        <input type="number" id="familyAge<?php echo $index; ?>" name="familyAge[]" class="form-control age-display" placeholder="Edad" min="0" max="120" value="<?php echo $member['age'] ?? ''; ?>" readonly>
+                      </div>
+                      
+                      <div class="form-group">
+                        <label for="familyGender<?php echo $index; ?>">Gender<br><small>Kasarian</small></label>
+                        <select id="familyGender<?php echo $index; ?>" name="familyGender[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
                           <option value="">Piliin</option>
                           <option value="Lalaki" <?php echo (isset($member['gender']) && $member['gender'] === 'Lalaki') ? 'selected' : ''; ?>>Lalaki</option>
                           <option value="Babae" <?php echo (isset($member['gender']) && $member['gender'] === 'Babae') ? 'selected' : ''; ?>>Babae</option>
                         </select>
-                      </td>
-                      <td data-label="Civil Status">
-                        <select name="familyCivilStatus[]" class="table-input" <?php echo $readonly ? 'disabled' : ''; ?>>
+                      </div>
+                      
+                      <div class="form-group">
+                        <label for="familyCivilStatus<?php echo $index; ?>">Civil Status<br><small>Katayuang Sibil</small></label>
+                        <select id="familyCivilStatus<?php echo $index; ?>" name="familyCivilStatus[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
                           <option value="">Piliin</option>
                           <option value="Single" <?php echo (isset($member['civil_status']) && $member['civil_status'] === 'Single') ? 'selected' : ''; ?>>Single</option>
                           <option value="Married" <?php echo (isset($member['civil_status']) && $member['civil_status'] === 'Married') ? 'selected' : ''; ?>>Married</option>
                           <option value="Widowed" <?php echo (isset($member['civil_status']) && ($member['civil_status'] === 'Widowed' || $member['civil_status'] === 'Widow')) ? 'selected' : ''; ?>>Widowed</option>
                           <option value="Separated" <?php echo (isset($member['civil_status']) && $member['civil_status'] === 'Separated') ? 'selected' : ''; ?>>Separated</option>
                         </select>
-                      </td>
-                      <td data-label="Email"><input type="email" name="familyEmail[]" class="table-input" placeholder="email@example.com" value="<?php echo isset($member['email']) ? htmlspecialchars($member['email']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>></td>
-                      <td data-label="Occupation"><input type="text" name="familyOccupation[]" class="table-input" placeholder="Hanapbuhay" value="<?php echo isset($member['occupation']) ? htmlspecialchars($member['occupation']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>></td>
-                      <?php if (!$readonly): ?>
-                      <td data-label="Action"><button type="button" class="btn-remove-row" onclick="removeFamilyMember(this)" title="Remove this family member">✕</button></td>
-                      <?php endif; ?>
-                    </tr>
-                  <?php endforeach; ?>
-                <?php else: ?>
-                  <tr class="family-member-row">
-                    <td data-label="Name" class="scrollable-name-cell"><input type="text" name="familyName[]" class="table-input scrollable-name-input" placeholder="Pangalan" <?php echo $readonly ? 'readonly' : ''; ?>></td>
-                    <td data-label="Relationship">
-                      <select name="familyRelation[]" class="table-input" <?php echo $readonly ? 'disabled' : ''; ?>>
+                      </div>
+                      
+                      <div class="form-group">
+                        <label for="familyEmail<?php echo $index; ?>">Email Address<br><small>Email Address</small></label>
+                        <input type="email" id="familyEmail<?php echo $index; ?>" name="familyEmail[]" class="form-control" placeholder="email@example.com" value="<?php echo isset($member['email']) ? htmlspecialchars($member['email']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
+                      </div>
+                      
+                      <div class="form-group">
+                        <label for="familyOccupation<?php echo $index; ?>">Occupation<br><small>Hanapbuhay</small></label>
+                        <input type="text" id="familyOccupation<?php echo $index; ?>" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay" value="<?php echo isset($member['occupation']) ? htmlspecialchars($member['occupation']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              <?php endforeach; ?>
+            <?php else: ?>
+              <div class="family-member-card">
+                <div class="family-member-header" onclick="toggleFamilyCard(this)">
+                  <span class="family-member-name">Family Member 1</span>
+                  <span class="toggle-icon">▼</span>
+                </div>
+                <div class="family-member-content">
+                  <div class="form-grid">
+                    <div class="form-group">
+                      <label for="familyName0">Name<br><small>Pangalan</small></label>
+                      <input type="text" id="familyName0" name="familyName[]" class="form-control" placeholder="Full Name" onchange="updateCardHeader(this)">
+                    </div>
+                    
+                    <div class="form-group">
+                      <label for="familyRelation0">Relationship to Head<br><small>Relasyon sa Puno</small></label>
+                      <select id="familyRelation0" name="familyRelation[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
                         <option value="">Piliin ang Relasyon</option>
                         <option value="Asawa">Asawa (Spouse)</option>
                         <option value="Anak">Anak (Child)</option>
@@ -1247,346 +1283,364 @@ function debugShowPrivacyNotice() {
                         <option value="Boarder">Boarder</option>
                         <option value="Iba pa">Iba pa (Others)</option>
                       </select>
-                    </td>
-                    <td data-label="Birth Date"><input type="date" name="familyBirthDate[]" class="table-input" onchange="calculateAge(this)" <?php echo $readonly ? 'readonly' : ''; ?>></td>
-                    <td data-label="Age"><input type="number" name="familyAge[]" class="table-input age-display" placeholder="Edad" min="0" max="120" readonly></td>
-                    <td data-label="Gender">
-                      <select name="familyGender[]" class="table-input" <?php echo $readonly ? 'disabled' : ''; ?>>
+                    </div>
+                    
+                    <div class="form-group">
+                      <label for="familyBirthDate0">Birth Date<br><small>Petsa ng Kapanganakan</small></label>
+                      <input type="date" id="familyBirthDate0" name="familyBirthDate[]" class="form-control" onchange="calculateAgeFromCard(this)">
+                    </div>
+                    
+                    <div class="form-group">
+                      <label for="familyAge0">Age<br><small>Edad</small></label>
+                      <input type="number" id="familyAge0" name="familyAge[]" class="form-control age-display" placeholder="Edad" min="0" max="120" readonly>
+                    </div>
+                    
+                    <div class="form-group">
+                      <label for="familyGender0">Gender<br><small>Kasarian</small></label>
+                      <select id="familyGender0" name="familyGender[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
                         <option value="">Piliin</option>
                         <option value="Lalaki">Lalaki</option>
                         <option value="Babae">Babae</option>
                       </select>
-                    </td>
-                    <td data-label="Civil Status">
-                      <select name="familyCivilStatus[]" class="table-input" <?php echo $readonly ? 'disabled' : ''; ?>>
+                    </div>
+                    
+                    <div class="form-group">
+                      <label for="familyCivilStatus0">Civil Status<br><small>Katayuang Sibil</small></label>
+                      <select id="familyCivilStatus0" name="familyCivilStatus[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
                         <option value="">Piliin</option>
                         <option value="Single">Single</option>
                         <option value="Married">Married</option>
                         <option value="Widowed">Widowed</option>
                         <option value="Separated">Separated</option>
                       </select>
-                    </td>
-                    <td data-label="Email"><input type="email" name="familyEmail[]" class="table-input" placeholder="email@example.com" <?php echo $readonly ? 'readonly' : ''; ?>></td>
-                    <td data-label="Occupation"><input type="text" name="familyOccupation[]" class="table-input" placeholder="Hanapbuhay" <?php echo $readonly ? 'readonly' : ''; ?>></td>
-                    <?php if (!$readonly): ?>
-                    <td data-label="Action"><button type="button" class="btn-remove-row" onclick="removeFamilyMember(this)" title="Remove this family member">✕</button></td>
-                    <?php endif; ?>
-                  </tr>
-                <?php endif; ?>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        
-        <?php if (!$readonly): ?>
-        <div class="family-controls">
-          <button type="button" class="btn-add-family-member" onclick="addFamilyMember()">
-            <span class="btn-icon">➕</span>
-            <span class="btn-text">Add Family Member<br><small>Magdagdag ng Kasapi</small></span>
-          </button>
-        </div>
-        <?php endif; ?>
-        </div>
-          </fieldset>
-        </div>
-        
-        <!-- Tab 3: Livelihood -->
-        <div class="tab-content" id="tab-content-3">
-          <fieldset>
-            <legend>I. Livelihood<br><small>I. Pangkabuhayan</small></legend>
-        
-        <div class="subsection">
-          <h4>A. Land Occupied<br><small>A. Lupang Kinatatayuan</small></h4>
-          <div class="checkbox-group">
-            <label><input type="radio" name="landOwnership" value="Pag-aari" <?php echo ($registration_data && $registration_data['land_ownership'] === 'Pag-aari') ? 'checked' : ''; ?> onchange="toggleOtherInput('landOwnership', 'landOwnershipOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Pag-aari</label>
-            <label><input type="radio" name="landOwnership" value="Inuupahan" <?php echo ($registration_data && $registration_data['land_ownership'] === 'Inuupahan') ? 'checked' : ''; ?> onchange="toggleOtherInput('landOwnership', 'landOwnershipOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Inuupahan</label>
-            <label><input type="radio" name="landOwnership" value="Iba pa" <?php echo ($registration_data && $registration_data['land_ownership'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('landOwnership', 'landOwnershipOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
-            <input type="text" name="landOwnershipOther" id="landOwnershipOther" placeholder="Pakisulat kung iba pa" class="other-input" 
-                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['land_ownership_other'] ?? '') : ''; ?>"
-                   <?php echo ($registration_data && $registration_data['land_ownership'] !== 'Iba pa') ? 'disabled' : ''; ?>
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
-          </div>
-        </div>
-
-        <div class="subsection">
-          <h4>B. House Residence<br><small>B. Bahay na Tinitirhan</small></h4>
-          <div class="checkbox-group">
-            <label><input type="radio" name="houseOwnership" value="Pag-aari" <?php echo ($registration_data && $registration_data['house_ownership'] === 'Pag-aari') ? 'checked' : ''; ?> onchange="toggleOtherInput('houseOwnership', 'houseOwnershipOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Pag-aari</label>
-            <label><input type="radio" name="houseOwnership" value="Umuupa" <?php echo ($registration_data && $registration_data['house_ownership'] === 'Umuupa') ? 'checked' : ''; ?> onchange="toggleOtherInput('houseOwnership', 'houseOwnershipOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Umuupa</label>
-            <label><input type="radio" name="houseOwnership" value="Iba pa" <?php echo ($registration_data && $registration_data['house_ownership'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('houseOwnership', 'houseOwnershipOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
-            <input type="text" name="houseOwnershipOther" id="houseOwnershipOther" placeholder="Pakisulat kung iba pa" class="other-input"
-                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['house_ownership_other'] ?? '') : ''; ?>"
-                   <?php echo ($registration_data && $registration_data['house_ownership'] !== 'Iba pa') ? 'disabled' : ''; ?>
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
-          </div>
-        </div>
-
-        <div class="subsection">
-          <h4>C. Agricultural/Farm Land<br><small>C. Lupahang Sakahan/Pinagyayaman</small></h4>
-          <div class="checkbox-group">
-            <label><input type="radio" name="farmland" value="Pag-aari" <?php echo ($registration_data && $registration_data['farmland'] === 'Pag-aari') ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Pag-aari</label>
-            <label><input type="radio" name="farmland" value="Binubuwisan" <?php echo ($registration_data && $registration_data['farmland'] === 'Binubuwisan') ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Binubuwisan</label>
-            <label><input type="radio" name="farmland" value="Wala" <?php echo ($registration_data && $registration_data['farmland'] === 'Wala') ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Wala</label>
-          </div>
-        </div>
-
-        <div class="subsection">
-          <h4>D. Source of Cooking Energy<br><small>D. Pinagmumulan ng Enerhiya sa Pagluluto</small></h4>
-          <div class="checkbox-group">
-            <label><input type="radio" name="cookingEnergy" value="Gaas" <?php echo ($registration_data && $registration_data['cooking_energy'] === 'Gaas') ? 'checked' : ''; ?> onchange="toggleOtherInput('cookingEnergy', 'cookingEnergyOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Gaas</label>
-            <label><input type="radio" name="cookingEnergy" value="Kuryente" <?php echo ($registration_data && $registration_data['cooking_energy'] === 'Kuryente') ? 'checked' : ''; ?> onchange="toggleOtherInput('cookingEnergy', 'cookingEnergyOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Kuryente</label>
-            <label><input type="radio" name="cookingEnergy" value="LPG" <?php echo ($registration_data && $registration_data['cooking_energy'] === 'LPG') ? 'checked' : ''; ?> onchange="toggleOtherInput('cookingEnergy', 'cookingEnergyOther')" <?php echo $readonly ? 'disabled' : ''; ?>> LPG</label>
-            <label><input type="radio" name="cookingEnergy" value="Kahoy" <?php echo ($registration_data && $registration_data['cooking_energy'] === 'Kahoy') ? 'checked' : ''; ?> onchange="toggleOtherInput('cookingEnergy', 'cookingEnergyOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Kahoy</label>
-            <label><input type="radio" name="cookingEnergy" value="Iba pa" <?php echo ($registration_data && $registration_data['cooking_energy'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('cookingEnergy', 'cookingEnergyOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
-            <input type="text" name="cookingEnergyOther" id="cookingEnergyOther" placeholder="Pakisulat kung iba pa" class="other-input"
-                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['cooking_energy_other'] ?? '') : ''; ?>"
-                   <?php echo ($registration_data && $registration_data['cooking_energy'] !== 'Iba pa') ? 'disabled' : ''; ?>
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
-          </div>
-        </div>
-
-        <div class="subsection">
-          <h4>E. Type of Toilet<br><small>E. Uri ng Palikuran</small></h4>
-          <div class="checkbox-group">
-            <label><input type="radio" name="toiletType" value="Flush" <?php echo ($registration_data && $registration_data['toilet_type'] === 'Flush') ? 'checked' : ''; ?> onchange="toggleOtherInput('toiletType', 'toiletTypeOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Flush</label>
-            <label><input type="radio" name="toiletType" value="De-buhos" <?php echo ($registration_data && $registration_data['toilet_type'] === 'De-buhos') ? 'checked' : ''; ?> onchange="toggleOtherInput('toiletType', 'toiletTypeOther')" <?php echo $readonly ? 'disabled' : ''; ?>> De-buhos</label>
-            <label><input type="radio" name="toiletType" value="Hinuhukay/Balon" <?php echo ($registration_data && $registration_data['toilet_type'] === 'Hinuhukay/Balon') ? 'checked' : ''; ?> onchange="toggleOtherInput('toiletType', 'toiletTypeOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Hinuhukay/Balon</label>
-            <label><input type="radio" name="toiletType" value="Iba pa" <?php echo ($registration_data && $registration_data['toilet_type'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('toiletType', 'toiletTypeOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
-            <input type="text" name="toiletTypeOther" id="toiletTypeOther" placeholder="Pakisulat kung iba pa" class="other-input"
-                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['toilet_type_other'] ?? '') : ''; ?>"
-                   <?php echo ($registration_data && $registration_data['toilet_type'] !== 'Iba pa') ? 'disabled' : ''; ?>
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
-          </div>
-        </div>
-
-        <div class="subsection">
-          <h4>F. Source of Electricity<br><small>F. Pinagmululan ng Elektrisidad</small></h4>
-          <div class="checkbox-group">
-            <label><input type="radio" name="electricitySource" value="Kuryente" <?php echo ($registration_data && $registration_data['electricity_source'] === 'Kuryente') ? 'checked' : ''; ?> onchange="toggleOtherInput('electricitySource', 'electricitySourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Kuryente</label>
-            <label><input type="radio" name="electricitySource" value="Gaas" <?php echo ($registration_data && $registration_data['electricity_source'] === 'Gaas') ? 'checked' : ''; ?> onchange="toggleOtherInput('electricitySource', 'electricitySourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Gaas</label>
-            <label><input type="radio" name="electricitySource" value="Iba pa" <?php echo ($registration_data && $registration_data['electricity_source'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('electricitySource', 'electricitySourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
-            <input type="text" name="electricitySourceOther" id="electricitySourceOther" placeholder="Pakisulat kung iba pa" class="other-input"
-                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['electricity_source_other'] ?? '') : ''; ?>"
-                   <?php echo ($registration_data && $registration_data['electricity_source'] !== 'Iba pa') ? 'disabled' : ''; ?>
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
-          </div>
-        </div>
-
-        <div class="subsection">
-          <h4>G. Source of Water<br><small>G. Pinagkukunan ng Tubig</small></h4>
-          <div class="checkbox-group">
-            <label><input type="radio" name="waterSource" value="Poso Artesiyano" <?php echo ($registration_data && $registration_data['water_source'] === 'Poso Artesiyano') ? 'checked' : ''; ?> onchange="toggleOtherInput('waterSource', 'waterSourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Poso Artesiyano</label>
-            <label><input type="radio" name="waterSource" value="Water District" <?php echo ($registration_data && $registration_data['water_source'] === 'Water District') ? 'checked' : ''; ?> onchange="toggleOtherInput('waterSource', 'waterSourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Water District</label>
-            <label><input type="radio" name="waterSource" value="Nawasa" <?php echo ($registration_data && $registration_data['water_source'] === 'Nawasa') ? 'checked' : ''; ?> onchange="toggleOtherInput('waterSource', 'waterSourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Nawasa</label>
-            <label><input type="radio" name="waterSource" value="Iba pa" <?php echo ($registration_data && $registration_data['water_source'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('waterSource', 'waterSourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
-            <input type="text" name="waterSourceOther" id="waterSourceOther" placeholder="Pakisulat kung iba pa" class="other-input"
-                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['water_source_other'] ?? '') : ''; ?>"
-                   <?php echo ($registration_data && $registration_data['water_source'] !== 'Iba pa') ? 'disabled' : ''; ?>
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
-          </div>
-        </div>
-
-        <div class="subsection">
-          <h4>H. Method of Waste Disposal<br><small>H. Pamamaraan ng Pagtatapon ng Basura</small></h4>
-          <div class="checkbox-group">
-            <label><input type="radio" name="wasteDisposal" value="Sinusunog" <?php echo ($registration_data && $registration_data['waste_disposal'] === 'Sinusunog') ? 'checked' : ''; ?> onchange="toggleOtherInput('wasteDisposal', 'wasteDisposalOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Sinusunog</label>
-            <label><input type="radio" name="wasteDisposal" value="Hukay na may takip" <?php echo ($registration_data && $registration_data['waste_disposal'] === 'Hukay na may takip') ? 'checked' : ''; ?> onchange="toggleOtherInput('wasteDisposal', 'wasteDisposalOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Hukay na may takip</label>
-            <label><input type="radio" name="wasteDisposal" value="Kinokolekta" <?php echo ($registration_data && $registration_data['waste_disposal'] === 'Kinokolekta') ? 'checked' : ''; ?> onchange="toggleOtherInput('wasteDisposal', 'wasteDisposalOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Kinokolekta</label>
-            <label><input type="radio" name="wasteDisposal" value="Itinatapon kung saan" <?php echo ($registration_data && $registration_data['waste_disposal'] === 'Itinatapon kung saan') ? 'checked' : ''; ?> onchange="toggleOtherInput('wasteDisposal', 'wasteDisposalOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Itinatapon kung saan</label>
-            <label><input type="radio" name="wasteDisposal" value="Iba pa" <?php echo ($registration_data && $registration_data['waste_disposal'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('wasteDisposal', 'wasteDisposalOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
-            <input type="text" name="wasteDisposalOther" id="wasteDisposalOther" placeholder="Pakisulat kung iba pa" class="other-input"
-                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['waste_disposal_other'] ?? '') : ''; ?>"
-                   <?php echo ($registration_data && $registration_data['waste_disposal'] !== 'Iba pa') ? 'disabled' : ''; ?>
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
-          </div>
-        </div>
-
-        <div class="subsection">
-          <h4>I. Household Appliances<br><small>I. Kasangkapan sa Bahay</small></h4>
-          <div class="checkbox-group">
-            <?php 
-            $appliances_array = $registration_data ? explode(',', $registration_data['appliances']) : [];
-            ?>
-            <label><input type="checkbox" name="appliances[]" value="Radyo/Stereo" <?php echo in_array('Radyo/Stereo', $appliances_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Radyo/Stereo</label>
-            <label><input type="checkbox" name="appliances[]" value="Telebisyon" <?php echo in_array('Telebisyon', $appliances_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Telebisyon (TV)</label>
-            <label><input type="checkbox" name="appliances[]" value="Refrigerator" <?php echo in_array('Refrigerator', $appliances_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Refrigerator</label>
-            <label><input type="checkbox" name="appliances[]" value="Muwebles" <?php echo in_array('Muwebles', $appliances_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Muwebles (Furniture)</label>
-          </div>
-        </div>
-
-        <div class="subsection">
-          <h4>J. Transportation<br><small>J. Transportasyon</small></h4>
-          <div class="checkbox-group">
-            <?php 
-            $transportation_array = $registration_data ? explode(',', $registration_data['transportation']) : [];
-            ?>
-            <label><input type="checkbox" name="transportation[]" value="Sasakyan" <?php echo in_array('Sasakyan', $transportation_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Sasakyan</label>
-            <label><input type="checkbox" name="transportation[]" value="Jeep" <?php echo in_array('Jeep', $transportation_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Jeep</label>
-            <label><input type="checkbox" name="transportation[]" value="Kotse" <?php echo in_array('Kotse', $transportation_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Kotse</label>
-            <label><input type="checkbox" name="transportation[]" value="Tricycle" <?php echo in_array('Tricycle', $transportation_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Tricycle</label>
-            <label><input type="checkbox" name="transportation[]" value="Truck" <?php echo in_array('Truck', $transportation_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Truck</label>
-            <label><input type="checkbox" name="transportation[]" value="Motorsiklo" <?php echo in_array('Motorsiklo', $transportation_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Motorsiklo</label>
-            <label><input type="checkbox" name="transportation[]" value="Iba pa" <?php echo in_array('Iba pa', $transportation_array) ? 'checked' : ''; ?> onchange="toggleCheckboxOther('transportation', 'transportationOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
-            <input type="text" name="transportationOther" id="transportationOther" placeholder="Pakisulat kung iba pa" class="other-input"
-                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['transportation_other'] ?? '') : ''; ?>"
-                   <?php echo (!in_array('Iba pa', $transportation_array)) ? 'disabled' : ''; ?>
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
-          </div>
-        </div>
-
-        <div class="subsection">
-          <h4>K. Commercial/Other Sources of Income<br><small>K. Pang-Komersyo/Iba pang Pinagkakakitaan</small></h4>
-          <div class="checkbox-group">
-            <?php 
-            $business_array = $registration_data ? explode(',', $registration_data['business']) : [];
-            ?>
-            <label><input type="checkbox" name="business[]" value="Sari-Sari Store" <?php echo in_array('Sari-Sari Store', $business_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Sari-Sari Store</label>
-            <label><input type="checkbox" name="business[]" value="Patahian" <?php echo in_array('Patahian', $business_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Patahian</label>
-            <label><input type="checkbox" name="business[]" value="Rice Mill" <?php echo in_array('Rice Mill', $business_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Rice Mill</label>
-            <label><input type="checkbox" name="business[]" value="Iba pa" <?php echo in_array('Iba pa', $business_array) ? 'checked' : ''; ?> onchange="toggleCheckboxOther('business', 'businessOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
-            <input type="text" name="businessOther" id="businessOther" placeholder="Pakisulat kung iba pa" class="other-input"
-                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['business_other'] ?? '') : ''; ?>"
-                   <?php echo (!in_array('Iba pa', $business_array)) ? 'disabled' : ''; ?>
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
-          </div>
-        </div>
-
-        <div class="subsection">
-          <h4>L. Contraceptive Methods Used<br><small>L. Gamit na Kontraseptibo</small></h4>
-          <div class="checkbox-group">
-            <?php 
-            $contraceptive_array = $registration_data ? explode(',', $registration_data['contraceptive']) : [];
-            ?>
-            <label><input type="checkbox" name="contraceptive[]" value="Pills" <?php echo in_array('Pills', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Pills</label>
-            <label><input type="checkbox" name="contraceptive[]" value="IUD" <?php echo in_array('IUD', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> IUD</label>
-            <label><input type="checkbox" name="contraceptive[]" value="Condom" <?php echo in_array('Condom', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Condom</label>
-            <label><input type="checkbox" name="contraceptive[]" value="Sterilization" <?php echo in_array('Sterilization', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Sterilization (Ligation/VAS)</label>
-            <label><input type="checkbox" name="contraceptive[]" value="INJ" <?php echo in_array('INJ', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> INJ</label>
-            <label><input type="checkbox" name="contraceptive[]" value="NFP" <?php echo in_array('NFP', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> NFP (Natural F.P.)</label>
-            <label><input type="checkbox" name="contraceptive[]" value="Wala" <?php echo in_array('Wala', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Wala</label>
-          </div>
-        </div>
-          </fieldset>
-        </div>
-        
-        <!-- Tab 4: Disabilities -->
-        <div class="tab-content" id="tab-content-4">
-          <fieldset>
-            <legend>II. Family Members with Disabilities<br><small>II. Mga Kasambahay na may Kapansanan</small></legend>
-            
-        <div class="disability-section">
-          <div class="disability-wrapper">
-            <div class="disability-container" id="disabilitySection">
-              <?php if (!empty($family_disabilities)): ?>
-                <?php foreach ($family_disabilities as $disability): ?>
-                  <div class="disability-row">
+                    </div>
+                    
                     <div class="form-group">
-                      <label>Name:<br><small>Pangalan:</small></label>
-                      <input type="text" name="disabilityName[]" class="form-control" placeholder="Buong pangalan" 
-                             value="<?php echo isset($disability['name']) ? htmlspecialchars($disability['name']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
+                      <label for="familyEmail0">Email Address<br><small>Email Address</small></label>
+                      <input type="email" id="familyEmail0" name="familyEmail[]" class="form-control" placeholder="email@example.com">
                     </div>
+                    
                     <div class="form-group">
-                      <label>Disability:<br><small>Kapansanan:</small></label>
-                      <input type="text" name="disabilityType[]" class="form-control" placeholder="Uri ng kapansanan"
-                             value="<?php echo isset($disability['disability_type']) ? htmlspecialchars($disability['disability_type']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
+                      <label for="familyOccupation0">Occupation<br><small>Hanapbuhay</small></label>
+                      <input type="text" id="familyOccupation0" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay">
                     </div>
-                    <?php if (!$readonly): ?>
-                    <div class="form-group remove-group">
-                      <button type="button" class="btn-remove-disability" onclick="removeDisability(this)" title="Remove this disability entry">✕</button>
-                    </div>
-                    <?php endif; ?>
                   </div>
-                <?php endforeach; ?>
-              <?php else: ?>
-                <div class="disability-row">
-                  <div class="form-group">
-                    <label>Name:<br><small>Pangalan:</small></label>
-                    <input type="text" name="disabilityName[]" class="form-control" placeholder="Buong pangalan" <?php echo $readonly ? 'readonly' : ''; ?>>
-                  </div>
-                  <div class="form-group">
-                    <label>Disability:<br><small>Kapansanan:</small></label>
-                    <input type="text" name="disabilityType[]" class="form-control" placeholder="Uri ng kapansanan" <?php echo $readonly ? 'readonly' : ''; ?>>
-                  </div>
-                  <?php if (!$readonly): ?>
-                  <div class="form-group remove-group">
-                    <button type="button" class="btn-remove-disability" onclick="removeDisability(this)" title="Remove this disability entry">✕</button>
-                  </div>
-                  <?php endif; ?>
                 </div>
-              <?php endif; ?>
-            </div>
+              </div>
+            <?php endif; ?>
           </div>
           
           <?php if (!$readonly): ?>
-          <div class="disability-controls">
-            <button type="button" class="btn-add-disability" onclick="addDisability()">
+          <div class="family-controls">
+            <button type="button" class="btn-add-family-member" onclick="addFamilyMemberCard()">
               <span class="btn-icon">➕</span>
-              <span class="btn-text">Add Disability Entry<br><small>Magdagdag ng Kapansanan</small></span>
+              <span class="btn-text">Add Family Member<br><small>Magdagdag ng Kasapi</small></span>
             </button>
           </div>
           <?php endif; ?>
         </div>
           </fieldset>
         </div>
-        
-        <!-- Tab 5: Organizations -->
-        <div class="tab-content" id="tab-content-5">
-          <fieldset>
-            <legend>III. Family Members with Organizational Membership<br><small>III. Mga Kasambahay na may Samahang Kinaaniban</small></legend>
-            
-        <div class="organization-section">
-          <div class="organization-wrapper">
-            <div class="organization-container" id="organizationSection">
-              <?php if (!empty($family_organizations)): ?>
-                <?php foreach ($family_organizations as $organization): ?>
-                  <div class="organization-row">
-                    <div class="form-group">
-                      <label>Name:<br><small>Pangalan:</small></label>
-                      <input type="text" name="organizationName[]" class="form-control" placeholder="Buong pangalan"
-                             value="<?php echo isset($organization['name']) ? htmlspecialchars($organization['name']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
-                    </div>
-                    <div class="form-group">
-                      <label>Organization Membership:<br><small>Samahang Kinaaniban:</small></label>
-                      <input type="text" name="organizationType[]" class="form-control" placeholder="Pangalan ng samahan/organisasyon"
-                             value="<?php echo isset($organization['organization_type']) ? htmlspecialchars($organization['organization_type']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
-                    </div>
-                    <?php if (!$readonly): ?>
-                    <div class="form-group remove-group">
-                      <button type="button" class="btn-remove-organization" onclick="removeOrganization(this)" title="Remove this organization entry">✕</button>
-                    </div>
-                    <?php endif; ?>
-                  </div>
-                <?php endforeach; ?>
-              <?php else: ?>
-                <div class="organization-row">
-                  <div class="form-group">
-                    <label>Name:<br><small>Pangalan:</small></label>
-                    <input type="text" name="organizationName[]" class="form-control" placeholder="Buong pangalan" <?php echo $readonly ? 'readonly' : ''; ?>>
-                  </div>
-                  <div class="form-group">
-                    <label>Organization Membership:<br><small>Samahang Kinaaniban:</small></label>
-                    <input type="text" name="organizationType[]" class="form-control" placeholder="Pangalan ng samahan/organisasyon" <?php echo $readonly ? 'readonly' : ''; ?>>
-                  </div>
-                  <?php if (!$readonly): ?>
-                  <div class="form-group remove-group">
-                    <button type="button" class="btn-remove-organization" onclick="removeOrganization(this)" title="Remove this organization entry">✕</button>
-                  </div>
-                  <?php endif; ?>
-                </div>
-              <?php endif; ?>
-            </div>
-          </div>
-          
-          <?php if (!$readonly): ?>
-          <div class="organization-controls">
-            <button type="button" class="btn-add-organization" onclick="addOrganization()">
-              <span class="btn-icon">➕</span>
-              <span class="btn-text">Add Organization Entry<br><small>Magdagdag ng Samahan</small></span>
-            </button>
-          </div>
-          <?php endif; ?>
-        </div>
+
+    <!-- Tab 3: Livelihood -->
+    <div class="tab-content" id="tab-content-3">
+      <fieldset>
+        <legend>I. Livelihood<br><small>I. Pangkabuhayan</small></legend>
+    
+    <div class="subsection">
+      <h4>A. Land Occupied<br><small>A. Lupang Kinatatayuan</small></h4>
+      <div class="checkbox-group">
+        <label><input type="radio" name="landOwnership" value="Pag-aari" <?php echo ($registration_data && $registration_data['land_ownership'] === 'Pag-aari') ? 'checked' : ''; ?> onchange="toggleOtherInput('landOwnership', 'landOwnershipOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Pag-aari</label>
+        <label><input type="radio" name="landOwnership" value="Inuupahan" <?php echo ($registration_data && $registration_data['land_ownership'] === 'Inuupahan') ? 'checked' : ''; ?> onchange="toggleOtherInput('landOwnership', 'landOwnershipOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Inuupahan</label>
+        <label><input type="radio" name="landOwnership" value="Iba pa" <?php echo ($registration_data && $registration_data['land_ownership'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('landOwnership', 'landOwnershipOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
+        <input type="text" name="landOwnershipOther" id="landOwnershipOther" placeholder="Pakisulat kung iba pa" class="other-input" 
+               value="<?php echo $registration_data ? htmlspecialchars($registration_data['land_ownership_other'] ?? '') : ''; ?>"
+               <?php echo ($registration_data && $registration_data['land_ownership'] !== 'Iba pa') ? 'disabled' : ''; ?>
+               <?php echo $readonly ? 'readonly' : ''; ?>>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h4>B. House Residence<br><small>B. Bahay na Tinitirhan</small></h4>
+      <div class="checkbox-group">
+        <label><input type="radio" name="houseOwnership" value="Pag-aari" <?php echo ($registration_data && $registration_data['house_ownership'] === 'Pag-aari') ? 'checked' : ''; ?> onchange="toggleOtherInput('houseOwnership', 'houseOwnershipOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Pag-aari</label>
+        <label><input type="radio" name="houseOwnership" value="Umuupa" <?php echo ($registration_data && $registration_data['house_ownership'] === 'Umuupa') ? 'checked' : ''; ?> onchange="toggleOtherInput('houseOwnership', 'houseOwnershipOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Umuupa</label>
+        <label><input type="radio" name="houseOwnership" value="Iba pa" <?php echo ($registration_data && $registration_data['house_ownership'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('houseOwnership', 'houseOwnershipOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
+        <input type="text" name="houseOwnershipOther" id="houseOwnershipOther" placeholder="Pakisulat kung iba pa" class="other-input"
+               value="<?php echo $registration_data ? htmlspecialchars($registration_data['house_ownership_other'] ?? '') : ''; ?>"
+               <?php echo ($registration_data && $registration_data['house_ownership'] !== 'Iba pa') ? 'disabled' : ''; ?>
+               <?php echo $readonly ? 'readonly' : ''; ?>>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h4>C. Agricultural/Farm Land<br><small>C. Lupahang Sakahan/Pinagyayaman</small></h4>
+      <div class="checkbox-group">
+        <label><input type="radio" name="farmland" value="Pag-aari" <?php echo ($registration_data && $registration_data['farmland'] === 'Pag-aari') ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Pag-aari</label>
+        <label><input type="radio" name="farmland" value="Binubuwisan" <?php echo ($registration_data && $registration_data['farmland'] === 'Binubuwisan') ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Binubuwisan</label>
+        <label><input type="radio" name="farmland" value="Wala" <?php echo ($registration_data && $registration_data['farmland'] === 'Wala') ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Wala</label>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h4>D. Source of Cooking Energy<br><small>D. Pinagmumulan ng Enerhiya sa Pagluluto</small></h4>
+      <div class="checkbox-group">
+        <label><input type="radio" name="cookingEnergy" value="Gaas" <?php echo ($registration_data && $registration_data['cooking_energy'] === 'Gaas') ? 'checked' : ''; ?> onchange="toggleOtherInput('cookingEnergy', 'cookingEnergyOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Gaas</label>
+        <label><input type="radio" name="cookingEnergy" value="Kuryente" <?php echo ($registration_data && $registration_data['cooking_energy'] === 'Kuryente') ? 'checked' : ''; ?> onchange="toggleOtherInput('cookingEnergy', 'cookingEnergyOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Kuryente</label>
+        <label><input type="radio" name="cookingEnergy" value="LPG" <?php echo ($registration_data && $registration_data['cooking_energy'] === 'LPG') ? 'checked' : ''; ?> onchange="toggleOtherInput('cookingEnergy', 'cookingEnergyOther')" <?php echo $readonly ? 'disabled' : ''; ?>> LPG</label>
+        <label><input type="radio" name="cookingEnergy" value="Kahoy" <?php echo ($registration_data && $registration_data['cooking_energy'] === 'Kahoy') ? 'checked' : ''; ?> onchange="toggleOtherInput('cookingEnergy', 'cookingEnergyOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Kahoy</label>
+        <label><input type="radio" name="cookingEnergy" value="Iba pa" <?php echo ($registration_data && $registration_data['cooking_energy'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('cookingEnergy', 'cookingEnergyOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
+        <input type="text" name="cookingEnergyOther" id="cookingEnergyOther" placeholder="Pakisulat kung iba pa" class="other-input"
+               value="<?php echo $registration_data ? htmlspecialchars($registration_data['cooking_energy_other'] ?? '') : ''; ?>"
+               <?php echo ($registration_data && $registration_data['cooking_energy'] !== 'Iba pa') ? 'disabled' : ''; ?>
+               <?php echo $readonly ? 'readonly' : ''; ?>>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h4>E. Type of Toilet<br><small>E. Uri ng Palikuran</small></h4>
+      <div class="checkbox-group">
+        <label><input type="radio" name="toiletType" value="Flush" <?php echo ($registration_data && $registration_data['toilet_type'] === 'Flush') ? 'checked' : ''; ?> onchange="toggleOtherInput('toiletType', 'toiletTypeOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Flush</label>
+        <label><input type="radio" name="toiletType" value="De-buhos" <?php echo ($registration_data && $registration_data['toilet_type'] === 'De-buhos') ? 'checked' : ''; ?> onchange="toggleOtherInput('toiletType', 'toiletTypeOther')" <?php echo $readonly ? 'disabled' : ''; ?>> De-buhos</label>
+        <label><input type="radio" name="toiletType" value="Hinuhukay/Balon" <?php echo ($registration_data && $registration_data['toilet_type'] === 'Hinuhukay/Balon') ? 'checked' : ''; ?> onchange="toggleOtherInput('toiletType', 'toiletTypeOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Hinuhukay/Balon</label>
+        <label><input type="radio" name="toiletType" value="Iba pa" <?php echo ($registration_data && $registration_data['toilet_type'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('toiletType', 'toiletTypeOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
+        <input type="text" name="toiletTypeOther" id="toiletTypeOther" placeholder="Pakisulat kung iba pa" class="other-input"
+               value="<?php echo $registration_data ? htmlspecialchars($registration_data['toilet_type_other'] ?? '') : ''; ?>"
+               <?php echo ($registration_data && $registration_data['toilet_type'] !== 'Iba pa') ? 'disabled' : ''; ?>
+               <?php echo $readonly ? 'readonly' : ''; ?>>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h4>F. Source of Electricity<br><small>F. Pinagmululan ng Elektrisidad</small></h4>
+      <div class="checkbox-group">
+        <label><input type="radio" name="electricitySource" value="Kuryente" <?php echo ($registration_data && $registration_data['electricity_source'] === 'Kuryente') ? 'checked' : ''; ?> onchange="toggleOtherInput('electricitySource', 'electricitySourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Kuryente</label>
+        <label><input type="radio" name="electricitySource" value="Gaas" <?php echo ($registration_data && $registration_data['electricity_source'] === 'Gaas') ? 'checked' : ''; ?> onchange="toggleOtherInput('electricitySource', 'electricitySourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Gaas</label>
+        <label><input type="radio" name="electricitySource" value="Iba pa" <?php echo ($registration_data && $registration_data['electricity_source'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('electricitySource', 'electricitySourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
+        <input type="text" name="electricitySourceOther" id="electricitySourceOther" placeholder="Pakisulat kung iba pa" class="other-input"
+               value="<?php echo $registration_data ? htmlspecialchars($registration_data['electricity_source_other'] ?? '') : ''; ?>"
+               <?php echo ($registration_data && $registration_data['electricity_source'] !== 'Iba pa') ? 'disabled' : ''; ?>
+               <?php echo $readonly ? 'readonly' : ''; ?>>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h4>G. Source of Water<br><small>G. Pinagkukunan ng Tubig</small></h4>
+      <div class="checkbox-group">
+        <label><input type="radio" name="waterSource" value="Poso Artesiyano" <?php echo ($registration_data && $registration_data['water_source'] === 'Poso Artesiyano') ? 'checked' : ''; ?> onchange="toggleOtherInput('waterSource', 'waterSourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Poso Artesiyano</label>
+        <label><input type="radio" name="waterSource" value="Water District" <?php echo ($registration_data && $registration_data['water_source'] === 'Water District') ? 'checked' : ''; ?> onchange="toggleOtherInput('waterSource', 'waterSourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Water District</label>
+        <label><input type="radio" name="waterSource" value="Nawasa" <?php echo ($registration_data && $registration_data['water_source'] === 'Nawasa') ? 'checked' : ''; ?> onchange="toggleOtherInput('waterSource', 'waterSourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Nawasa</label>
+        <label><input type="radio" name="waterSource" value="Iba pa" <?php echo ($registration_data && $registration_data['water_source'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('waterSource', 'waterSourceOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
+        <input type="text" name="waterSourceOther" id="waterSourceOther" placeholder="Pakisulat kung iba pa" class="other-input"
+               value="<?php echo $registration_data ? htmlspecialchars($registration_data['water_source_other'] ?? '') : ''; ?>"
+               <?php echo ($registration_data && $registration_data['water_source'] !== 'Iba pa') ? 'disabled' : ''; ?>
+               <?php echo $readonly ? 'readonly' : ''; ?>>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h4>H. Method of Waste Disposal<br><small>H. Pamamaraan ng Pagtatapon ng Basura</small></h4>
+      <div class="checkbox-group">
+        <label><input type="radio" name="wasteDisposal" value="Sinusunog" <?php echo ($registration_data && $registration_data['waste_disposal'] === 'Sinusunog') ? 'checked' : ''; ?> onchange="toggleOtherInput('wasteDisposal', 'wasteDisposalOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Sinusunog</label>
+        <label><input type="radio" name="wasteDisposal" value="Hukay na may takip" <?php echo ($registration_data && $registration_data['waste_disposal'] === 'Hukay na may takip') ? 'checked' : ''; ?> onchange="toggleOtherInput('wasteDisposal', 'wasteDisposalOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Hukay na may takip</label>
+        <label><input type="radio" name="wasteDisposal" value="Kinokolekta" <?php echo ($registration_data && $registration_data['waste_disposal'] === 'Kinokolekta') ? 'checked' : ''; ?> onchange="toggleOtherInput('wasteDisposal', 'wasteDisposalOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Kinokolekta</label>
+        <label><input type="radio" name="wasteDisposal" value="Itinatapon kung saan" <?php echo ($registration_data && $registration_data['waste_disposal'] === 'Itinatapon kung saan') ? 'checked' : ''; ?> onchange="toggleOtherInput('wasteDisposal', 'wasteDisposalOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Itinatapon kung saan</label>
+        <label><input type="radio" name="wasteDisposal" value="Iba pa" <?php echo ($registration_data && $registration_data['waste_disposal'] === 'Iba pa') ? 'checked' : ''; ?> onchange="toggleOtherInput('wasteDisposal', 'wasteDisposalOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
+        <input type="text" name="wasteDisposalOther" id="wasteDisposalOther" placeholder="Pakisulat kung iba pa" class="other-input"
+               value="<?php echo $registration_data ? htmlspecialchars($registration_data['waste_disposal_other'] ?? '') : ''; ?>"
+               <?php echo ($registration_data && $registration_data['waste_disposal'] !== 'Iba pa') ? 'disabled' : ''; ?>
+               <?php echo $readonly ? 'readonly' : ''; ?>>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h4>I. Household Appliances<br><small>I. Kasangkapan sa Bahay</small></h4>
+      <div class="checkbox-group">
+        <?php 
+        $appliances_array = $registration_data ? explode(',', $registration_data['appliances']) : [];
+        ?>
+        <label><input type="checkbox" name="appliances[]" value="Radyo/Stereo" <?php echo in_array('Radyo/Stereo', $appliances_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Radyo/Stereo</label>
+        <label><input type="checkbox" name="appliances[]" value="Telebisyon" <?php echo in_array('Telebisyon', $appliances_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Telebisyon (TV)</label>
+        <label><input type="checkbox" name="appliances[]" value="Refrigerator" <?php echo in_array('Refrigerator', $appliances_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Refrigerator</label>
+        <label><input type="checkbox" name="appliances[]" value="Muwebles" <?php echo in_array('Muwebles', $appliances_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Muwebles (Furniture)</label>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h4>J. Transportation<br><small>J. Transportasyon</small></h4>
+      <div class="checkbox-group">
+        <?php 
+        $transportation_array = $registration_data ? explode(',', $registration_data['transportation']) : [];
+        ?>
+        <label><input type="checkbox" name="transportation[]" value="Sasakyan" <?php echo in_array('Sasakyan', $transportation_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Sasakyan</label>
+        <label><input type="checkbox" name="transportation[]" value="Jeep" <?php echo in_array('Jeep', $transportation_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Jeep</label>
+        <label><input type="checkbox" name="transportation[]" value="Kotse" <?php echo in_array('Kotse', $transportation_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Kotse</label>
+        <label><input type="checkbox" name="transportation[]" value="Tricycle" <?php echo in_array('Tricycle', $transportation_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Tricycle</label>
+        <label><input type="checkbox" name="transportation[]" value="Truck" <?php echo in_array('Truck', $transportation_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Truck</label>
+        <label><input type="checkbox" name="transportation[]" value="Motorsiklo" <?php echo in_array('Motorsiklo', $transportation_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Motorsiklo</label>
+        <label><input type="checkbox" name="transportation[]" value="Iba pa" <?php echo in_array('Iba pa', $transportation_array) ? 'checked' : ''; ?> onchange="toggleCheckboxOther('transportation', 'transportationOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
+        <input type="text" name="transportationOther" id="transportationOther" placeholder="Pakisulat kung iba pa" class="other-input"
+               value="<?php echo $registration_data ? htmlspecialchars($registration_data['transportation_other'] ?? '') : ''; ?>"
+               <?php echo (!in_array('Iba pa', $transportation_array)) ? 'disabled' : ''; ?>
+               <?php echo $readonly ? 'readonly' : ''; ?>>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h4>K. Commercial/Other Sources of Income<br><small>K. Pang-Komersyo/Iba pang Pinagkakakitaan</small></h4>
+      <div class="checkbox-group">
+        <?php 
+        $business_array = $registration_data ? explode(',', $registration_data['business']) : [];
+        ?>
+        <label><input type="checkbox" name="business[]" value="Sari-Sari Store" <?php echo in_array('Sari-Sari Store', $business_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Sari-Sari Store</label>
+        <label><input type="checkbox" name="business[]" value="Patahian" <?php echo in_array('Patahian', $business_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Patahian</label>
+        <label><input type="checkbox" name="business[]" value="Rice Mill" <?php echo in_array('Rice Mill', $business_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Rice Mill</label>
+        <label><input type="checkbox" name="business[]" value="Iba pa" <?php echo in_array('Iba pa', $business_array) ? 'checked' : ''; ?> onchange="toggleCheckboxOther('business', 'businessOther')" <?php echo $readonly ? 'disabled' : ''; ?>> Iba pa</label>
+        <input type="text" name="businessOther" id="businessOther" placeholder="Pakisulat kung iba pa" class="other-input"
+               value="<?php echo $registration_data ? htmlspecialchars($registration_data['business_other'] ?? '') : ''; ?>"
+               <?php echo (!in_array('Iba pa', $business_array)) ? 'disabled' : ''; ?>
+               <?php echo $readonly ? 'readonly' : ''; ?>>
+      </div>
+    </div>
+
+    <div class="subsection">
+      <h4>L. Contraceptive Methods Used<br><small>L. Gamit na Kontraseptibo</small></h4>
+      <div class="checkbox-group">
+        <?php 
+        $contraceptive_array = $registration_data ? explode(',', $registration_data['contraceptive']) : [];
+        ?>
+        <label><input type="checkbox" name="contraceptive[]" value="Pills" <?php echo in_array('Pills', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Pills</label>
+        <label><input type="checkbox" name="contraceptive[]" value="IUD" <?php echo in_array('IUD', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> IUD</label>
+        <label><input type="checkbox" name="contraceptive[]" value="Condom" <?php echo in_array('Condom', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Condom</label>
+        <label><input type="checkbox" name="contraceptive[]" value="Sterilization" <?php echo in_array('Sterilization', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Sterilization (Ligation/VAS)</label>
+        <label><input type="checkbox" name="contraceptive[]" value="INJ" <?php echo in_array('INJ', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> INJ</label>
+        <label><input type="checkbox" name="contraceptive[]" value="NFP" <?php echo in_array('NFP', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> NFP (Natural F.P.)</label>
+        <label><input type="checkbox" name="contraceptive[]" value="Wala" <?php echo in_array('Wala', $contraceptive_array) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>> Wala</label>
+      </div>
+    </div>
       </fieldset>
+    </div>
+        
+    <!-- Tab 4: Disabilities -->
+    <div class="tab-content" id="tab-content-4">
+      <fieldset>
+        <legend>II. Family Members with Disabilities<br><small>II. Mga Kasambahay na may Kapansanan</small></legend>
+        
+    <div class="disability-section">
+      <div class="disability-wrapper">
+        <div class="disability-container" id="disabilitySection">
+          <?php if (!empty($family_disabilities)): ?>
+            <?php foreach ($family_disabilities as $disability): ?>
+              <div class="disability-row">
+                <div class="form-group">
+                  <label>Name:<br><small>Pangalan:</small></label>
+                  <input type="text" name="disabilityName[]" class="form-control" placeholder="Buong pangalan" 
+                         value="<?php echo isset($disability['name']) ? htmlspecialchars($disability['name']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
+                </div>
+                <div class="form-group">
+                  <label>Disability:<br><small>Kapansanan:</small></label>
+                  <input type="text" name="disabilityType[]" class="form-control" placeholder="Uri ng kapansanan"
+                         value="<?php echo isset($disability['disability_type']) ? htmlspecialchars($disability['disability_type']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
+                </div>
+                <?php if (!$readonly): ?>
+                <div class="form-group remove-group">
+                  <button type="button" class="btn-remove-disability" onclick="removeDisability(this)" title="Remove this disability entry">✕</button>
+                </div>
+                <?php endif; ?>
+              </div>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <div class="disability-row">
+              <div class="form-group">
+                <label>Name:<br><small>Pangalan:</small></label>
+                <input type="text" name="disabilityName[]" class="form-control" placeholder="Buong pangalan" <?php echo $readonly ? 'readonly' : ''; ?>>
+              </div>
+              <div class="form-group">
+                <label>Disability:<br><small>Kapansanan:</small></label>
+                <input type="text" name="disabilityType[]" class="form-control" placeholder="Uri ng kapansanan" <?php echo $readonly ? 'readonly' : ''; ?>>
+              </div>
+              <?php if (!$readonly): ?>
+              <div class="form-group remove-group">
+                <button type="button" class="btn-remove-disability" onclick="removeDisability(this)" title="Remove this disability entry">✕</button>
+              </div>
+              <?php endif; ?>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+      
+      <?php if (!$readonly): ?>
+      <div class="disability-controls">
+        <button type="button" class="btn-add-disability" onclick="addDisability()">
+          <span class="btn-icon">➕</span>
+          <span class="btn-text">Add Disability Entry<br><small>Magdagdag ng Kapansanan</small></span>
+        </button>
+      </div>
+      <?php endif; ?>
+    </div>
+      </fieldset>
+    </div>
+
+    <!-- Tab 5: Organizations -->
+    <div class="tab-content" id="tab-content-5">
+      <fieldset>
+        <legend>III. Family Members with Organizational Membership<br><small>III. Mga Kasambahay na may Samahang Kinaaniban</small></legend>
+        
+    <div class="organization-section">
+      <div class="organization-wrapper">
+        <div class="organization-container" id="organizationSection">
+          <?php if (!empty($family_organizations)): ?>
+            <?php foreach ($family_organizations as $organization): ?>
+              <div class="organization-row">
+                <div class="form-group">
+                  <label>Name:<br><small>Pangalan:</small></label>
+                  <input type="text" name="organizationName[]" class="form-control" placeholder="Buong pangalan"
+                         value="<?php echo isset($organization['name']) ? htmlspecialchars($organization['name']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
+                </div>
+                <div class="form-group">
+                  <label>Organization Membership:<br><small>Samahang Kinaaniban:</small></label>
+                  <input type="text" name="organizationType[]" class="form-control" placeholder="Pangalan ng samahan/organisasyon"
+                         value="<?php echo isset($organization['organization_type']) ? htmlspecialchars($organization['organization_type']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
+                </div>
+                <?php if (!$readonly): ?>
+                <div class="form-group remove-group">
+                  <button type="button" class="btn-remove-organization" onclick="removeOrganization(this)" title="Remove this organization entry">✕</button>
+                </div>
+                <?php endif; ?>
+              </div>
+            <?php endforeach; ?>
+          <?php else: ?>
+            <div class="organization-row">
+              <div class="form-group">
+                <label>Name:<br><small>Pangalan:</small></label>
+                <input type="text" name="organizationName[]" class="form-control" placeholder="Buong pangalan" <?php echo $readonly ? 'readonly' : ''; ?>>
+              </div>
+              <div class="form-group">
+                <label>Organization Membership:<br><small>Samahang Kinaaniban:</small></label>
+                <input type="text" name="organizationType[]" class="form-control" placeholder="Pangalan ng samahan/organisasyon" <?php echo $readonly ? 'readonly' : ''; ?>>
+              </div>
+              <?php if (!$readonly): ?>
+              <div class="form-group remove-group">
+                <button type="button" class="btn-remove-organization" onclick="removeOrganization(this)" title="Remove this organization entry">✕</button>
+              </div>
+              <?php endif; ?>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+
+      <?php if (!$readonly): ?>
+      <div class="organization-controls">
+        <button type="button" class="btn-add-organization" onclick="addOrganization()">
+          <span class="btn-icon">➕</span>
+          <span class="btn-text">Add Organization Entry<br><small>Magdagdag ng Samahan</small></span>
+        </button>
+      </div>
+      <?php endif; ?>
+    </div>
+      </fieldset>
+    </div>
+        
       
       <!-- Tab Navigation Controls -->
       <?php if (!$readonly): ?>
@@ -2170,26 +2224,178 @@ function debugShowPrivacyNotice() {
   pointer-events: none;
 }
 
-.tab-btn {
-  flex: 1;
-  min-width: 220px;
-  padding: 1.8rem 2.2rem;
-  border: 4px solid rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.18);
-  color: white;
-  font-weight: 800;
-  font-size: 1.15rem;
-  border-radius: 18px;
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  text-align: center;
-  line-height: 1.3;
+/* Family Member Card Styles */
+.family-members-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.family-member-card {
+    border: 2px solid #4CAF50;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.15);
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.family-member-card:hover {
+    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.25);
+    transform: translateY(-2px);
+}
+
+.family-member-card.expanded {
+    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+}
+
+.family-member-header {
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    color: white;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    font-size: 1.1rem;
+    user-select: none;
+}
+
+.family-member-header:hover {
+    background: linear-gradient(135deg, #66BB6A, #388E3C);
+}
+
+.family-member-name {
+    flex-grow: 1;
+    padding-right: 1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.toggle-icon {
+    font-size: 1.2rem;
+    transition: transform 0.3s ease;
+}
+
+.family-member-content {
+    padding: 1.5rem;
+    background: #f9f9f9;
+}
+
+.family-member-content .form-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.2rem;
+}
+
+.remove-btn-container {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.btn-remove-family-member {
+    background: #f44336;
+    color: white;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-remove-family-member:hover {
+    background: #d32f2f;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+}
+
+.btn-remove-family-member:active {
+    transform: translateY(0);
+}
+
+/* Responsive adjustments for family member cards */
+@media (max-width: 768px) {
+    .family-member-content {
+        padding: 1rem;
+    }
+    
+    .family-member-content .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .family-member-header {
+        padding: 0.8rem 1rem;
+        font-size: 1rem;
+    }
+}
+
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.1) 75%, transparent 75%);
+  background-size: 40px 40px;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+/* Tab Navigation Styles - Enhanced for Kiosk Visibility */
+.tab-navigation {
+  display: flex;
+  background: linear-gradient(135deg, #2c6e49 0%, #4c956c 50%, #6b705c 100%);
+  border-radius: 20px 20px 0 0;
+  padding: 1.5rem 1rem;
+  margin-bottom: 0;
+  box-shadow: 0 8px 30px rgba(44, 110, 73, 0.4);
+  overflow-x: auto;
+  gap: 0.5rem;
+  border: none;
   position: relative;
-  overflow: hidden;
-  backdrop-filter: blur(15px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  letter-spacing: 0.5px;
+  justify-content: center;
+}
+
+.tab-navigation::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.05) 50%, rgba(255, 255, 255, 0.05) 75%, transparent 75%);
+  background-size: 30px 30px;
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+/* Update the .tab-btn styles */
+.tab-btn {
+    flex: 1;
+    min-width: 180px;
+    padding: 1.2rem 1.5rem;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    line-height: 1.4;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    margin: 0 0.25rem;
 }
 
 .tab-btn::before {
@@ -2199,7 +2405,7 @@ function debugShowPrivacyNotice() {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%, rgba(255, 255, 255, 0.1) 100%);
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%, rgba(255, 255, 255, 0.05) 100%);
   z-index: 0;
 }
 
@@ -2210,104 +2416,79 @@ function debugShowPrivacyNotice() {
 
 .tab-btn small {
   display: block;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 0.95rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
   font-style: italic;
-  margin-top: 0.6rem;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  margin-top: 0.4rem;
+  text-shadow: none;
 }
 
 /* Add step number badges */
 .tab-btn::after {
-  content: attr(data-step);
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background: linear-gradient(135deg, #ff9800, #f57c00);
-  color: white;
-  border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  font-weight: 900;
-  box-shadow: 0 3px 10px rgba(255, 152, 0, 0.4);
-  border: 2px solid white;
-  z-index: 5;
+    content: attr(data-step);
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: linear-gradient(135deg, #fefae0, #dda15e);
+    color: #2c6e49;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 800;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    border: 2px solid #fff;
+    z-index: 5;
 }
 
 .tab-btn.active::after {
-  background: linear-gradient(135deg, #4caf50, #2e7d32);
-  box-shadow: 0 3px 10px rgba(76, 175, 80, 0.5);
+  background: linear-gradient(135deg, #ffca3a, #ff9e00);
+  box-shadow: 0 2px 10px rgba(255, 158, 0, 0.4);
   transform: scale(1.1);
 }
 
 .tab-btn.completed::after {
   content: '✓';
-  background: linear-gradient(135deg, #4caf50, #2e7d32);
-  box-shadow: 0 3px 10px rgba(76, 175, 80, 0.5);
+  background: linear-gradient(135deg, #8ac926, #5cb85c);
+  box-shadow: 0 2px 10px rgba(92, 184, 92, 0.4);
 }
 
 .tab-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.8);
-  transform: translateY(-4px) scale(1.05);
-  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
   color: #fff;
-  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
 }
 
 .tab-btn.active {
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 50%, #ffffff 100%);
-  color: #1b5e20;
-  border-color: #ffffff;
-  box-shadow: 0 10px 40px rgba(27, 94, 32, 0.5), 0 0 0 2px rgba(255, 255, 255, 0.8);
-  transform: translateY(-6px) scale(1.08);
-  font-weight: 900;
-  text-shadow: 0 1px 3px rgba(27, 94, 32, 0.2);
-  z-index: 10;
+  background: linear-gradient(135deg, #ffca3a 0%, #ffd166 100%);
+  color: #2c6e49;
+  box-shadow: 0 6px 20px rgba(255, 202, 58, 0.4);
+  transform: translateY(-3px);
+  font-weight: 700;
 }
 
 .tab-btn.active::before {
-  background: linear-gradient(45deg, rgba(27, 94, 32, 0.05) 0%, transparent 50%, rgba(27, 94, 32, 0.05) 100%);
+  background: linear-gradient(45deg, rgba(44, 110, 73, 0.1) 0%, transparent 50%, rgba(44, 110, 73, 0.1) 100%);
 }
 
 .tab-btn.active small {
-  color: #2e7d32;
-  font-weight: 600;
+  color: #2c6e49;
+  font-weight: 500;
 }
 
 .tab-btn.completed {
-  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
-  color: white;
-  border-color: #4caf50;
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
-}
-
-.tab-btn.completed::after {
-  content: '✓';
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(255, 255, 255, 0.9);
-  color: #2e7d32;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: bold;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  z-index: 2;
+  background: linear-gradient(135deg, #8ac926 0%, #9ef01a 100%);
+  color: #2c6e49;
+  box-shadow: 0 4px 15px rgba(138, 201, 38, 0.3);
 }
 
 .tab-btn:focus {
-  outline: 3px solid rgba(255, 255, 255, 0.8);
+  outline: 2px solid rgba(255, 255, 255, 0.8);
   outline-offset: 2px;
 }
 
@@ -2322,6 +2503,9 @@ function debugShowPrivacyNotice() {
   flex: 1;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(218, 165, 94, 0.2);
+  border-top: none;
 }
 
 .tab-content {
@@ -2355,83 +2539,97 @@ function debugShowPrivacyNotice() {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: linear-gradient(135deg, #fefae0 0%, #faedcd 100%);
   border-radius: 0 0 20px 20px;
-  border-top: 1px solid rgba(76, 175, 80, 0.1);
-  box-shadow: 0 -2px 8px rgba(27, 94, 32, 0.05);
+  border-top: 1px solid rgba(218, 165, 94, 0.2);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(218, 165, 94, 0.2);
+  border-top: none;
 }
 
 #prevBtn, #nextBtn {
-  min-width: 160px;
-  padding: 1.3rem 2.5rem;
-  font-size: 1.1rem;
-  font-weight: 800;
-  border-radius: 35px;
-  transition: all 0.4s ease;
+  min-width: 140px;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 30px;
+  transition: all 0.3s ease;
   text-transform: uppercase;
   letter-spacing: 1px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border: none;
+  cursor: pointer;
 }
 
 #nextBtn {
-  background: linear-gradient(135deg, #4caf50, #2e7d32);
-  border: none;
-  color: white;
-  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+  background: linear-gradient(135deg, #ff9e00, #ffca3a);
+  color: #2c6e49;
+  box-shadow: 0 4px 15px rgba(255, 158, 0, 0.3);
 }
 
 #nextBtn:hover {
-  background: linear-gradient(135deg, #66bb6a, #388e3c);
+  background: linear-gradient(135deg, #ffd166, #ffca3a);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+  box-shadow: 0 6px 20px rgba(255, 158, 0, 0.4);
 }
 
 #nextBtn.btn-success {
-  background: linear-gradient(135deg, #28a745, #20c997);
-  border: none;
-  color: white;
-  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+  background: linear-gradient(135deg, #8ac926, #9ef01a);
+  color: #2c6e49;
+  box-shadow: 0 4px 15px rgba(138, 201, 38, 0.3);
 }
 
 #nextBtn.btn-success:hover {
-  background: linear-gradient(135deg, #20c997, #17a2b8);
+  background: linear-gradient(135deg, #9ef01a, #8ac926);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+  box-shadow: 0 6px 20px rgba(138, 201, 38, 0.4);
+}
+
+#prevBtn {
+  background: linear-gradient(135deg, #6b705c, #a5a58d);
+  color: #fefae0;
+  box-shadow: 0 4px 15px rgba(107, 112, 92, 0.3);
+}
+
+#prevBtn:hover {
+  background: linear-gradient(135deg, #a5a58d, #6b705c);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(107, 112, 92, 0.4);
 }
 
 /* Progress Indicator Styles - Enhanced for Kiosk Visibility */
 .progress-indicator {
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  padding: 1.5rem 2.5rem;
+  background: linear-gradient(135deg, #fefae0 0%, #faedcd 100%);
+  padding: 1.2rem 2rem;
   border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  box-shadow: 0 4px 15px rgba(27, 94, 32, 0.15);
-  border-bottom: 3px solid rgba(76, 175, 80, 0.2);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  border-bottom: 2px solid rgba(218, 165, 94, 0.3);
   border-top: 1px solid rgba(255, 255, 255, 0.8);
 }
 
 .progress-bar {
   flex: 1;
-  height: 12px;
-  background: rgba(76, 175, 80, 0.15);
-  border-radius: 8px;
+  height: 10px;
+  background: rgba(218, 165, 94, 0.2);
+  border-radius: 5px;
   overflow: hidden;
-  margin-right: 2rem;
+  margin-right: 1.5rem;
   position: relative;
-  border: 2px solid rgba(76, 175, 80, 0.2);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(218, 165, 94, 0.3);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(135deg, #4caf50 0%, #2e7d32 50%, #1b5e20 100%);
-  border-radius: 6px;
-  transition: width 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+  background: linear-gradient(135deg, #ff9e00 0%, #ffca3a 100%);
+  border-radius: 5px;
+  transition: width 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
   width: 20%; /* Default for step 1 */
   position: relative;
-  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+  box-shadow: 0 2px 6px rgba(255, 158, 0, 0.4);
 }
 
 .progress-fill::after {
@@ -2441,8 +2639,8 @@ function debugShowPrivacyNotice() {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  animation: progressShimmer 2.5s infinite;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: progressShimmer 2s infinite;
 }
 
 @keyframes progressShimmer {
@@ -2451,24 +2649,24 @@ function debugShowPrivacyNotice() {
 }
 
 .progress-text {
-  font-weight: 900;
-  color: #1b5e20;
-  font-size: 1.4rem;
+  font-weight: 700;
+  color: #2c6e49;
+  font-size: 1.1rem;
   white-space: nowrap;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-  padding: 0.8rem 1.5rem;
-  background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(27, 94, 32, 0.1));
-  border-radius: 25px;
-  border: 3px solid rgba(76, 175, 80, 0.3);
-  letter-spacing: 1px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  padding: 0.6rem 1.2rem;
+  background: linear-gradient(135deg, rgba(255, 202, 58, 0.2), rgba(218, 165, 94, 0.1));
+  border-radius: 20px;
+  border: 2px solid rgba(218, 165, 94, 0.3);
+  letter-spacing: 0.5px;
   position: relative;
   overflow: hidden;
 }
 
 .progress-text::before {
   content: '📋';
-  margin-right: 0.8rem;
-  font-size: 1.2rem;
+  margin-right: 0.6rem;
+  font-size: 1rem;
 }
 
 #prevBtn {
@@ -5968,8 +6166,47 @@ function calculateAge(dateInput) {
     }
 }
 
+// Age Calculation Function for Main Resident
+function calculateAgeFromCard(dateInput) {
+    const birthDate = new Date(dateInput.value);
+    const today = new Date();
+    
+    if (!dateInput.value || isNaN(birthDate.getTime())) {
+        // Clear age if no valid date
+        const ageInput = document.getElementById('age');
+        if (ageInput) {
+            ageInput.value = '';
+        }
+        return;
+    }
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    // Adjust age if birthday hasn't occurred this year
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    // Update the age field
+    const ageInput = document.getElementById('age');
+    if (ageInput) {
+        ageInput.value = age >= 0 ? age : 0;
+    }
+}
+
 // Family Member Management Functions
+// Updated to work with both table and card layouts
 function addFamilyMember() {
+    // Check if we're using the card layout (new) or table layout (old)
+    const container = document.getElementById('familyMembersContainer');
+    if (container) {
+        // Use card layout
+        addFamilyMemberCard();
+        return;
+    }
+    
+    // Fallback to table layout
     const familyMembersBody = document.getElementById('familyMembersBody');
     if (!familyMembersBody) {
         console.error('Family members body not found');
@@ -6061,6 +6298,15 @@ function addFamilyMember() {
 }
 
 function removeFamilyMember(button) {
+    // Check if we're using the card layout (new) or table layout (old)
+    const container = document.getElementById('familyMembersContainer');
+    if (container) {
+        // Use card layout
+        removeFamilyMemberCard(button);
+        return;
+    }
+    
+    // Fallback to table layout
     const row = button.closest('tr');
     const familyMembersBody = document.getElementById('familyMembersBody');
     
@@ -6096,6 +6342,21 @@ function removeFamilyMember(button) {
 }
 
 function updateFamilyMemberCount() {
+    // Check if we're using the card layout (new) or table layout (old)
+    const container = document.getElementById('familyMembersContainer');
+    if (container) {
+        // For card layout, we don't need to update a count display
+        // But we can ensure the container is visible
+        const familyControls = document.querySelector('.family-controls');
+        if (familyControls) {
+            familyControls.style.display = 'flex';
+            familyControls.style.visibility = 'visible';
+            familyControls.style.opacity = '1';
+        }
+        return;
+    }
+    
+    // Fallback to table layout
     const familyMembersBody = document.getElementById('familyMembersBody');
     const familyControls = document.querySelector('.family-controls');
     
@@ -6152,10 +6413,266 @@ function showFamilyMessage(message, type = 'info') {
     
     // Remove after animation
     setTimeout(() => {
-        if (messageElement && messageElement.parentNode) {
-            messageElement.parentNode.removeChild(messageElement);
-        }
+        messageElement.remove();
     }, 2000);
+}
+
+// Family Member Card Functions
+function toggleFamilyCard(header) {
+    const card = header.closest('.family-member-card');
+    const content = card.querySelector('.family-member-content');
+    const icon = header.querySelector('.toggle-icon');
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        icon.textContent = '▲';
+        card.classList.add('expanded');
+    } else {
+        content.style.display = 'none';
+        icon.textContent = '▼';
+        card.classList.remove('expanded');
+    }
+}
+
+function updateCardHeader(nameInput) {
+    const card = nameInput.closest('.family-member-card');
+    const header = card.querySelector('.family-member-header');
+    const nameSpan = header.querySelector('.family-member-name');
+    
+    if (nameInput.value.trim()) {
+        nameSpan.textContent = nameInput.value.trim();
+    } else {
+        // Find the card index
+        const container = document.getElementById('familyMembersContainer');
+        const cards = container.querySelectorAll('.family-member-card');
+        let index = Array.from(cards).indexOf(card) + 1;
+        nameSpan.textContent = 'Family Member ' + index;
+    }
+}
+
+function calculateAgeFromCard(dateInput) {
+    const birthDate = new Date(dateInput.value);
+    const today = new Date();
+    
+    if (!dateInput.value || isNaN(birthDate.getTime())) {
+        // Clear age if no valid date
+        const ageInput = dateInput.closest('.family-member-content').querySelector('.age-display');
+        if (ageInput) {
+            ageInput.value = '';
+        }
+        return;
+    }
+    
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    // Adjust age if birthday hasn't occurred this year
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    
+    // Update the age field in the same card
+    const ageInput = dateInput.closest('.family-member-content').querySelector('.age-display');
+    if (ageInput) {
+        ageInput.value = age >= 0 ? age : 0;
+    }
+}
+
+function addFamilyMemberCard() {
+    const container = document.getElementById('familyMembersContainer');
+    if (!container) {
+        console.error('Family members container not found');
+        return;
+    }
+    
+    // Get the current number of cards to set the index
+    const currentCards = container.querySelectorAll('.family-member-card');
+    const newIndex = currentCards.length;
+    
+    // Create new card HTML
+    const newCard = document.createElement('div');
+    newCard.className = 'family-member-card';
+    newCard.innerHTML = `
+        <div class="family-member-header" onclick="toggleFamilyCard(this)">
+            <span class="family-member-name">Family Member ${newIndex + 1}</span>
+            <span class="toggle-icon">▲</span>
+        </div>
+        <div class="family-member-content">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="familyName${newIndex}">Name<br><small>Pangalan</small></label>
+                    <input type="text" id="familyName${newIndex}" name="familyName[]" class="form-control" placeholder="Full Name" onchange="updateCardHeader(this)">
+                </div>
+                
+                <div class="form-group">
+                    <label for="familyRelation${newIndex}">Relationship to Head<br><small>Relasyon sa Puno</small></label>
+                    <select id="familyRelation${newIndex}" name="familyRelation[]" class="form-control">
+                        <option value="">Piliin ang Relasyon</option>
+                        <option value="Asawa">Asawa (Spouse)</option>
+                        <option value="Anak">Anak (Child)</option>
+                        <option value="Ama">Ama (Father)</option>
+                        <option value="Ina">Ina (Mother)</option>
+                        <option value="Kapatid">Kapatid (Sibling)</option>
+                        <option value="Lolo">Lolo (Grandfather)</option>
+                        <option value="Lola">Lola (Grandmother)</option>
+                        <option value="Apo">Apo (Grandchild)</option>
+                        <option value="Tiyahin">Tiyahin (Aunt)</option>
+                        <option value="Tiyuhin">Tiyuhin (Uncle)</option>
+                        <option value="Pamangkin">Pamangkin (Nephew/Niece)</option>
+                        <option value="Pinsan">Pinsan (Cousin)</option>
+                        <option value="Manugang">Manugang (Son/Daughter-in-law)</option>
+                        <option value="Biyenan">Biyenan (Parent-in-law)</option>
+                        <option value="Ninong">Ninong (Godfather)</option>
+                        <option value="Ninang">Ninang (Godmother)</option>
+                        <option value="Inaanak">Inaanak (Godchild)</option>
+                        <option value="Kasambahay">Kasambahay (Helper)</option>
+                        <option value="Boarder">Boarder</option>
+                        <option value="Iba pa">Iba pa (Others)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="familyBirthDate${newIndex}">Birth Date<br><small>Petsa ng Kapanganakan</small></label>
+                    <input type="date" id="familyBirthDate${newIndex}" name="familyBirthDate[]" class="form-control" onchange="calculateAgeFromCard(this)">
+                </div>
+                
+                <div class="form-group">
+                    <label for="familyAge${newIndex}">Age<br><small>Edad</small></label>
+                    <input type="number" id="familyAge${newIndex}" name="familyAge[]" class="form-control age-display" placeholder="Edad" min="0" max="120" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label for="familyGender${newIndex}">Gender<br><small>Kasarian</small></label>
+                    <select id="familyGender${newIndex}" name="familyGender[]" class="form-control">
+                        <option value="">Piliin</option>
+                        <option value="Lalaki">Lalaki</option>
+                        <option value="Babae">Babae</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="familyCivilStatus${newIndex}">Civil Status<br><small>Katayuang Sibil</small></label>
+                    <select id="familyCivilStatus${newIndex}" name="familyCivilStatus[]" class="form-control">
+                        <option value="">Piliin</option>
+                        <option value="Single">Single</option>
+                        <option value="Married">Married</option>
+                        <option value="Widowed">Widowed</option>
+                        <option value="Separated">Separated</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="familyEmail${newIndex}">Email Address<br><small>Email Address</small></label>
+                    <input type="email" id="familyEmail${newIndex}" name="familyEmail[]" class="form-control" placeholder="email@example.com">
+                </div>
+                
+                <div class="form-group">
+                    <label for="familyOccupation${newIndex}">Occupation<br><small>Hanapbuhay</small></label>
+                    <input type="text" id="familyOccupation${newIndex}" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay">
+                </div>
+                
+                <div class="form-group remove-btn-container">
+                    <button type="button" class="btn-remove-family-member" onclick="removeFamilyMemberCard(this)" title="Remove this family member">✕ Remove Family Member</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Add animation class for smooth entry
+    newCard.style.opacity = '0';
+    newCard.style.transform = 'translateY(-10px)';
+    
+    // Add the card to the container
+    container.appendChild(newCard);
+    
+    // Animate the new card in
+    setTimeout(() => {
+        newCard.style.transition = 'all 0.3s ease';
+        newCard.style.opacity = '1';
+        newCard.style.transform = 'translateY(0)';
+    }, 10);
+}
+
+function removeFamilyMemberCard(button) {
+    const card = button.closest('.family-member-card');
+    const container = document.getElementById('familyMembersContainer');
+    
+    if (!card || !container) {
+        console.error('Cannot find card or container');
+        return;
+    }
+    
+    // Check if this is the last card - keep at least one card
+    const allCards = container.querySelectorAll('.family-member-card');
+    if (allCards.length <= 1) {
+        // Instead of removing, just clear the values
+        const inputs = card.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            if (input.type === 'select-one') {
+                input.selectedIndex = 0;
+            } else {
+                input.value = '';
+            }
+        });
+        
+        // Reset the card header name
+        const nameSpan = card.querySelector('.family-member-name');
+        nameSpan.textContent = 'Family Member 1';
+        
+        // Show a brief message
+        showFamilyMessage('At least one family member is required', 'info');
+        return;
+    }
+    
+    // Animate out
+    card.style.transition = 'all 0.3s ease';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(-100%)';
+    
+    // Remove after animation
+    setTimeout(() => {
+        card.remove();
+        // Update the card headers to reflect correct numbering
+        updateAllCardHeaders();
+    }, 300);
+}
+
+function updateAllCardHeaders() {
+    const container = document.getElementById('familyMembersContainer');
+    const cards = container.querySelectorAll('.family-member-card');
+    
+    cards.forEach((card, index) => {
+        const nameSpan = card.querySelector('.family-member-name');
+        const nameInput = card.querySelector('input[name="familyName[]"]');
+        
+        // Update the header text
+        if (nameInput && nameInput.value.trim()) {
+            nameSpan.textContent = nameInput.value.trim();
+        } else {
+            nameSpan.textContent = 'Family Member ' + (index + 1);
+        }
+        
+        // Update the input IDs to match the new index
+        const inputs = card.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            if (input.id) {
+                const nameAttr = input.getAttribute('name');
+                if (nameAttr) {
+                    const baseName = nameAttr.replace(/\[\]$/, '');
+                    const idMatch = input.id.match(/^([a-zA-Z]+)(\d+)$/);
+                    if (idMatch) {
+                        const baseId = idMatch[1];
+                        input.id = baseId + index;
+                        // Update the 'for' attribute of the corresponding label
+                        const label = card.querySelector(`label[for="${baseId}${idMatch[2]}"]`);
+                        if (label) {
+                            label.setAttribute('for', baseId + index);
+                        }
+                    }
+                }
+            }
+        });
+    });
 }
 
 // Disability Management Functions

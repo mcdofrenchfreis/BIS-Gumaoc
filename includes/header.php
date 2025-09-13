@@ -3,6 +3,21 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Dynamic base path configuration
+if (!isset($base_path)) {
+    // Determine base path based on current directory structure
+    $current_dir = dirname($_SERVER['PHP_SELF']);
+    if (strpos($current_dir, '/pages') !== false) {
+        $base_path = '../';
+    } elseif (strpos($current_dir, '/admin') !== false) {
+        $base_path = '../';
+    } elseif (strpos($current_dir, '/user') !== false) {
+        $base_path = '../';
+    } else {
+        $base_path = './';
+    }
+}
+
 $is_logged_in = isset($_SESSION['rfid_authenticated']) && $_SESSION['rfid_authenticated'] === true;
 $user_name = $_SESSION['user_name'] ?? 'User';
 $user_id = $_SESSION['user_id'] ?? null;
@@ -26,7 +41,7 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: url('assets/images/background.jpg') center/cover no-repeat;
+            background: url('<?php echo $base_path; ?>assets/images/background.jpg') center/cover no-repeat;
             background-attachment: fixed;
             background-color: #2d5a27;
             min-height: 100vh;
@@ -678,7 +693,7 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
 <body>
     <nav class="navbar">
         <div class="navbar-container">
-            <a href="/GUMAOC/index.php" class="navbar-brand">
+            <a href="<?php echo isset($base_path) ? $base_path : '../'; ?>index.php" class="navbar-brand">
                 <div class="brand-logo">BRGY</div>
                 <div class="brand-text">
                     <h1>GUMAOC EAST</h1>
@@ -687,55 +702,57 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
             </a>
             
             <ul class="navbar-nav" id="navbarNav">
-                <?php if (!$is_logged_in): ?>
+                <?php 
+                $base_path = isset($base_path) ? $base_path : '../';
+                if (!$is_logged_in): ?>
                     <!-- Guest Navigation -->
-                    <li><a href="/GUMAOC/index.php" class="nav-link">🏠 Home</a></li>
-                    <li><a href="/GUMAOC/pages/about.php" class="nav-link">ℹ️ About</a></li>
-                    <li><a href="/GUMAOC/pages/services.php" class="nav-link">🛠️ Services</a></li>
+                    <li><a href="<?php echo $base_path; ?>index.php" class="nav-link">🏠 Home</a></li>
+                    <li><a href="<?php echo $base_path; ?>pages/about.php" class="nav-link">ℹ️ About</a></li>
+                    <li><a href="<?php echo $base_path; ?>pages/services.php" class="nav-link">🛠️ Services</a></li>
                     <li class="nav-dropdown">
-                        <a href="/GUMAOC/pages/forms.php" class="nav-link">
+                        <a href="<?php echo $base_path; ?>pages/forms.php" class="nav-link">
                             📋 E-Services <span class="dropdown-arrow">▼</span>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="/GUMAOC/pages/resident-registration.php">
+                            <li><a href="<?php echo $base_path; ?>pages/resident-registration.php">
                                 <span class="dropdown-icon">👥</span>Census Registration
                             </a></li>
-                            <li><a href="/GUMAOC/pages/certificate-request.php">
+                            <li><a href="<?php echo $base_path; ?>pages/certificate-request.php">
                                 <span class="dropdown-icon">📄</span>Certificate Requests
                             </a></li>
-                            <li><a href="/GUMAOC/pages/forms.php">
+                            <li><a href="<?php echo $base_path; ?>pages/forms.php">
                                 <span class="dropdown-icon">📋</span>All Forms
                             </a></li>
                         </ul>
                     </li>
-                    <li><a href="/GUMAOC/pages/report.php" class="nav-link">🚨 Report</a></li>
-                    <li><a href="/GUMAOC/pages/queue-status.php" class="nav-link">🎫 Queue</a></li>
-                    <li><a href="/GUMAOC/pages/contact.php" class="nav-link">📞 Contact</a></li>
-                    <li><a href="/GUMAOC/user/login.php" class="nav-link">🔐 User Login</a></li>
-                    <li><a href="/GUMAOC/pages/resident-registration.php" class="nav-link">📝 Register</a></li>
+                    <li><a href="<?php echo $base_path; ?>pages/report.php" class="nav-link">🚨 Report</a></li>
+                    <li><a href="<?php echo $base_path; ?>pages/queue-status.php" class="nav-link">🎫 Queue</a></li>
+                    <li><a href="<?php echo $base_path; ?>pages/contact.php" class="nav-link">📞 Contact</a></li>
+                    <li><a href="<?php echo $base_path; ?>user/login.php" class="nav-link">🔐 User Login</a></li>
+                    <li><a href="<?php echo $base_path; ?>pages/resident-registration.php" class="nav-link">📝 Register</a></li>
                 <?php else: ?>
                     <!-- Authenticated User Navigation -->
-                    <li><a href="/GUMAOC/index.php" class="nav-link">🏠 Dashboard</a></li>
-                    <li><a href="/GUMAOC/pages/services.php" class="nav-link">🛠️ Services</a></li>
+                    <li><a href="<?php echo $base_path; ?>index.php" class="nav-link">🏠 Dashboard</a></li>
+                    <li><a href="<?php echo $base_path; ?>pages/services.php" class="nav-link">🛠️ Services</a></li>
                     <li class="nav-dropdown">
-                        <a href="/GUMAOC/pages/forms.php" class="nav-link">
+                        <a href="<?php echo $base_path; ?>pages/forms.php" class="nav-link">
                             📋 E-Services <span class="dropdown-arrow">▼</span>
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a href="/GUMAOC/pages/resident-registration.php">
+                            <li><a href="<?php echo $base_path; ?>pages/resident-registration.php">
                                 <span class="dropdown-icon">👥</span>Census Registration
                             </a></li>
-                            <li><a href="/GUMAOC/pages/certificate-request.php">
+                            <li><a href="<?php echo $base_path; ?>pages/certificate-request.php">
                                 <span class="dropdown-icon">📄</span>Certificate Requests
                             </a></li>
-                            <li><a href="/GUMAOC/pages/forms.php">
+                            <li><a href="<?php echo $base_path; ?>pages/forms.php">
                                 <span class="dropdown-icon">📋</span>All Forms
                             </a></li>
                         </ul>
                     </li>
-                    <li><a href="/GUMAOC/pages/report.php" class="nav-link">🚨 Report</a></li>
-                    <li><a href="/GUMAOC/pages/queue-status.php" class="nav-link">🎫 Queue</a></li>
-                    <li><a href="notifications.php" class="nav-link" style="position: relative;">
+                    <li><a href="<?php echo $base_path; ?>pages/report.php" class="nav-link">🚨 Report</a></li>
+                    <li><a href="<?php echo $base_path; ?>pages/queue-status.php" class="nav-link">🎫 Queue</a></li>
+                    <li><a href="<?php echo $base_path; ?>pages/notifications.php" class="nav-link" style="position: relative;">
                         🔔 Notifications
                         <span class="notification-badge">3</span>
                     </a></li>
@@ -750,16 +767,16 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                                 <div class="name"><?php echo htmlspecialchars($user_name); ?></div>
                                 <div class="role">Resident</div>
                             </div>
-                            <a href="profile.php" class="dropdown-item">
+                            <a href="<?php echo $base_path; ?>pages/profile.php" class="dropdown-item">
                                 👤 My Profile
                             </a>
-                            <a href="settings.php" class="dropdown-item">
+                            <a href="<?php echo $base_path; ?>pages/account-settings.php" class="dropdown-item">
                                 ⚙️ Account Settings
                             </a>
-                            <a href="help.php" class="dropdown-item">
+                            <a href="<?php echo $base_path; ?>pages/about.php" class="dropdown-item">
                                 ❓ Help & Support
                             </a>
-                            <a href="/GUMAOC/logout.php" class="dropdown-item logout">
+                            <a href="<?php echo $base_path; ?>logout.php" class="dropdown-item logout">
                                 🚪 Logout
                             </a>
                         </div>

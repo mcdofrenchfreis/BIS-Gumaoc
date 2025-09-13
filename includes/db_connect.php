@@ -1,8 +1,8 @@
 <?php
 $host = 'localhost';
-$dbname = 'gumaoc_db';
-$username = 'root';
-$password = '';
+$dbname = 'u138614204_gumaoc_db';
+$username = 'u138614204_gumaoc';
+$password = 'YOUR_DATABASE_PASSWORD_HERE'; // Replace with your actual database password
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);

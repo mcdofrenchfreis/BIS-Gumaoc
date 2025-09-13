@@ -99,7 +99,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (empty($civil_status) || $civil_status === 'Unknown') $errors[] = "Civil status is required";
         if (empty($house_number)) $errors[] = "House number is required";
         if (empty($street_address)) $errors[] = "Street address is required";
-        if (empty($interviewer)) $errors[] = "Interviewer name is required";
         
         if (empty($errors)) {
             // Start transaction

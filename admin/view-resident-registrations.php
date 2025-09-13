@@ -731,7 +731,7 @@ if (isset($_SESSION['toast_message'])) {
                         <th>Family Data</th>
                         <th>Status</th>
                         <th>Submitted</th>
-                        <th>View Form</th>
+                        <th>View Summary</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -789,8 +789,8 @@ if (isset($_SESSION['toast_message'])) {
                         </td>
                         <td>
                             <button onclick="viewRegistrationDetails(<?php echo $reg['id']; ?>)" class="view-form-btn" 
-                                    title="View complete registration form including personal info, family members, disabilities, and organizations">
-                                👁️ View Complete Form
+                                    title="View complete registration summary including personal info, family members, disabilities, and organizations">
+                                👁️ View Summary
                             </button>
                         </td>
                         <td>
@@ -861,8 +861,8 @@ if (isset($_SESSION['toast_message'])) {
                 })
             });
             
-            // Open the resident registration form with pre-filled data in new tab
-            window.open('../pages/resident-registration.php?admin_view=' + registrationId + '&readonly=1', '_blank');
+            // Open the resident registration summary in new tab
+            window.open('resident-summary.php?id=' + registrationId, '_blank');
         }
 
         // Toast notification functionality
