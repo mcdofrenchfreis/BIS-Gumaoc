@@ -6445,6 +6445,14 @@ function addFamilyMemberCard() {
                         Deceased<br><small>Namatay</small>
                       </label>
                     </div>
+                    
+                    <!-- Has Account Checkbox -->
+                    <div class="form-group">
+                      <label class="checkbox-label">
+                        <input type="checkbox" name="hasAccount[]" class="has-account-checkbox">
+                        Already has an account<br><small>May account na</small>
+                      </label>
+                    </div>
                 </div>
                 
                 <div class="form-group remove-btn-container">

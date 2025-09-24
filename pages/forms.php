@@ -106,41 +106,7 @@ include '../includes/header.php';
                     <a href="certificate-request.php" class="form-btn primary">Request Certificate</a>
                 </div>
                 
-                <div class="form-card">
-                    <div class="form-content">
-                        <div class="form-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                            </svg>
-                        </div>
-                        <h3>Business Application</h3>
-                        <p>Apply for business permits and clearances required for operating within the barangay. Streamlined process for new and renewal applications.</p>
-                        <div class="form-features">
-                            <span class="feature">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                                </svg> Fast Approval
-                            </span>
-                            <span class="feature">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="18" y1="20" x2="18" y2="10"></line>
-                                    <line x1="12" y1="20" x2="12" y2="4"></line>
-                                    <line x1="6" y1="20" x2="6" y2="14"></line>
-                                </svg> Requirements Guide
-                            </span>
-                            <span class="feature">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-                                </svg> Business Support
-                            </span>
-                        </div>
-                    </div>
-                    <a href="business-application.php" class="form-btn primary">Apply Now</a>
-                </div>
-                
+
                 <div class="form-card">
                     <div class="form-content">
                         <div class="form-icon">
@@ -357,8 +323,8 @@ include '../includes/header.php';
 
 .forms-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 30px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
     margin-bottom: 60px;
 }
 

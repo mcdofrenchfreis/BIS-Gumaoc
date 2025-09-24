@@ -38,6 +38,18 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $page_title; ?></title>
+    <!-- Force audio playback -->
+    <script>
+        window.onload = function() {
+            setTimeout(function() {
+                var audio = document.getElementById('bgMusic');
+                if (audio) {
+                    audio.play();
+                    audio.muted = false;
+                }
+            }, 500);
+        }
+    </script>
     <style>
         * {
             margin: 0;
@@ -312,6 +324,12 @@ try {
     </style>
 </head>
 <body>
+    <!-- Background Music -->
+    <audio id="bgMusic" loop autoplay="autoplay" muted="muted" playsinline>
+        <source src="../assets/audio/queue-background.mp3" type="audio/mp3">
+        Your browser does not support the audio element.
+    </audio>
+
     <!-- Auto-refresh indicator -->
     <div id="refreshIndicator" class="refresh-indicator">
         🔄 Updating...
@@ -333,8 +351,7 @@ try {
             <div class="serving-card">
                 <div class="serving-ticket-number"><?php echo htmlspecialchars($serving['ticket_number']); ?></div>
                 <div class="serving-service"><?php echo htmlspecialchars($serving['service_name']); ?></div>
-                <div class="serving-counter"><?php echo htmlspecialchars($serving['counter_name'] ?? 'Service Counter'); ?></div>
-                <div class="serving-customer"><?php echo htmlspecialchars($serving['customer_name']); ?></div>
+                <div class="serving-counter"><?php echo htmlspecialchars($serving['service_name'] . ' Window'); ?></div>
             </div>
             <?php endforeach; ?>
         </div>
@@ -386,6 +403,49 @@ try {
     </div>
 
     <script>
+        // Background music control - initialize once
+        let bgMusic;
+        document.addEventListener('DOMContentLoaded', function() {
+            bgMusic = document.getElementById('bgMusic');
+            bgMusic.volume = 0.3; // Set volume to 30%
+            
+            // Start with muted to allow autoplay, then unmute
+            bgMusic.muted = true;
+            
+            // Function to attempt playing music
+            function attemptAutoplay() {
+                bgMusic.play()
+                    .then(() => {
+                        // Successfully started playing, now unmute
+                        setTimeout(() => {
+                            bgMusic.muted = false;
+                        }, 100);
+                    })
+                    .catch(error => {
+                        console.log('Autoplay attempt failed:', error);
+                        // Try again after a short delay
+                        setTimeout(attemptAutoplay, 500);
+                    });
+            }
+            
+            // Start autoplay attempts immediately
+            attemptAutoplay();
+            
+            // Also try to play on any user interaction with the page
+            const userInteractions = ['click', 'touchstart', 'keydown', 'scroll', 'mousemove'];
+            userInteractions.forEach(event => {
+                document.addEventListener(event, function() {
+                    if (bgMusic.paused) {
+                        bgMusic.play().then(() => {
+                            bgMusic.muted = false;
+                        });
+                    } else if (bgMusic.muted) {
+                        bgMusic.muted = false;
+                    }
+                }, { once: true });
+            });
+        });
+        
         // Update live time
         function updateTime() {
             const now = new Date();
@@ -402,22 +462,124 @@ try {
             document.getElementById('liveTime').textContent = timeString;
         }
 
-        // Auto-refresh page every 15 seconds
-        function autoRefresh() {
+        // Fetch queue data via AJAX
+        function fetchQueueData() {
             const indicator = document.getElementById('refreshIndicator');
             
             // Show refresh indicator
             indicator.classList.add('show');
             
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
+            fetch('../api/queue-data.php')
+                .then(response => response.json())
+                .then(data => {
+                    updateQueueDisplay(data);
+                    indicator.classList.remove('show');
+                })
+                .catch(error => {
+                    console.error('Error fetching queue data:', error);
+                    indicator.classList.remove('show');
+                });
+        }
+        
+        // Update the queue display with new data
+        function updateQueueDisplay(data) {
+            // Update currently serving section
+            const servingSection = document.querySelector('.serving-section');
+            if (data.currently_serving && data.currently_serving.length > 0) {
+                let servingHTML = `
+                    <h2 class="section-title">🎯 NOW SERVING</h2>
+                    <div class="serving-grid">
+                `;
+                
+                data.currently_serving.forEach(serving => {
+                    servingHTML += `
+                        <div class="serving-card">
+                            <div class="serving-ticket-number">${serving.ticket_number}</div>
+                            <div class="serving-service">${serving.service_name}</div>
+                            <div class="serving-counter">${serving.service_name} Window</div>
+                        </div>
+                    `;
+                });
+                
+                servingHTML += `</div>`;
+                servingSection.innerHTML = servingHTML;
+            } else {
+                servingSection.innerHTML = '';
+            }
+            
+            // Update next in queue section
+            const nextSection = document.querySelector('.next-section');
+            const emptyState = document.querySelector('.empty-state');
+            
+            if (data.next_in_queue && data.next_in_queue.length > 0) {
+                let nextHTML = `
+                    <h2 class="section-title">⏭️ NEXT IN QUEUE</h2>
+                    <div class="next-grid">
+                `;
+                
+                data.next_in_queue.forEach((next, index) => {
+                    nextHTML += `
+                        <div class="next-card" style="animation-delay: ${index * 0.1}s;">
+                            <div class="next-ticket-number">${next.ticket_number}</div>
+                            <div class="next-service">${next.service_name}</div>
+                            <div class="next-position">Position #${next.queue_position}</div>
+                        </div>
+                    `;
+                });
+                
+                nextHTML += `</div>`;
+                nextSection.innerHTML = nextHTML;
+                
+                if (emptyState) {
+                    emptyState.style.display = 'none';
+                }
+            } else {
+                nextSection.innerHTML = '';
+                
+                if (!emptyState) {
+                    const emptyStateHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">✅</div>
+                            <div class="empty-state-text">No tickets waiting in queue</div>
+                        </div>
+                    `;
+                    nextSection.insertAdjacentHTML('afterend', emptyStateHTML);
+                } else {
+                    emptyState.style.display = 'block';
+                }
+            }
+            
+            // Update statistics section
+            const statsSection = document.querySelector('.stats-grid');
+            statsSection.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number stat-waiting">${data.today_stats.waiting}</div>
+                    <div class="stat-label">Waiting</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number stat-serving">${data.today_stats.serving}</div>
+                    <div class="stat-label">Serving</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number stat-completed">${data.today_stats.completed}</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number stat-total">${data.today_stats.total_tickets}</div>
+                    <div class="stat-label">Total Today</div>
+                </div>
+            `;
+            
+            // Update time display if provided
+            if (data.current_time) {
+                document.getElementById('liveTime').textContent = data.current_time;
+            }
         }
 
         // Initialize
         updateTime();
         setInterval(updateTime, 1000);
-        setInterval(autoRefresh, 15000); // Refresh every 15 seconds
+        setInterval(fetchQueueData, 15000); // Refresh data every 15 seconds
 
         // Add keyboard shortcuts
         document.addEventListener('keydown', function(e) {
@@ -426,7 +588,7 @@ try {
                 case 'r':
                 case 'R':
                     e.preventDefault();
-                    autoRefresh();
+                    fetchQueueData();
                     break;
                 case 'Escape':
                     if (confirm('Exit kiosk mode?')) {
@@ -442,6 +604,15 @@ try {
                         document.exitFullscreen();
                     }
                     break;
+                case 'm':
+                case 'M':
+                    // Toggle music
+                    if (bgMusic.paused) {
+                        bgMusic.play();
+                    } else {
+                        bgMusic.pause();
+                    }
+                    break;
             }
         });
 
@@ -449,7 +620,7 @@ try {
         let touchTimer;
         document.addEventListener('touchstart', function() {
             touchTimer = setTimeout(() => {
-                autoRefresh();
+                fetchQueueData();
             }, 2000); // Hold for 2 seconds to refresh
         });
 

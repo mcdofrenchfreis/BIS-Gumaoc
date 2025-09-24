@@ -113,6 +113,15 @@ style.textContent = `
   50% { transform: scale(1.1); opacity: 0.8; }
 }
 
+/* Placeholder styles */
+#operatorLicense::placeholder,
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  opacity: 0.5;
+  font-family: inherit;
+}
+
 /* Tricycle Photo Upload Styles */
 .file-upload-container {
   position: relative;
@@ -438,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="form-grid">
           <div class="form-group">
             <label for="plateNo">Plate No. *</label>
-            <input type="text" id="plateNo" name="plateNo" placeholder="License Plate Number" 
+            <input type="text" id="plateNo" name="plateNo" placeholder="e.g., 123ABC (official) or GD776A (temporary)" 
                    value="<?php echo $request_data ? htmlspecialchars($request_data['plate_no'] ?? '') : ''; ?>" 
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
@@ -459,6 +468,7 @@ document.addEventListener('DOMContentLoaded', function() {
                    pattern="[0-9]{4}"
                    title="Please enter a valid 4-digit year (1980-<?php echo date('Y'); ?>)"
                    value="<?php echo $request_data ? ($request_data['year_model'] ?? '') : ''; ?>" 
+                   style="text-align: left;"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
         </div>
@@ -478,6 +488,7 @@ document.addEventListener('DOMContentLoaded', function() {
                    pattern="[0-9\-]+"
                    title="Please enter numbers only (dashes allowed for formatting)"
                    value="<?php echo $request_data ? htmlspecialchars($request_data['operator_license'] ?? '') : ''; ?>" 
+                   style="font-family: inherit;"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
             <small class="input-help">Enter license number using numbers only (e.g., 123456789 or 123-456-789)</small>
           </div>
