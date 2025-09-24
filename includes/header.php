@@ -31,6 +31,7 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $page_title ?? 'GUMAOC East'; ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="<?php echo $base_path; ?>css/styles.css">
     <style>
         * {

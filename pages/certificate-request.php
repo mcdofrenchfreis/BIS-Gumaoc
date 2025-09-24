@@ -112,6 +112,84 @@ style.textContent = `
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.1); opacity: 0.8; }
 }
+
+/* Tricycle Photo Upload Styles */
+.file-upload-container {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.file-upload-input {
+  position: absolute;
+  width: 0.1px;
+  height: 0.1px;
+  opacity: 0;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.file-upload-label {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #f5f5f5;
+  border: 2px dashed #ccc;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.file-upload-label:hover {
+  background-color: #e8f5e9;
+  border-color: #4caf50;
+}
+
+.file-upload-icon {
+  font-size: 24px;
+  margin-right: 10px;
+}
+
+.file-upload-text {
+  font-size: 14px;
+  color: #555;
+}
+
+.file-upload-preview {
+  margin-top: 10px;
+  position: relative;
+}
+
+.tricycle-photo-preview {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.remove-preview {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 25px;
+  height: 25px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  color: #f44336;
+}
+
+.existing-photo {
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  border-left: 3px solid #2196f3;
+}
 `;
 document.head.appendChild(style);
 
@@ -123,6 +201,58 @@ document.addEventListener('keydown', function(event) {
     if (notification && notification.style.display !== 'none') {
       dismissNotification();
     }
+  }
+});
+
+// Tricycle photo preview functionality
+document.addEventListener('DOMContentLoaded', function() {
+  const tricyclePhotoInput = document.getElementById('tricyclePhoto');
+  const tricyclePhotoPreview = document.getElementById('tricyclePhotoPreview');
+  
+  if (tricyclePhotoInput && tricyclePhotoPreview) {
+    tricyclePhotoInput.addEventListener('change', function() {
+      // Clear previous preview
+      tricyclePhotoPreview.innerHTML = '';
+      
+      if (this.files && this.files[0]) {
+        const file = this.files[0];
+        
+        // Check file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          alert('File is too large. Maximum size is 5MB.');
+          this.value = '';
+          return;
+        }
+        
+        // Check file type
+        if (!file.type.match('image.*')) {
+          alert('Only image files are allowed (JPG, PNG, etc.)');
+          this.value = '';
+          return;
+        }
+        
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.className = 'tricycle-photo-preview';
+          tricyclePhotoPreview.appendChild(img);
+          
+          const removeBtn = document.createElement('button');
+          removeBtn.innerHTML = '&times;';
+          removeBtn.className = 'remove-preview';
+          removeBtn.onclick = function() {
+            tricyclePhotoPreview.innerHTML = '';
+            tricyclePhotoInput.value = '';
+            return false;
+          };
+          tricyclePhotoPreview.appendChild(removeBtn);
+        };
+        
+        reader.readAsDataURL(file);
+      }
+    });
   }
 });
 </script>
@@ -176,7 +306,11 @@ document.addEventListener('keydown', function(event) {
       
       <div class="certificate-types">
         <div class="certificate-option" data-type="BRGY. CLEARANCE" <?php echo ($request_data && $request_data['certificate_type'] === 'BRGY. CLEARANCE') ? 'data-selected="true"' : ''; ?>>
-          <div class="certificate-icon">🏠</div>
+          <div class="certificate-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
+              <path d="M12,3L2,12h3v8h6v-6h2v6h6v-8h3L12,3z M17,18h-2v-6H9v6H7v-7.81l5-4.5l5,4.5V18z"/>
+            </svg>
+          </div>
           <div class="certificate-text">
             <strong>BARANGAY CLEARANCE</strong>
             <small style="display: block; margin-top: 8px; opacity: 0.8;">Certificate of good moral character</small>
@@ -184,7 +318,11 @@ document.addEventListener('keydown', function(event) {
         </div>
         
         <div class="certificate-option" data-type="BRGY. INDIGENCY" <?php echo ($request_data && $request_data['certificate_type'] === 'BRGY. INDIGENCY') ? 'data-selected="true"' : ''; ?>>
-          <div class="certificate-icon">💰</div>
+          <div class="certificate-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
+              <path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M12,20c-4.41,0-8-3.59-8-8s3.59-8,8-8s8,3.59,8,8 S16.41,20,12,20z M12.31,11.14c-1.77-0.45-2.34-0.94-2.34-1.67c0-0.84,0.79-1.43,2.1-1.43c1.38,0,1.9,0.66,1.94,1.64h1.71 c-0.05-1.34-0.87-2.57-2.49-2.97V5H10.9v1.69c-1.51,0.32-2.72,1.3-2.72,2.81c0,1.79,1.49,2.69,3.66,3.21 c1.95,0.46,2.34,1.15,2.34,1.87c0,0.53-0.39,1.39-2.1,1.39c-1.6,0-2.23-0.72-2.32-1.64H8.04c0.1,1.7,1.36,2.66,2.86,2.97V19h2.34 v-1.67c1.52-0.29,2.72-1.16,2.73-2.77C16.01,12.48,14.83,11.74,12.31,11.14z"/>
+            </svg>
+          </div>
           <div class="certificate-text">
             <strong>BARANGAY INDIGENCY</strong>
             <small style="display: block; margin-top: 8px; opacity: 0.8;">Certificate of financial status</small>
@@ -192,7 +330,11 @@ document.addEventListener('keydown', function(event) {
         </div>
         
         <div class="certificate-option" data-type="TRICYCLE PERMIT" <?php echo ($request_data && $request_data['certificate_type'] === 'TRICYCLE PERMIT') ? 'data-selected="true"' : ''; ?>>
-          <div class="certificate-icon">🚲</div>
+          <div class="certificate-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
+              <path d="M15.5,5.5c1.1,0,2-0.9,2-2s-0.9-2-2-2s-2,0.9-2,2S14.4,5.5,15.5,5.5z M5,12c-2.8,0-5,2.2-5,5s2.2,5,5,5s5-2.2,5-5 S7.8,12,5,12z M5,20.5c-1.9,0-3.5-1.6-3.5-3.5s1.6-3.5,3.5-3.5s3.5,1.6,3.5,3.5S6.9,20.5,5,20.5z M19,12c-2.8,0-5,2.2-5,5 s2.2,5,5,5s5-2.2,5-5S21.8,12,19,12z M19,20.5c-1.9,0-3.5-1.6-3.5-3.5s1.6-3.5,3.5-3.5s3.5,1.6,3.5,3.5S20.9,20.5,19,20.5z M12,8.5h-1v-2h1V5H4v1.5h1v2H4V10h8V8.5z M10,5.5H6.5v2H10V5.5z M17.5,10.5c-0.8,0-1.5,0.7-1.5,1.5s0.7,1.5,1.5,1.5 s1.5-0.7,1.5-1.5S18.3,10.5,17.5,10.5z M18.5,6h-6v2h6V6z"/>
+            </svg>
+          </div>
           <div class="certificate-text">
             <strong>TRICYCLE PERMIT</strong>
             <small style="display: block; margin-top: 8px; opacity: 0.8;">Vehicle operation permit</small>
@@ -200,7 +342,11 @@ document.addEventListener('keydown', function(event) {
         </div>
         
         <div class="certificate-option" data-type="PROOF OF RESIDENCY" <?php echo ($request_data && $request_data['certificate_type'] === 'PROOF OF RESIDENCY') ? 'data-selected="true"' : ''; ?>>
-          <div class="certificate-icon">📍</div>
+          <div class="certificate-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
+              <path d="M12,2C8.13,2,5,5.13,5,9c0,5.25,7,13,7,13s7-7.75,7-13C19,5.13,15.87,2,12,2z M12,11.5c-1.38,0-2.5-1.12-2.5-2.5 s1.12-2.5,2.5-2.5s2.5,1.12,2.5,2.5S13.38,11.5,12,11.5z"/>
+            </svg>
+          </div>
           <div class="certificate-text">
             <strong>PROOF OF RESIDENCY</strong>
             <small style="display: block; margin-top: 8px; opacity: 0.8;">Certificate of residence</small>
@@ -208,7 +354,11 @@ document.addEventListener('keydown', function(event) {
         </div>
         
         <div class="certificate-option" data-type="CEDULA/CTC" <?php echo ($request_data && $request_data['certificate_type'] === 'CEDULA/CTC') ? 'data-selected="true"' : ''; ?>>
-          <div class="certificate-icon">📄</div>
+          <div class="certificate-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
+              <path d="M14,2H6C4.9,2,4,2.9,4,4v16c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2V8L14,2z M16,18H8v-2h8V18z M16,14H8v-2h8V14z M13,9V3.5 L18.5,9H13z"/>
+            </svg>
+          </div>
           <div class="certificate-text">
             <strong>CEDULA/CTC</strong>
             <small style="display: block; margin-top: 8px; opacity: 0.8;">Community Tax Certificate</small>
@@ -216,7 +366,11 @@ document.addEventListener('keydown', function(event) {
         </div>
         
         <div class="certificate-option" data-type="BUSINESS APPLICATION" <?php echo ($request_data && $request_data['certificate_type'] === 'BUSINESS APPLICATION') ? 'data-selected="true"' : ''; ?>>
-          <div class="certificate-icon">🏢</div>
+          <div class="certificate-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
+              <path d="M12,7V3H2v18h20V7H12z M6,19H4v-2h2V19z M6,15H4v-2h2V15z M6,11H4V9h2V11z M6,7H4V5h2V7z M10,19H8v-2h2V19z M10,15H8v-2 h2V15z M10,11H8V9h2V11z M10,7H8V5h2V7z M20,19h-8v-2h2v-2h-2v-2h2v-2h-2V9h8V19z M18,11h-2v2h2V11z M18,15h-2v2h2V15z"/>
+            </svg>
+          </div>
           <div class="certificate-text">
             <strong>BUSINESS APPLICATION</strong>
             <small style="display: block; margin-top: 8px; opacity: 0.8;">Business permit application</small>
@@ -327,6 +481,25 @@ document.addEventListener('keydown', function(event) {
                    <?php echo $readonly ? 'readonly' : ''; ?>>
             <small class="input-help">Enter license number using numbers only (e.g., 123456789 or 123-456-789)</small>
           </div>
+        </div>
+
+        <div class="form-group">
+          <label for="tricyclePhoto">Tricycle Photo (Optional)</label>
+          <div class="file-upload-container">
+            <input type="file" id="tricyclePhoto" name="tricyclePhoto" accept="image/*" class="file-upload-input"
+                  <?php echo $readonly ? 'disabled' : ''; ?>>
+            <label for="tricyclePhoto" class="file-upload-label">
+              <span class="file-upload-icon">📷</span>
+              <span class="file-upload-text">Choose a photo of your tricycle</span>
+            </label>
+            <div class="file-upload-preview" id="tricyclePhotoPreview"></div>
+          </div>
+          <small class="input-help">Upload a clear photo of your tricycle (max 5MB, JPG/PNG format)</small>
+          <?php if ($request_data && !empty($request_data['tricycle_photo'])): ?>
+            <div class="existing-photo">
+              <p>Current photo: <a href="../assets/uploads/tricycle_photos/<?php echo htmlspecialchars($request_data['tricycle_photo']); ?>" target="_blank">View Photo</a></p>
+            </div>
+          <?php endif; ?>
         </div>
       </fieldset>
 

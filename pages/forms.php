@@ -36,13 +36,37 @@ include '../includes/header.php';
             <div class="forms-grid">
                 <div class="form-card">
                     <div class="form-content">
-                        <div class="form-icon">👥</div>
+                        <div class="form-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        </div>
                         <h3>Census Registration</h3>
                         <p>Register as a resident of Barangay Gumaoc East. Complete your demographic information and household details for proper documentation.</p>
                         <div class="form-features">
-                            <span class="feature">📝 Digital Form</span>
-                            <span class="feature">⚡ Quick Process</span>
-                            <span class="feature">📧 Email Confirmation</span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg> Digital Form
+                            </span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                                </svg> Quick Process
+                            </span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                </svg> Email Confirmation
+                            </span>
                         </div>
                     </div>
                     <a href="resident-registration.php" class="form-btn primary">Fill Out Form</a>
@@ -50,13 +74,33 @@ include '../includes/header.php';
                 
                 <div class="form-card">
                     <div class="form-content">
-                        <div class="form-icon">📄</div>
+                        <div class="form-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="8" r="7"></circle>
+                                <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
+                            </svg>
+                        </div>
                         <h3>Certificate Requests</h3>
                         <p>Request various barangay certificates such as Certificate of Residency, Indigency, Business Clearance, and other official documents.</p>
                         <div class="form-features">
-                            <span class="feature">📋 Multiple Types</span>
-                            <span class="feature">🔍 Status Tracking</span>
-                            <span class="feature">💳 Online Payment</span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg> Multiple Types
+                            </span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg> Status Tracking
+                            </span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                    <line x1="1" y1="10" x2="23" y2="10"></line>
+                                </svg> Online Payment
+                            </span>
                         </div>
                     </div>
                     <a href="certificate-request.php" class="form-btn primary">Request Certificate</a>
@@ -64,13 +108,34 @@ include '../includes/header.php';
                 
                 <div class="form-card">
                     <div class="form-content">
-                        <div class="form-icon">🏢</div>
+                        <div class="form-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                            </svg>
+                        </div>
                         <h3>Business Application</h3>
                         <p>Apply for business permits and clearances required for operating within the barangay. Streamlined process for new and renewal applications.</p>
                         <div class="form-features">
-                            <span class="feature">🚀 Fast Approval</span>
-                            <span class="feature">📊 Requirements Guide</span>
-                            <span class="feature">💼 Business Support</span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg> Fast Approval
+                            </span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                                </svg> Requirements Guide
+                            </span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                                    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                                </svg> Business Support
+                            </span>
                         </div>
                     </div>
                     <a href="business-application.php" class="form-btn primary">Apply Now</a>
@@ -78,13 +143,35 @@ include '../includes/header.php';
                 
                 <div class="form-card">
                     <div class="form-content">
-                        <div class="form-icon">🤝</div>
+                        <div class="form-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                                <line x1="4" y1="22" x2="4" y2="15"></line>
+                            </svg>
+                        </div>
                         <h3>Assistance Applications</h3>
                         <p>Apply for various assistance programs offered by the barangay government including financial aid, medical assistance, and social services.</p>
                         <div class="form-features">
-                            <span class="feature">💰 Financial Aid</span>
-                            <span class="feature">🏥 Medical Help</span>
-                            <span class="feature">📋 Documentation</span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                    <line x1="1" y1="10" x2="23" y2="10"></line>
+                                </svg> Financial Aid
+                            </span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                                </svg> Medical Help
+                            </span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg> Documentation
+                            </span>
                         </div>
                     </div>
                     <a href="#" class="form-btn secondary">Coming Soon</a>
@@ -92,13 +179,33 @@ include '../includes/header.php';
 
                 <div class="form-card">
                     <div class="form-content">
-                        <div class="form-icon">🚨</div>
+                        <div class="form-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                                <line x1="12" y1="9" x2="12" y2="13"></line>
+                                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                            </svg>
+                        </div>
                         <h3>Incident Reports</h3>
                         <p>Report incidents, emergencies, or community concerns directly to barangay officials for immediate attention and proper action.</p>
                         <div class="form-features">
-                            <span class="feature">📱 24/7 Available</span>
-                            <span class="feature">📸 Photo Upload</span>
-                            <span class="feature">⚡ Immediate Alert</span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                                    <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                                </svg> 24/7 Available
+                            </span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"></path>
+                                    <circle cx="12" cy="13" r="3"></circle>
+                                </svg> Photo Upload
+                            </span>
+                            <span class="feature">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                                </svg> Immediate Alert
+                            </span>
                         </div>
                     </div>
                     <a href="report.php" class="form-btn emergency">Report Now</a>

@@ -25,6 +25,7 @@ $display_name = $user['first_name'] . ' ' . ($user['middle_name'] ? $user['middl
     <title><?php echo htmlspecialchars($page_title); ?> - Barangay Gumaoc East</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/background.css">
     <style>
         * {
             margin: 0;

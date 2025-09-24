@@ -17,6 +17,7 @@ $display_phone = $user['phone'] ?? 'No phone';
     <title><?php echo htmlspecialchars($page_title); ?> - Barangay Gumaoc East</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/background.css">
     <style>
         * {
             margin: 0;
@@ -24,26 +25,16 @@ $display_phone = $user['phone'] ?? 'No phone';
             box-sizing: border-box;
         }
         
+        /* Body styling is now in background.css */
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
             min-height: 100vh;
             line-height: 1.6;
             position: relative;
             overflow-x: hidden;
         }
         
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><radialGradient id="a" cx=".5" cy=".5" r=".5"><stop offset="0%" stop-color="%23ffffff" stop-opacity=".1"/><stop offset="100%" stop-color="%23ffffff" stop-opacity="0"/></radialGradient></defs><circle cx="200" cy="200" r="100" fill="url(%23a)"/><circle cx="800" cy="300" r="150" fill="url(%23a)"/><circle cx="400" cy="700" r="120" fill="url(%23a)"/></svg>');
-            opacity: 0.3;
-            z-index: 0;
-        }
+        /* Removed body::before to allow background.css to work */
         
         /* User Navbar */
         .user-navbar {
@@ -1216,4 +1207,4 @@ $display_phone = $user['phone'] ?? 'No phone';
         }
     </style>
 </body>
-</html> 
+</html>

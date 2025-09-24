@@ -5,9 +5,10 @@ $page_title = 'User Registration';
 $base_path = '../';
 
 include '../includes/header.php';
-?>
-
-<style>
+  ?>
+  <link rel="stylesheet" href="css/background.css">
+  
+  <style>
 .register-wrapper {
     min-height: 100vh;
     display: flex;
@@ -128,4 +129,4 @@ include '../includes/header.php';
     </div>
 </div>
 
-<?php include '../includes/footer.php'; ?> 
+<?php include '../includes/footer.php'; ?>

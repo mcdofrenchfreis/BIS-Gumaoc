@@ -37,6 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $interviewer = trim($_POST['interviewer'] ?? '');
         $interviewer_title = trim($_POST['interviewerTitle'] ?? '');
         
+        // New fields for resident disability and organization (Tab 1)
+        $resident_disability = trim($_POST['residentDisability'] ?? '');
+        $resident_organization = trim($_POST['residentOrganization'] ?? '');
+        
         // Extract household economics data
         $land_ownership = $_POST['landOwnership'] ?? '';
         $land_ownership_other = $_POST['landOwnershipOther'] ?? '';
@@ -148,8 +152,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 farmland, cooking_energy, cooking_energy_other, toilet_type, toilet_type_other,
                 electricity_source, electricity_source_other, water_source, water_source_other,
                 waste_disposal, waste_disposal_other, appliances, transportation, transportation_other,
-                business, business_other, contraceptive, interviewer, interviewer_title
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                business, business_other, contraceptive, interviewer, interviewer_title,
+                resident_disability, resident_organization
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
             $stmt = $pdo->prepare($sql);
             $result = $stmt->execute([
@@ -159,7 +164,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $farmland, $cooking_energy, $cooking_energy_other, $toilet_type, $toilet_type_other,
                 $electricity_source, $electricity_source_other, $water_source, $water_source_other,
                 $waste_disposal, $waste_disposal_other, $appliances, $transportation, $transportation_other,
-                $business, $business_other, $contraceptive, $interviewer, $interviewer_title
+                $business, $business_other, $contraceptive, $interviewer, $interviewer_title,
+                $resident_disability, $resident_organization
             ]);
             
             if (!$result) {
@@ -188,6 +194,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $family_civil_status = $_POST['familyCivilStatus'][$index] ?? '';
                         $family_email = trim($_POST['familyEmail'][$index] ?? '');
                         $occupation = $_POST['familyOccupation'][$index] ?? '';
+                        // Get deceased status
+                        $is_deceased = isset($_POST['isDeceased'][$index]) ? 1 : 0;
                         
                         // Convert empty birth date to null
                         if (empty($family_birth_date)) {
@@ -195,7 +203,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                         
                         // Insert family member into database
-                        $family_stmt->execute([$registration_id, trim($name), $relationship, $family_birth_date, $family_age, $family_gender, $family_civil_status, $family_email, $occupation]);
+                        $family_stmt = $pdo->prepare("INSERT INTO family_members (registration_id, full_name, relationship, birth_date, age, gender, civil_status, email, occupation, is_deceased) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                        $family_stmt->execute([$registration_id, trim($name), $relationship, $family_birth_date, $family_age, $family_gender, $family_civil_status, $family_email, $occupation, $is_deceased]);
                         
                         // Create family member as user in residents table if they have an email
                         if (!empty($family_email) && filter_var($family_email, FILTER_VALIDATE_EMAIL)) {
@@ -309,6 +318,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             
+            // Insert family members with disabilities (from the merged tab data)
+            if (isset($_POST['familyName']) && is_array($_POST['familyName']) && isset($_POST['disabilityType']) && is_array($_POST['disabilityType'])) {
+                $disability_stmt = $pdo->prepare("INSERT INTO family_disabilities (registration_id, name, disability_type) VALUES (?, ?, ?)");
+                
+                foreach ($_POST['familyName'] as $index => $name) {
+                    if (!empty(trim($name)) && !empty(trim($_POST['disabilityType'][$index] ?? ''))) {
+                        $disability_stmt->execute([$registration_id, trim($name), trim($_POST['disabilityType'][$index])]);
+                    }
+                }
+            }
+            
+            // Insert family members in organizations (from the merged tab data)
+            if (isset($_POST['familyName']) && is_array($_POST['familyName']) && isset($_POST['organizationType']) && is_array($_POST['organizationType'])) {
+                $org_stmt = $pdo->prepare("INSERT INTO family_organizations (registration_id, name, organization_type) VALUES (?, ?, ?)");
+                
+                foreach ($_POST['familyName'] as $index => $name) {
+                    if (!empty(trim($name)) && !empty(trim($_POST['organizationType'][$index] ?? ''))) {
+                        $org_stmt->execute([$registration_id, trim($name), trim($_POST['organizationType'][$index])]);
+                    }
+                }
+            }
+            
+            // Commented out the old disability and organization insertion code since it's now merged
+            /*
             // Insert family members with disabilities
             if (isset($_POST['disabilityName']) && is_array($_POST['disabilityName'])) {
                 $disability_stmt = $pdo->prepare("INSERT INTO family_disabilities (registration_id, name, disability_type) VALUES (?, ?, ?)");
@@ -330,6 +363,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
             }
+            */
             
             // Commit transaction
             $pdo->commit();

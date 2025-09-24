@@ -1001,8 +1001,6 @@ function debugShowPrivacyNotice() {
         <button type="button" class="tab-btn active" onclick="showTab(1)" id="tab-1" data-step="1">1. Basic Information<br><small>Pangunahing Impormasyon</small></button>
         <button type="button" class="tab-btn" onclick="showTab(2)" id="tab-2" data-step="2">2. Family Members<br><small>Mga Kasapi ng Pamilya</small></button>
         <button type="button" class="tab-btn" onclick="showTab(3)" id="tab-3" data-step="3">3. Livelihood<br><small>Pangkabuhayan</small></button>
-        <button type="button" class="tab-btn" onclick="showTab(4)" id="tab-4" data-step="4">4. Disabilities<br><small>Mga Kasambahay na may Kapansanan</small></button>
-        <button type="button" class="tab-btn" onclick="showTab(5)" id="tab-5" data-step="5">5. Organizations<br><small>Mga Kasambahay na may Samahang Kinaaniban</small></button>
       </div>
       
       <!-- Progress Indicator -->
@@ -1010,7 +1008,7 @@ function debugShowPrivacyNotice() {
         <div class="progress-bar">
           <div class="progress-fill" id="progressFill"></div>
         </div>
-        <div class="progress-text" id="progressText">Step 1 of 5</div>
+        <div class="progress-text" id="progressText">Step 1 of 3</div>
       </div>
       
       <!-- Tab Content Container -->
@@ -1059,7 +1057,7 @@ function debugShowPrivacyNotice() {
 
         <div class="form-grid">
           <div class="form-group">
-            <label for="cellphone">Cellphone Number<br><small>Numero ng Cellphone</small></label>
+            <label for="cellphone">Mobile Number<br><small>Numero ng Cellphone</small></label>
             <input type="tel" id="cellphone" name="cellphone" placeholder="09XXXXXXXXX" pattern="[0-9]{11}" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['contact_number']) : ''; ?>"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
@@ -1099,7 +1097,7 @@ function debugShowPrivacyNotice() {
 
         <div class="form-grid">
           <div class="form-group">
-            <label for="gender">Gender *<br><small>Kasarian *</small></label>
+            <label for="gender">Sex *<br><small>Kasarian *</small></label>
             <select id="gender" name="gender" required <?php echo $readonly ? 'disabled' : ''; ?>>
               <option value="">Piliin ang Kasarian</option>
               <option value="Male" <?php echo ($registration_data && $registration_data['gender'] === 'Male') ? 'selected' : ''; ?>>Lalaki (Male)</option>
@@ -1150,6 +1148,22 @@ function debugShowPrivacyNotice() {
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['interviewer_title']) : ''; ?>"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
+        </div>
+        
+        <!-- Disability Information for Main Resident -->
+        <div class="form-group">
+          <label for="residentDisability">Disability (if applicable)<br><small>Kapansanan (kung mayroon)</small></label>
+          <input type="text" id="residentDisability" name="residentDisability" class="form-control" placeholder="Type of disability"
+                 value="<?php echo $registration_data ? htmlspecialchars($registration_data['resident_disability'] ?? '') : ''; ?>"
+                 <?php echo $readonly ? 'readonly' : ''; ?>>
+        </div>
+        
+        <!-- Organization Membership for Main Resident -->
+        <div class="form-group">
+          <label for="residentOrganization">Organization Membership (if applicable)<br><small>Samahang Kinaaniban (kung mayroon)</small></label>
+          <input type="text" id="residentOrganization" name="residentOrganization" class="form-control" placeholder="Organization name"
+                 value="<?php echo $registration_data ? htmlspecialchars($registration_data['resident_organization'] ?? '') : ''; ?>"
+                 <?php echo $readonly ? 'readonly' : ''; ?>>
         </div>
           </fieldset>
         </div>
@@ -1241,6 +1255,36 @@ function debugShowPrivacyNotice() {
                         <label for="familyOccupation<?php echo $index; ?>">Occupation<br><small>Hanapbuhay</small></label>
                         <input type="text" id="familyOccupation<?php echo $index; ?>" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay" value="<?php echo isset($member['occupation']) ? htmlspecialchars($member['occupation']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
                       </div>
+                      
+                    <!-- Disability, Organization, Deceased, and Has Account Information in a grid -->
+                    <div class="form-grid disability-org-grid">
+                      <!-- First row: Disability and Organization side by side -->
+                      <div class="form-group disability-field">
+                        <label>Disability (if applicable)<br><small>Kapansanan (kung mayroon)</small></label>
+                        <input type="text" name="disabilityType[]" class="form-control" placeholder="Type of disability" value="<?php echo isset($family_disabilities[$index]) ? htmlspecialchars($family_disabilities[$index]['disability_type']) : ''; ?>">
+                      </div>
+                      
+                      <div class="form-group organization-field">
+                        <label>Organization Membership (if applicable)<br><small>Samahang Kinaaniban (kung mayroon)</small></label>
+                        <input type="text" name="organizationType[]" class="form-control" placeholder="Organization name" value="<?php echo isset($family_organizations[$index]) ? htmlspecialchars($family_organizations[$index]['organization_name']) : ''; ?>">
+                      </div>
+                      
+                      <!-- Second row: Deceased and Has Account checkboxes side by side -->
+                      <div class="form-group checkbox-container deceased-field">
+                        <!-- Deceased Status Checkbox -->
+                        <label class="checkbox-label">
+                          <input type="checkbox" name="isDeceased[]" class="deceased-checkbox" <?php echo (isset($member['is_deceased']) && $member['is_deceased']) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>>
+                          <span>Deceased<br><small>Namatay</small></span>
+                        </label>
+                      </div>
+                      
+                      <div class="form-group checkbox-container account-field">
+                        <!-- Has Account Checkbox -->
+                        <label class="checkbox-label">
+                          <input type="checkbox" name="hasAccount[]" class="has-account-checkbox" <?php echo (isset($member['has_account']) && $member['has_account']) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>>
+                          <span>Already has an account<br><small>May account na</small></span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1323,6 +1367,36 @@ function debugShowPrivacyNotice() {
                     <div class="form-group">
                       <label for="familyOccupation0">Occupation<br><small>Hanapbuhay</small></label>
                       <input type="text" id="familyOccupation0" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay">
+                    </div>
+                    
+                    <!-- Disability, Organization, and Deceased Information in a wider grid -->
+                    <div class="form-grid disability-org-grid">
+                      <!-- Disability Information - Full width -->
+                      <div class="form-group" style="grid-column: span 2;">
+                        <label>Disability (if applicable)<br><small>Kapansanan (kung mayroon)</small></label>
+                        <input type="text" name="disabilityType[]" class="form-control" placeholder="Type of disability">
+                      </div>
+                      
+                      <!-- Organization Membership - Full width -->
+                      <div class="form-group" style="grid-column: span 2;">
+                        <label>Organization Membership (if applicable)<br><small>Samahang Kinaaniban (kung mayroon)</small></label>
+                        <input type="text" name="organizationType[]" class="form-control" placeholder="Organization name">
+                      </div>
+                      
+                      <!-- Checkboxes in a single row -->
+                      <div class="form-group checkbox-container" style="display: flex; justify-content: space-between; grid-column: span 2;">
+                        <!-- Deceased Status Checkbox -->
+                        <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer; margin-right: 20px;">
+                          <input type="checkbox" name="isDeceased[]" class="deceased-checkbox" style="margin-right: 8px; width: 18px; height: 18px;">
+                          <span style="font-weight: normal;">Deceased<br><small>Namatay</small></span>
+                        </label>
+                        
+                        <!-- Has Account Checkbox -->
+                        <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
+                          <input type="checkbox" name="hasAccount[]" class="has-account-checkbox" style="margin-right: 8px; width: 18px; height: 18px;">
+                          <span style="font-weight: normal;">Already has an account<br><small>May account na</small></span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1521,125 +1595,7 @@ function debugShowPrivacyNotice() {
       </fieldset>
     </div>
         
-    <!-- Tab 4: Disabilities -->
-    <div class="tab-content" id="tab-content-4">
-      <fieldset>
-        <legend>II. Family Members with Disabilities<br><small>II. Mga Kasambahay na may Kapansanan</small></legend>
-        
-    <div class="disability-section">
-      <div class="disability-wrapper">
-        <div class="disability-container" id="disabilitySection">
-          <?php if (!empty($family_disabilities)): ?>
-            <?php foreach ($family_disabilities as $disability): ?>
-              <div class="disability-row">
-                <div class="form-group">
-                  <label>Name:<br><small>Pangalan:</small></label>
-                  <input type="text" name="disabilityName[]" class="form-control" placeholder="Buong pangalan" 
-                         value="<?php echo isset($disability['name']) ? htmlspecialchars($disability['name']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
-                </div>
-                <div class="form-group">
-                  <label>Disability:<br><small>Kapansanan:</small></label>
-                  <input type="text" name="disabilityType[]" class="form-control" placeholder="Uri ng kapansanan"
-                         value="<?php echo isset($disability['disability_type']) ? htmlspecialchars($disability['disability_type']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
-                </div>
-                <?php if (!$readonly): ?>
-                <div class="form-group remove-group">
-                  <button type="button" class="btn-remove-disability" onclick="removeDisability(this)" title="Remove this disability entry">✕</button>
-                </div>
-                <?php endif; ?>
-              </div>
-            <?php endforeach; ?>
-          <?php else: ?>
-            <div class="disability-row">
-              <div class="form-group">
-                <label>Name:<br><small>Pangalan:</small></label>
-                <input type="text" name="disabilityName[]" class="form-control" placeholder="Buong pangalan" <?php echo $readonly ? 'readonly' : ''; ?>>
-              </div>
-              <div class="form-group">
-                <label>Disability:<br><small>Kapansanan:</small></label>
-                <input type="text" name="disabilityType[]" class="form-control" placeholder="Uri ng kapansanan" <?php echo $readonly ? 'readonly' : ''; ?>>
-              </div>
-              <?php if (!$readonly): ?>
-              <div class="form-group remove-group">
-                <button type="button" class="btn-remove-disability" onclick="removeDisability(this)" title="Remove this disability entry">✕</button>
-              </div>
-              <?php endif; ?>
-            </div>
-          <?php endif; ?>
-        </div>
-      </div>
-      
-      <?php if (!$readonly): ?>
-      <div class="disability-controls">
-        <button type="button" class="btn-add-disability" onclick="addDisability()">
-          <span class="btn-icon">➕</span>
-          <span class="btn-text">Add Disability Entry<br><small>Magdagdag ng Kapansanan</small></span>
-        </button>
-      </div>
-      <?php endif; ?>
-    </div>
-      </fieldset>
-    </div>
 
-    <!-- Tab 5: Organizations -->
-    <div class="tab-content" id="tab-content-5">
-      <fieldset>
-        <legend>III. Family Members with Organizational Membership<br><small>III. Mga Kasambahay na may Samahang Kinaaniban</small></legend>
-        
-    <div class="organization-section">
-      <div class="organization-wrapper">
-        <div class="organization-container" id="organizationSection">
-          <?php if (!empty($family_organizations)): ?>
-            <?php foreach ($family_organizations as $organization): ?>
-              <div class="organization-row">
-                <div class="form-group">
-                  <label>Name:<br><small>Pangalan:</small></label>
-                  <input type="text" name="organizationName[]" class="form-control" placeholder="Buong pangalan"
-                         value="<?php echo isset($organization['name']) ? htmlspecialchars($organization['name']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
-                </div>
-                <div class="form-group">
-                  <label>Organization Membership:<br><small>Samahang Kinaaniban:</small></label>
-                  <input type="text" name="organizationType[]" class="form-control" placeholder="Pangalan ng samahan/organisasyon"
-                         value="<?php echo isset($organization['organization_type']) ? htmlspecialchars($organization['organization_type']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
-                </div>
-                <?php if (!$readonly): ?>
-                <div class="form-group remove-group">
-                  <button type="button" class="btn-remove-organization" onclick="removeOrganization(this)" title="Remove this organization entry">✕</button>
-                </div>
-                <?php endif; ?>
-              </div>
-            <?php endforeach; ?>
-          <?php else: ?>
-            <div class="organization-row">
-              <div class="form-group">
-                <label>Name:<br><small>Pangalan:</small></label>
-                <input type="text" name="organizationName[]" class="form-control" placeholder="Buong pangalan" <?php echo $readonly ? 'readonly' : ''; ?>>
-              </div>
-              <div class="form-group">
-                <label>Organization Membership:<br><small>Samahang Kinaaniban:</small></label>
-                <input type="text" name="organizationType[]" class="form-control" placeholder="Pangalan ng samahan/organisasyon" <?php echo $readonly ? 'readonly' : ''; ?>>
-              </div>
-              <?php if (!$readonly): ?>
-              <div class="form-group remove-group">
-                <button type="button" class="btn-remove-organization" onclick="removeOrganization(this)" title="Remove this organization entry">✕</button>
-              </div>
-              <?php endif; ?>
-            </div>
-          <?php endif; ?>
-        </div>
-      </div>
-
-      <?php if (!$readonly): ?>
-      <div class="organization-controls">
-        <button type="button" class="btn-add-organization" onclick="addOrganization()">
-          <span class="btn-icon">➕</span>
-          <span class="btn-text">Add Organization Entry<br><small>Magdagdag ng Samahan</small></span>
-        </button>
-      </div>
-      <?php endif; ?>
-    </div>
-      </fieldset>
-    </div>
         
       
       <!-- Tab Navigation Controls -->
@@ -2280,14 +2236,53 @@ function debugShowPrivacyNotice() {
     transition: transform 0.3s ease;
 }
 
+/* Ensure the parent container has proper styling */
 .family-member-content {
-    padding: 1.5rem;
-    background: #f9f9f9;
+  padding: 1.5rem;
+  background: #f9f9f9;
+  margin-top: 1rem;
 }
 
 .family-member-content .form-grid {
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 1.2rem;
+}
+
+/* Custom grid for disability, organization, and deceased fields to maximize space */
+.family-member-content .form-grid.disability-org-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    width: 100%;
+    grid-column: 1 / -1; /* Make it span all columns of the parent grid */
+}
+
+/* Ensure proper styling for the input fields */
+.form-grid.disability-org-grid .form-group {
+    min-width: 0;
+}
+
+/* Specific styling for checkbox containers */
+.form-grid.disability-org-grid .checkbox-container {
+    display: flex;
+    align-items: center;
+}
+
+.form-grid.disability-org-grid .checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    width: 100%;
+}
+
+.form-grid.disability-org-grid .checkbox-label input[type="checkbox"] {
+    margin-right: 8px;
+    width: 18px;
+    height: 18px;
+}
+
+.form-grid.disability-org-grid .checkbox-label span {
+    font-weight: normal;
 }
 
 .remove-btn-container {
@@ -2937,10 +2932,7 @@ function debugShowPrivacyNotice() {
 .registration-form.readonly-mode button[type="reset"],
 .registration-form.readonly-mode .btn-add-family-member,
 .registration-form.readonly-mode .btn-remove-family,
-.registration-form.readonly-mode .btn-add-disability,
-.registration-form.readonly-mode .btn-remove-disability,
-.registration-form.readonly-mode .btn-add-organization,
-.registration-form.readonly-mode .btn-remove-organization {
+.registration-form.readonly-mode .btn-add-family-member {
   pointer-events: none;
   background-color: #f5f5f5 !important;
   border-color: #e0e0e0 !important;
@@ -3276,6 +3268,7 @@ legend * {
   z-index: 1;
 }
 
+/* Make sure the form-grid is properly styled */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -3683,37 +3676,22 @@ h4 small {
   border-radius: 1px;
 }
 
-/* Disability and Organization Sections */
-.disability-row,
-.organization-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-  padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 12px;
-  border: 1px solid rgba(76, 175, 80, 0.1);
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.disability-row:hover,
-.organization-row:hover {
-  background: rgba(232, 245, 233, 0.3);
-  border-color: rgba(76, 175, 80, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(27, 94, 32, 0.1);
-}
-
-.remove-group {
+/* Family Section Structure */
+.family-section {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  min-height: 500px;
+  max-height: 600px;
 }
 
-/* Disability Controls */
-.disability-controls {
+.family-section .table-wrapper {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Family Member Controls Styling */
+.family-controls {
   display: flex;
   justify-content: center;
   padding: 1.5rem 0;
@@ -3726,160 +3704,6 @@ h4 small {
   clear: both;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
   flex-shrink: 0;
-}
-
-.btn-add-disability {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 1.2rem 2rem;
-  background: linear-gradient(135deg, #ff9800, #f57c00);
-  color: white;
-  border: none;
-  border-radius: 20px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 6px 20px rgba(255, 152, 0, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  min-width: 220px;
-  justify-content: center;
-}
-
-.btn-add-disability:hover {
-  background: linear-gradient(135deg, #ffb74d, #ff9800);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(255, 152, 0, 0.4);
-}
-
-.btn-remove-disability {
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 1.2rem;
-  font-weight: 900;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-  min-width: 40px;
-}
-
-.btn-remove-disability:hover {
-  background: linear-gradient(135deg, #c0392b, #a93226);
-  transform: scale(1.1);
-  box-shadow: 0 6px 18px rgba(231, 76, 60, 0.4);
-}
-
-/* Organization Controls */
-.organization-controls {
-  display: flex;
-  justify-content: center;
-  padding: 1.5rem 0;
-  margin-top: 1rem;
-  border-top: 2px solid rgba(76, 175, 80, 0.1);
-  position: relative;
-  z-index: 10;
-  background: white;
-  width: 100%;
-  clear: both;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
-  flex-shrink: 0;
-}
-
-.btn-add-organization {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 1.2rem 2rem;
-  background: linear-gradient(135deg, #9c27b0, #7b1fa2);
-  color: white;
-  border: none;
-  border-radius: 20px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 6px 20px rgba(156, 39, 176, 0.3);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  min-width: 220px;
-  justify-content: center;
-}
-
-.btn-add-organization:hover {
-  background: linear-gradient(135deg, #ba68c8, #9c27b0);
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(156, 39, 176, 0.4);
-}
-
-.btn-remove-organization {
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 1.2rem;
-  font-weight: 900;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-  min-width: 40px;
-}
-
-.btn-remove-organization:hover {
-  background: linear-gradient(135deg, #c0392b, #a93226);
-  transform: scale(1.1);
-  box-shadow: 0 6px 18px rgba(231, 76, 60, 0.4);
-}
-
-.btn-add-disability .btn-icon,
-.btn-add-organization .btn-icon {
-  font-size: 1.3rem;
-  background: rgba(255, 255, 255, 0.2);
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-}
-
-.btn-add-disability .btn-text,
-.btn-add-organization .btn-text {
-  text-align: left;
-  line-height: 1.2;
-}
-
-.btn-add-disability .btn-text small,
-.btn-add-organization .btn-text small {
-  display: block;
-  font-weight: 500;
-  font-size: 0.85rem;
-  opacity: 0.9;
-  font-style: italic;
-  text-transform: none;
-  letter-spacing: normal;
-  margin-top: 0.2rem;
-}
-
-.disability-row:hover,
-.organization-row:hover {
-  background: rgba(232, 245, 233, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(27, 94, 32, 0.1);
 }
 
 .form-control {
@@ -4078,11 +3902,7 @@ h4 small {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   }
   
-  .disability-row,
-  .organization-row {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
+
 }
 
 @media (max-width: 768px) {
@@ -4631,86 +4451,111 @@ body:has(.privacy-overlay.show) .container {
   overflow: hidden;
 }
 
-/* Disability Section Structure */
-.disability-section {
+/* Checkbox and Radio Styles */
+.checkbox-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.checkbox-group label {
   display: flex;
-  flex-direction: column;
-  min-height: 400px;
-  max-height: 500px;
-}
-
-.disability-wrapper {
-  flex: 1;
-  min-height: 0;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  background: rgba(255, 255, 255, 0.7);
+  border: 2px solid rgba(76, 175, 80, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  position: relative;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  box-shadow: 0 8px 25px rgba(27, 94, 32, 0.05);
-  margin: 1.5rem 0 0 0;
-  border: 1px solid rgba(76, 175, 80, 0.1);
 }
 
-.disability-container {
-  max-height: 350px;
-  overflow-y: auto;
-  padding: 1rem;
-  scrollbar-width: thin;
-  scrollbar-color: #4caf50 rgba(76, 175, 80, 0.1);
+.checkbox-group label:hover {
+  background: rgba(232, 245, 233, 0.5);
+  border-color: rgba(76, 175, 80, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(27, 94, 32, 0.1);
 }
 
-.disability-container::-webkit-scrollbar {
-  width: 8px;
+/* Deceased Member Styling */
+.deceased-member {
+  border: 2px solid #6c757d !important;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+  opacity: 0.8;
 }
 
-.disability-container::-webkit-scrollbar-track {
-  background: rgba(76, 175, 80, 0.1);
-  border-radius: 4px;
+.deceased-member .family-member-header {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%) !important;
 }
 
-.disability-container::-webkit-scrollbar-thumb {
-  background: #4caf50;
-  border-radius: 4px;
-}
-
-/* Organization Section Structure */
-.organization-section {
+/* Deceased Checkbox Styling */
+.checkbox-label {
   display: flex;
-  flex-direction: column;
-  min-height: 400px;
-  max-height: 500px;
+  align-items: center;
+  font-weight: 600;
+  color: #495057;
+  cursor: pointer;
+  gap: 8px;
+  padding: 10px 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background: #f8f9fa;
+  transition: all 0.3s ease;
 }
 
-.organization-wrapper {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
-  box-shadow: 0 8px 25px rgba(27, 94, 32, 0.05);
-  margin: 1.5rem 0 0 0;
-  border: 1px solid rgba(76, 175, 80, 0.1);
+.checkbox-label:hover {
+  background: #e9ecef;
+  border-color: #dee2e6;
 }
 
-.organization-container {
-  max-height: 350px;
-  overflow-y: auto;
-  padding: 1rem;
-  scrollbar-width: thin;
-  scrollbar-color: #4caf50 rgba(76, 175, 80, 0.1);
+.deceased-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
 }
 
-.organization-container::-webkit-scrollbar {
-  width: 8px;
+.checkbox-group label::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, 
+    rgba(232, 245, 233, 0.1) 0%,
+    transparent 50%,
+    rgba(232, 245, 233, 0.1) 100%);
+  z-index: -1;
 }
 
-.organization-container::-webkit-scrollbar-track {
-  background: rgba(76, 175, 80, 0.1);
-  border-radius: 4px;
+.checkbox-group input[type="radio"],
+.checkbox-group input[type="checkbox"] {
+  margin-right: 0.8rem;
+  transform: scale(1.2);
+  accent-color: #4caf50;
 }
 
-.organization-container::-webkit-scrollbar-thumb {
-  background: #4caf50;
-  border-radius: 4px;
+.other-input {
+  margin-top: 1rem !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 2px solid rgba(76, 175, 80, 0.2) !important;
+  border-radius: 12px !important;
+  padding: 1rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.other-input:focus {
+  border-color: #4caf50 !important;
+  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.15) !important;
+}
+
+.other-input:disabled {
+  background: rgba(248, 249, 250, 0.8) !important;
+  border-color: rgba(224, 224, 224, 0.5) !important;
+  color: #999 !important;
 }
 
 /* Family Member Controls Styling */
@@ -5089,17 +4934,6 @@ body:has(.privacy-overlay.show) .container {
     max-height: 500px;
   }
   
-  .disability-section,
-  .organization-section {
-    min-height: 350px;
-    max-height: 450px;
-  }
-  
-  .disability-container,
-  .organization-container {
-    max-height: 300px;
-  }
-  
   .table-wrapper {
     margin: 1rem 0 0 0;
   }
@@ -5141,35 +4975,6 @@ body:has(.privacy-overlay.show) .container {
   .family-section {
     min-height: 350px;
     max-height: 450px;
-  }
-  
-  .disability-section,
-  .organization-section {
-    min-height: 300px;
-    max-height: 400px;
-  }
-  
-  .disability-container,
-  .organization-container {
-    max-height: 250px;
-  }
-  
-  .disability-row,
-  .organization-row {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .remove-group {
-    justify-content: flex-end;
-  }
-  
-  .btn-add-disability,
-  .btn-add-organization {
-    flex-direction: column;
-    padding: 1rem;
-    min-width: 180px;
-    gap: 0.5rem;
   }
   
   .table-wrapper {
@@ -5268,22 +5073,21 @@ body:has(.privacy-overlay.show) .container {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(15px);
+  background: rgba(255, 255, 255, 0.4); /* Much more transparent background */
+  backdrop-filter: blur(8px);
   z-index: 20000; /* Higher than privacy notice (10000) */
   display: flex;
-  align-items: flex-start; /* Align to top instead of center */
-  justify-content: center;
+  align-items: center; /* Center vertically */
+  justify-content: center; /* Center horizontally */
   opacity: 1;
   visibility: visible;
   padding: 20px;
-  padding-top: 100px; /* Space below header */
 }
 
 .modal-content {
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.65) 0%, rgba(248, 249, 250, 0.65) 100%);
   border-radius: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   max-width: 800px; /* Increased from 600px */
   width: 90%; /* More responsive width */
   max-height: 80vh;
@@ -5292,6 +5096,8 @@ body:has(.privacy-overlay.show) .container {
   transform: scale(1);
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   animation: modalSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 @keyframes modalSlideIn {
@@ -5357,8 +5163,6 @@ body:has(.privacy-overlay.show) .container {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   letter-spacing: 0.5px;
 }
-
-.modal-close {
   background: rgba(255, 255, 255, 0.15);
   border: 2px solid rgba(255, 255, 255, 0.3);
   color: white;
@@ -5383,10 +5187,11 @@ body:has(.privacy-overlay.show) .container {
 
 .modal-body {
   padding: 2.5rem; /* Increased from 2rem */
-  color: #2c3e50;
+  color: rgba(44, 62, 80, 0.9); /* Semi-transparent text color */
   line-height: 1.8; /* Increased from 1.6 for better readability */
   font-size: 1.3rem; /* Increased from 1.1rem */
-  font-weight: 600; /* Added bold font weight */
+  font-weight: 500; /* Slightly lighter font weight */
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5); /* Subtle text shadow for better readability */
 }
 
 /* Enhanced Success Message Styling */
@@ -5857,7 +5662,7 @@ function setupPrivacyModalEventHandlers() {
 
 // Tab Navigation Functions
 let currentTab = 1;
-const totalTabs = 5;
+const totalTabs = 3;
 
 function showTab(tabNumber) {
     console.log('Switching to tab:', tabNumber);
@@ -6088,6 +5893,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const submitBtn = document.getElementById('hiddenSubmitBtn');
     const form = document.getElementById('censusForm');
     
+    // Lock all "pakisulat kung iba pa" fields on page load
+    const otherInputs = document.querySelectorAll('input[placeholder="Pakisulat kung iba pa"]');
+    otherInputs.forEach(input => {
+        input.disabled = true;
+    });
+    
     if (submitBtn) {
         submitBtn.addEventListener('click', function(e) {
             // Only prevent default if using tab navigation
@@ -6106,6 +5917,9 @@ function toggleOtherInput(radioName, otherId) {
     const radios = document.querySelectorAll(`input[name="${radioName}"]`);
     const otherInput = document.getElementById(otherId);
     
+    // Lock the field by default
+    otherInput.disabled = true;
+    
     radios.forEach(radio => {
         if (radio.checked && radio.value === 'Iba pa') {
             otherInput.disabled = false;
@@ -6121,6 +5935,9 @@ function toggleCheckboxOther(checkboxName, otherId) {
     const checkboxes = document.querySelectorAll(`input[name="${checkboxName}[]"]`);
     const otherInput = document.getElementById(otherId);
     let otherChecked = false;
+    
+    // Lock the field by default
+    otherInput.disabled = true;
     
     checkboxes.forEach(checkbox => {
         if (checkbox.checked && checkbox.value === 'Iba pa') {
@@ -6294,6 +6111,42 @@ function addFamilyMember() {
     if (familyControls) {
         familyControls.style.display = 'flex';
         familyControls.style.visibility = 'visible';
+    }
+}
+
+// Function to handle deceased checkbox functionality
+function handleDeceasedCheckbox(checkbox) {
+    const card = checkbox.closest('.family-member-card');
+    if (!card) return;
+    
+    const content = card.querySelector('.family-member-content');
+    if (!content) return;
+    
+    // Get all input fields except the deceased checkbox itself
+    const inputs = content.querySelectorAll('input, select, textarea');
+    
+    if (checkbox.checked) {
+        // Disable all fields except the deceased checkbox
+        inputs.forEach(input => {
+            if (input !== checkbox) {
+                input.disabled = true;
+                input.style.opacity = '0.6';
+            }
+        });
+        
+        // Add visual indication that this member is deceased
+        card.classList.add('deceased-member');
+    } else {
+        // Enable all fields
+        inputs.forEach(input => {
+            if (input !== checkbox) {
+                input.disabled = false;
+                input.style.opacity = '1';
+            }
+        });
+        
+        // Remove visual indication
+        card.classList.remove('deceased-member');
     }
 }
 
@@ -6571,6 +6424,29 @@ function addFamilyMemberCard() {
                     <input type="text" id="familyOccupation${newIndex}" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay">
                 </div>
                 
+                <!-- Disability, Organization, and Deceased Information in a wider grid -->
+                <div class="form-grid disability-org-grid">
+                    <!-- Disability Information -->
+                    <div class="form-group">
+                        <label>Disability (if applicable)<br><small>Kapansanan (kung mayroon)</small></label>
+                        <input type="text" name="disabilityType[]" class="form-control" placeholder="Type of disability">
+                    </div>
+                    
+                    <!-- Organization Membership -->
+                    <div class="form-group">
+                        <label>Organization Membership (if applicable)<br><small>Samahang Kinaaniban (kung mayroon)</small></label>
+                        <input type="text" name="organizationType[]" class="form-control" placeholder="Organization name">
+                    </div>
+                    
+                    <!-- Deceased Status Checkbox -->
+                    <div class="form-group">
+                      <label class="checkbox-label">
+                        <input type="checkbox" name="isDeceased[]" class="deceased-checkbox">
+                        Deceased<br><small>Namatay</small>
+                      </label>
+                    </div>
+                </div>
+                
                 <div class="form-group remove-btn-container">
                     <button type="button" class="btn-remove-family-member" onclick="removeFamilyMemberCard(this)" title="Remove this family member">✕ Remove Family Member</button>
                 </div>
@@ -6584,6 +6460,14 @@ function addFamilyMemberCard() {
     
     // Add the card to the container
     container.appendChild(newCard);
+    
+    // Add event listener for the deceased checkbox
+    const deceasedCheckbox = newCard.querySelector('.deceased-checkbox');
+    if (deceasedCheckbox) {
+        deceasedCheckbox.addEventListener('change', function() {
+            handleDeceasedCheckbox(this);
+        });
+    }
     
     // Animate the new card in
     setTimeout(() => {
@@ -6608,7 +6492,13 @@ function removeFamilyMemberCard(button) {
         // Instead of removing, just clear the values
         const inputs = card.querySelectorAll('input, select');
         inputs.forEach(input => {
-            if (input.type === 'select-one') {
+            if (input.type === 'checkbox') {
+                input.checked = false;
+                // Re-enable all fields if this was a deceased checkbox
+                if (input.classList.contains('deceased-checkbox')) {
+                    handleDeceasedCheckbox(input);
+                }
+            } else if (input.type === 'select-one') {
                 input.selectedIndex = 0;
             } else {
                 input.value = '';
@@ -6653,11 +6543,16 @@ function updateAllCardHeaders() {
         }
         
         // Update the input IDs to match the new index
-        const inputs = card.querySelectorAll('input, select');
+        const inputs = card.querySelectorAll('input, select, textarea');
         inputs.forEach(input => {
             if (input.id) {
                 const nameAttr = input.getAttribute('name');
                 if (nameAttr) {
+                    // Skip updating IDs for checkboxes as they don't need unique IDs for functionality
+                    if (input.type === 'checkbox' && input.classList.contains('deceased-checkbox')) {
+                        return;
+                    }
+                    
                     const baseName = nameAttr.replace(/\[\]$/, '');
                     const idMatch = input.id.match(/^([a-zA-Z]+)(\d+)$/);
                     if (idMatch) {
@@ -6672,216 +6567,23 @@ function updateAllCardHeaders() {
                 }
             }
         });
+        
+        // Re-attach event listeners for the deceased checkbox
+        const deceasedCheckbox = card.querySelector('.deceased-checkbox');
+        if (deceasedCheckbox) {
+            // Remove existing event listeners by cloning
+            const newCheckbox = deceasedCheckbox.cloneNode(true);
+            deceasedCheckbox.parentNode.replaceChild(newCheckbox, deceasedCheckbox);
+            
+            // Add new event listener
+            newCheckbox.addEventListener('change', function() {
+                handleDeceasedCheckbox(this);
+            });
+        }
     });
 }
 
-// Disability Management Functions
-function addDisability() {
-    const disabilitySection = document.getElementById('disabilitySection');
-    if (!disabilitySection) {
-        console.error('Disability section not found');
-        return;
-    }
-    
-    // Create new disability row HTML
-    const newRow = document.createElement('div');
-    newRow.className = 'disability-row';
-    newRow.innerHTML = `
-        <div class="form-group">
-            <label>Name:<br><small>Pangalan:</small></label>
-            <input type="text" name="disabilityName[]" class="form-control" placeholder="Buong pangalan">
-        </div>
-        <div class="form-group">
-            <label>Disability:<br><small>Kapansanan:</small></label>
-            <input type="text" name="disabilityType[]" class="form-control" placeholder="Uri ng kapansanan">
-        </div>
-        <div class="form-group remove-group">
-            <button type="button" class="btn-remove-disability" onclick="removeDisability(this)" title="Remove this disability entry">✕</button>
-        </div>
-    `;
-    
-    // Add animation class for smooth entry
-    newRow.style.opacity = '0';
-    newRow.style.transform = 'translateY(-10px)';
-    
-    // Add the row to the section
-    disabilitySection.appendChild(newRow);
-    
-    // Animate the new row in
-    setTimeout(() => {
-        newRow.style.transition = 'all 0.3s ease';
-        newRow.style.opacity = '1';
-        newRow.style.transform = 'translateY(0)';
-        
-        // Focus on the first input of the new row
-        const firstInput = newRow.querySelector('input[name="disabilityName[]"]');
-        if (firstInput) {
-            firstInput.focus();
-        }
-    }, 10);
-    
-    console.log('New disability entry added');
-}
 
-function removeDisability(button) {
-    const row = button.closest('.disability-row');
-    const disabilitySection = document.getElementById('disabilitySection');
-    
-    if (!row || !disabilitySection) {
-        console.error('Cannot find row or disability section');
-        return;
-    }
-    
-    // Check if this is the last row - keep at least one row
-    const allRows = disabilitySection.querySelectorAll('.disability-row');
-    if (allRows.length <= 1) {
-        // Instead of removing, just clear the values
-        const inputs = row.querySelectorAll('input');
-        inputs.forEach(input => {
-            input.value = '';
-        });
-        
-        showMessage('At least one disability row is required', 'info');
-        return;
-    }
-    
-    // Animate out
-    row.style.transition = 'all 0.3s ease';
-    row.style.opacity = '0';
-    row.style.transform = 'translateX(-100%)';
-    
-    // Remove after animation
-    setTimeout(() => {
-        row.remove();
-        console.log('Disability entry removed');
-    }, 300);
-}
-
-// Organization Management Functions
-function addOrganization() {
-    const organizationSection = document.getElementById('organizationSection');
-    if (!organizationSection) {
-        console.error('Organization section not found');
-        return;
-    }
-    
-    // Create new organization row HTML
-    const newRow = document.createElement('div');
-    newRow.className = 'organization-row';
-    newRow.innerHTML = `
-        <div class="form-group">
-            <label>Name:<br><small>Pangalan:</small></label>
-            <input type="text" name="organizationName[]" class="form-control" placeholder="Buong pangalan">
-        </div>
-        <div class="form-group">
-            <label>Organization Membership:<br><small>Samahang Kinaaniban:</small></label>
-            <input type="text" name="organizationType[]" class="form-control" placeholder="Pangalan ng samahan/organisasyon">
-        </div>
-        <div class="form-group remove-group">
-            <button type="button" class="btn-remove-organization" onclick="removeOrganization(this)" title="Remove this organization entry">✕</button>
-        </div>
-    `;
-    
-    // Add animation class for smooth entry
-    newRow.style.opacity = '0';
-    newRow.style.transform = 'translateY(-10px)';
-    
-    // Add the row to the section
-    organizationSection.appendChild(newRow);
-    
-    // Animate the new row in
-    setTimeout(() => {
-        newRow.style.transition = 'all 0.3s ease';
-        newRow.style.opacity = '1';
-        newRow.style.transform = 'translateY(0)';
-        
-        // Focus on the first input of the new row
-        const firstInput = newRow.querySelector('input[name="organizationName[]"]');
-        if (firstInput) {
-            firstInput.focus();
-        }
-    }, 10);
-    
-    console.log('New organization entry added');
-}
-
-function removeOrganization(button) {
-    const row = button.closest('.organization-row');
-    const organizationSection = document.getElementById('organizationSection');
-    
-    if (!row || !organizationSection) {
-        console.error('Cannot find row or organization section');
-        return;
-    }
-    
-    // Check if this is the last row - keep at least one row
-    const allRows = organizationSection.querySelectorAll('.organization-row');
-    if (allRows.length <= 1) {
-        // Instead of removing, just clear the values
-        const inputs = row.querySelectorAll('input');
-        inputs.forEach(input => {
-            input.value = '';
-        });
-        
-        showMessage('At least one organization row is required', 'info');
-        return;
-    }
-    
-    // Animate out
-    row.style.transition = 'all 0.3s ease';
-    row.style.opacity = '0';
-    row.style.transform = 'translateX(-100%)';
-    
-    // Remove after animation
-    setTimeout(() => {
-        row.remove();
-        console.log('Organization entry removed');
-    }, 300);
-}
-
-// Generic message function for disabilities and organizations
-function showMessage(message, type = 'info') {
-    // Create a temporary message element
-    const messageElement = document.createElement('div');
-    messageElement.className = `message message-${type}`;
-    messageElement.textContent = message;
-    messageElement.style.cssText = `
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background: ${type === 'info' ? '#17a2b8' : '#dc3545'};
-        color: white;
-        padding: 1rem 2rem;
-        border-radius: 10px;
-        font-weight: 600;
-        z-index: 10000;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        animation: fadeInOut 2s ease;
-    `;
-    
-    // Add CSS animation if not exists
-    if (!document.getElementById('messageStyles')) {
-        const styles = document.createElement('style');
-        styles.id = 'messageStyles';
-        styles.textContent = `
-            @keyframes fadeInOut {
-                0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-                20%, 80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            }
-        `;
-        document.head.appendChild(styles);
-    }
-    
-    document.body.appendChild(messageElement);
-    
-    // Remove after animation
-    setTimeout(() => {
-        if (messageElement && messageElement.parentNode) {
-            messageElement.parentNode.removeChild(messageElement);
-        }
-    }, 2000);
-}
 
 // Real-time Validation Functions
 let validationTimeout = null;
@@ -7412,6 +7114,19 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Add event listeners for existing deceased checkboxes
+    const deceasedCheckboxes = document.querySelectorAll('.deceased-checkbox');
+    deceasedCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            handleDeceasedCheckbox(this);
+        });
+        
+        // Initialize the state based on the checked status
+        if (checkbox.checked) {
+            handleDeceasedCheckbox(checkbox);
+        }
+    });
 });
 
 // Modal Management Functions
@@ -7733,5 +7448,343 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 </style>
 <?php endif; ?>
+
+<script>
+// Validation for deceased checkbox - ensure required fields are filled first
+document.addEventListener('DOMContentLoaded', function() {
+  // Add event listeners to all deceased checkboxes
+  const deceasedCheckboxes = document.querySelectorAll('.deceased-checkbox');
+  
+  deceasedCheckboxes.forEach(function(checkbox) {
+    checkbox.addEventListener('click', function(e) {
+      const familyCard = this.closest('.family-member-card');
+      
+      // Check if required fields are filled
+      const name = familyCard.querySelector('input[name="familyName[]"]').value.trim();
+      const relation = familyCard.querySelector('select[name="familyRelation[]"]').value;
+      const birthDate = familyCard.querySelector('input[name="familyBirthDate[]"]').value;
+      const gender = familyCard.querySelector('select[name="familyGender[]"]').value;
+      
+      // If required fields are not filled, prevent checking and show toast
+      if (!name || !relation || !birthDate || !gender) {
+        e.preventDefault();
+        showToast('Please fill out the required information (Name, Relationship, Birth Date, and Gender) before marking as deceased.', 'error');
+        return false;
+      }
+    });
+  });
+  
+  // Create modal elements for unsaved changes warning
+  const modalHTML = `
+    <div id="unsavedChangesModal" class="modal-overlay" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Unsaved Changes</h3>
+        </div>
+        <div class="modal-body">
+          <p>You have unsaved changes. If you leave now, your data will be lost.</p>
+        </div>
+        <div class="modal-footer">
+          <button id="stayButton" class="btn btn-primary">Stay on this page</button>
+          <button id="leaveButton" class="btn btn-danger">Leave anyway</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Create toast container
+  const toastContainerHTML = `<div id="toastContainer" class="toast-container"></div>`;
+  
+  // Add modal and toast container to the body
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  document.body.insertAdjacentHTML('beforeend', toastContainerHTML);
+  
+  // Add styles for modal and toast
+  const styleElement = document.createElement('style');
+  styleElement.textContent = `
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    
+    .modal-content {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      width: 90%;
+      max-width: 500px;
+      animation: modalFadeIn 0.3s ease-out;
+    }
+    
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .modal-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid #e9ecef;
+    }
+    
+    .modal-header h3 {
+      margin: 0;
+      color: #dc3545;
+      font-size: 1.25rem;
+    }
+    
+    .modal-body {
+      padding: 20px;
+    }
+    
+    .modal-body p {
+      margin: 0;
+      font-size: 1.1rem;
+      line-height: 1.5;
+    }
+    
+    .modal-footer {
+      padding: 15px 20px;
+      border-top: 1px solid #e9ecef;
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    
+    /* Toast notification styles */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+    
+    .toast {
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      margin-bottom: 10px;
+      overflow: hidden;
+      width: 300px;
+      max-width: 100%;
+      animation: toastFadeIn 0.3s ease-out;
+    }
+    
+    @keyframes toastFadeIn {
+      from {
+        opacity: 0;
+        transform: translateX(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    .toast-header {
+      padding: 10px 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e9ecef;
+    }
+    
+    .toast-body {
+      padding: 15px;
+      color: #212529;
+    }
+    
+    .toast-success {
+      border-left: 4px solid #28a745;
+    }
+    
+    .toast-error {
+      border-left: 4px solid #dc3545;
+    }
+    
+    .toast-warning {
+      border-left: 4px solid #ffc107;
+    }
+    
+    .toast-info {
+      border-left: 4px solid #17a2b8;
+    }
+    
+    .toast-close {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      cursor: pointer;
+      color: #6c757d;
+    }
+  `;
+  document.head.appendChild(styleElement);
+  
+  // Function to show toast notifications
+  window.showToast = function(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const toastHeader = document.createElement('div');
+    toastHeader.className = 'toast-header';
+    
+    let title = 'Information';
+    if (type === 'success') title = 'Success';
+    if (type === 'error') title = 'Error';
+    if (type === 'warning') title = 'Warning';
+    
+    toastHeader.innerHTML = `
+      <strong>${title}</strong>
+      <button type="button" class="toast-close">&times;</button>
+    `;
+    
+    const toastBody = document.createElement('div');
+    toastBody.className = 'toast-body';
+    toastBody.textContent = message;
+    
+    toast.appendChild(toastHeader);
+    toast.appendChild(toastBody);
+    
+    const toastContainer = document.getElementById('toastContainer');
+    toastContainer.appendChild(toast);
+    
+    // Add close button functionality
+    const closeButton = toast.querySelector('.toast-close');
+    closeButton.addEventListener('click', function() {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateX(20px)';
+      toast.style.transition = 'all 0.3s ease-out';
+      
+      setTimeout(() => {
+        if (toast.parentElement) {
+          toast.remove();
+        }
+      }, 300);
+    });
+    
+    // Auto-remove toast after 5 seconds
+    setTimeout(() => {
+      if (toast.parentElement) {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(20px)';
+        toast.style.transition = 'all 0.3s ease-out';
+        
+        setTimeout(() => {
+          if (toast.parentElement) {
+            toast.remove();
+          }
+        }, 300);
+      }
+    }, 5000);
+  };
+  
+  // Form data loss prevention
+  let formChanged = false;
+  let pendingNavigation = null;
+  const registrationForm = document.querySelector('form.registration-form');
+  
+  if (registrationForm) {
+    // Track form changes
+    const formInputs = registrationForm.querySelectorAll('input, select, textarea');
+    formInputs.forEach(input => {
+      input.addEventListener('change', function() {
+        formChanged = true;
+      });
+      
+      // For text inputs, also track keyup events
+      if (input.type === 'text' || input.type === 'textarea' || input.type === 'number' || input.type === 'email') {
+        input.addEventListener('keyup', function() {
+          formChanged = true;
+        });
+      }
+    });
+    
+    // Reset the formChanged flag when the form is submitted
+    registrationForm.addEventListener('submit', function() {
+      formChanged = false;
+    });
+  }
+  
+  // Set up modal button handlers
+  const stayButton = document.getElementById('stayButton');
+  const leaveButton = document.getElementById('leaveButton');
+  const unsavedChangesModal = document.getElementById('unsavedChangesModal');
+  
+  stayButton.addEventListener('click', function() {
+    unsavedChangesModal.style.display = 'none';
+  });
+  
+  leaveButton.addEventListener('click', function() {
+    // Allow navigation by setting formChanged to false and triggering the stored navigation
+    formChanged = false;
+    if (pendingNavigation) {
+      window.location.href = pendingNavigation;
+    } else {
+      unsavedChangesModal.style.display = 'none';
+    }
+  });
+  
+  // Intercept link clicks
+  document.addEventListener('click', function(e) {
+    // Find closest anchor tag if the click was on a child element
+    const link = e.target.closest('a');
+    
+    if (link && formChanged) {
+      // Check if it's an internal link (not external)
+      const href = link.getAttribute('href');
+      if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+        e.preventDefault();
+        pendingNavigation = href;
+        unsavedChangesModal.style.display = 'flex';
+      }
+    }
+  });
+  
+  // Intercept F5/refresh and browser close actions
+  window.addEventListener('beforeunload', function(e) {
+    if (formChanged) {
+      // For browser close events, we still need to use the browser's default confirmation
+      // as we can't show a custom modal that would block the closing action
+      const confirmationMessage = 'You have unsaved changes. Are you sure you want to leave this page? Your data may be lost.';
+      
+      // For older browsers
+      e.returnValue = confirmationMessage;
+      
+      // For modern browsers
+      return confirmationMessage;
+    }
+  });
+  
+  // Intercept F5/refresh key presses
+  document.addEventListener('keydown', function(e) {
+    // Check for F5 key (code 116) or Ctrl+R (code 82 with ctrlKey)
+    if ((e.key === 'F5' || (e.ctrlKey && e.key === 'r')) && formChanged) {
+      e.preventDefault();
+      
+      // Store the refresh intent
+      pendingNavigation = window.location.href;
+      
+      // Show our custom modal
+      unsavedChangesModal.style.display = 'flex';
+      
+      // Return false to prevent the default refresh
+      return false;
+    }
+  });
+});
+</script>
 
 <?php include '../includes/footer.php'; ?>

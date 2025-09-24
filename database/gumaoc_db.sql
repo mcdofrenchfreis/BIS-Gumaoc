@@ -136,13 +136,17 @@ CREATE TABLE `family_members` (
   `id` int(11) NOT NULL,
   `registration_id` int(11) NOT NULL,
   `full_name` varchar(255) NOT NULL,
+  `relationship` varchar(100) DEFAULT NULL,
   `birth_date` date DEFAULT NULL,
   `age` int(11) DEFAULT NULL,
+  `gender` enum('Lalaki','Babae') DEFAULT NULL,
   `civil_status` varchar(50) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
   `education` varchar(100) DEFAULT NULL,
   `occupation` varchar(100) DEFAULT NULL,
   `skills` varchar(255) DEFAULT NULL,
   `monthly_income` decimal(10,2) DEFAULT NULL,
+  `is_deceased` tinyint(1) DEFAULT 0,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -189,11 +193,14 @@ CREATE TABLE `resident_registrations` (
   `middle_name` varchar(100) DEFAULT NULL,
   `last_name` varchar(100) NOT NULL,
   `birth_date` date NOT NULL,
+  `birth_place` varchar(255) DEFAULT NULL,
   `age` int(11) NOT NULL,
   `civil_status` varchar(50) NOT NULL,
   `gender` varchar(20) NOT NULL,
   `contact_number` varchar(20) DEFAULT NULL,
+  `email` varchar(255) DEFAULT NULL,
   `house_number` varchar(20) DEFAULT NULL,
+  `address` varchar(500) DEFAULT NULL,
   `pangkabuhayan` varchar(100) DEFAULT NULL,
   `submitted_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `status` enum('pending','approved','rejected') DEFAULT 'pending',
@@ -221,7 +228,9 @@ CREATE TABLE `resident_registrations` (
   `interviewer` varchar(255) DEFAULT NULL,
   `interviewer_title` varchar(255) DEFAULT NULL,
   `login_id` varchar(20) DEFAULT NULL,
-  `password` varchar(255) DEFAULT NULL
+  `password` varchar(255) DEFAULT NULL,
+  `resident_disability` varchar(255) DEFAULT NULL,
+  `resident_organization` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -229,7 +238,7 @@ CREATE TABLE `resident_registrations` (
 --
 
 INSERT INTO `resident_registrations` (`id`, `first_name`, `middle_name`, `last_name`, `birth_date`, `age`, `civil_status`, `gender`, `contact_number`, `house_number`, `pangkabuhayan`, `submitted_at`, `status`, `land_ownership`, `land_ownership_other`, `house_ownership`, `house_ownership_other`, `farmland`, `cooking_energy`, `cooking_energy_other`, `toilet_type`, `toilet_type_other`, `electricity_source`, `electricity_source_other`, `water_source`, `water_source_other`, `waste_disposal`, `waste_disposal_other`, `appliances`, `transportation`, `transportation_other`, `business`, `business_other`, `contraceptive`, `interviewer`, `interviewer_title`, `login_id`, `password`) VALUES
-(1, 'test', '', 'test', '2025-08-01', 25, 'Unknown', 'Not Specified', '09162291763', '3', 'Not Specified', '2025-08-01 08:49:15', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(1, 'test', '', 'test', '2025-08-01', 25, 'Unknown', 'Not Specified', '09162291763', '3', 'Not Specified', '2025-08-01 08:49:15', 'pending', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
 (2, 'Juan', 'Santos', 'Cruz', '1980-05-15', 43, 'Married', 'Male', '09123456789', '123', 'Pag-aari', '2025-08-01 09:08:43', 'pending', 'Pag-aari', NULL, 'Pag-aari', NULL, 'Pag-aari', 'LPG', NULL, 'Flush', NULL, 'Kuryente', NULL, 'Water District', NULL, 'Kinokolekta', NULL, 'Telebisyon,Refrigerator', 'Kotse,Motorsiklo', NULL, 'Sari-Sari Store', NULL, 'Wala', 'Maria Garcia', 'Barangay Health Worker', NULL, NULL);
 
 -- --------------------------------------------------------
