@@ -18,6 +18,31 @@ if (!$certificate_data) {
     die("Certificate request not found or is not a BRGY. CLEARANCE certificate.");
 }
 
+// Resolve applicant photo (1x1)
+$photoSrc = '../assets/images/forms/1x1.jpeg';
+try {
+    if (!empty($certificate_data['photo_path'])) {
+        $candidate = '../' . ltrim($certificate_data['photo_path'], '/\\');
+        $photoSrc = $candidate;
+    } elseif (!empty($certificate_data['photo_id'])) {
+        $stmtPhoto = $pdo->prepare("SELECT photo_path FROM user_photos WHERE id = ? AND is_active = 1");
+        $stmtPhoto->execute([$certificate_data['photo_id']]);
+        $photo = $stmtPhoto->fetch(PDO::FETCH_ASSOC);
+        if ($photo && !empty($photo['photo_path'])) {
+            $photoSrc = '../' . ltrim($photo['photo_path'], '/\\');
+        }
+    } elseif (!empty($certificate_data['user_id'])) {
+        $stmtPhoto = $pdo->prepare("SELECT photo_path FROM user_photos WHERE user_id = ? AND certificate_request_id = ? AND is_active = 1 ORDER BY uploaded_at DESC LIMIT 1");
+        $stmtPhoto->execute([$certificate_data['user_id'], $request_id]);
+        $photo = $stmtPhoto->fetch(PDO::FETCH_ASSOC);
+        if ($photo && !empty($photo['photo_path'])) {
+            $photoSrc = '../' . ltrim($photo['photo_path'], '/\\');
+        }
+    }
+} catch (Exception $e) {
+    // keep fallback
+}
+
 // Calculate age from birth date
 $birth_date = new DateTime($certificate_data['birth_date']);
 $current_date = new DateTime();
@@ -62,29 +87,13 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             @page {
                 margin: 0;
                 size: A4 portrait;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
             }
-            
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-            }
-            
             body { 
                 margin: 0; 
                 padding: 0;
                 background: white !important;
-                font-family: 'Times New Roman', serif !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
             }
-            
-            .no-print { 
-                display: none !important; 
-            }
-            
+            .no-print { display: none !important; }
             .certificate-container { 
                 page-break-inside: avoid !important;
                 page-break-after: avoid !important;
@@ -99,7 +108,6 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                 print-color-adjust: exact !important;
                 box-shadow: none !important;
                 position: relative !important;
-                overflow: hidden !important;
             }
             .certificate-content {
                 padding: 250px 60px 60px 60px !important;
@@ -138,11 +146,17 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             }
             
             .photo-placeholder {
-                width: 85px !important;
-                height: 85px !important;
+                width: 1in !important;
+                height: 1in !important;
                 border: 2px solid #000 !important;
                 font-size: 11px !important;
                 margin-left: 20px !important;
+            }
+            .photo-placeholder img {
+                width: 1in !important;
+                height: 1in !important;
+                object-fit: cover !important;
+                display: block !important;
             }
             
             .person-details {
@@ -215,104 +229,21 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                 font-size: 10px !important;
             }
             
-            .bottom-sections-container {
-                display: flex !important;
-                justify-content: space-between !important;
-                align-items: flex-start !important;
-                margin-top: 20px !important;
-                page-break-inside: avoid !important;
-            }
-            
-            .left-section {
-                width: 45% !important;
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 8px !important;
-            }
-            
-            .right-section {
-                width: 50% !important;
-                display: flex !important;
-                flex-direction: column !important;
-                gap: 12px !important;
-                align-items: center !important;
-                margin-top: 33px !important;
-            }
-            
-            .ctc-details-section {
-                width: 140% !important;
-                page-break-inside: avoid !important;
-            }
-            
-            .ctc-detail-item {
-                display: flex !important;
-                align-items: center !important;
-                margin-bottom: 5px !important;
-                page-break-inside: avoid !important;
-            }
-            
-            .ctc-detail-label {
-                font-weight: bold !important;
-                margin-right: 6px !important;
-                min-width: 80px !important;
-                font-size: 12px !important;
-                white-space: nowrap !important;
-            }
-            
-            .ctc-detail-value {
+            .thumb-mark-box {
                 flex: 1 !important;
-                padding-bottom: 1px !important;
-                height: 17px !important;
-                min-width: 280px !important;
-                white-space: nowrap !important;
-                overflow: visible !important;
+                max-width: 88px !important;
+            }
+            
+            .thumb-mark-label {
                 font-size: 11px !important;
             }
             
-            
-            /* Text and Border Print Optimization */
-            .main-title {
-                font-size: 32px !important;
-                margin-bottom: 20px !important;
-                letter-spacing: 3px !important;
-                color: #C2944D !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            
-            .signature-line,
-            .signature-line-applicant,
-            .thumb-mark-circle {
-                border-color: #000 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            
-            .photo-placeholder {
-                border: 2px solid #000 !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-            
-            /* Prevent text breaking and improve readability */
-            .certification-text,
-            .person-details {
-                orphans: 3;
-                widows: 3;
-                page-break-inside: avoid;
-            }
-            
-            /* Ensure signature section stays together */
-            .signature-section {
-                page-break-inside: avoid !important;
-            }
-            
-            .thumb-marks-section {
-                page-break-inside: avoid !important;
-            }
-            
             .signature-box {
-                page-break-inside: avoid !important;
+                width: 235px !important;
+            }
+            
+            .signature-name {
+                font-size: 13px !important;
             }
             
             .bottom-sections-container {
@@ -390,43 +321,13 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                 font-weight: bold;
             }
             
-            .signature-section {
-                margin-top: 0 !important;
-                display: block !important;
-                width: 100% !important;
-                position: relative !important;
-                top: -3px !important;
-            }
-            
-            .ctc-details-section {
-                width: 100% !important;
-            }
-            
-            .ctc-detail-item {
-                display: flex !important;
-                align-items: center !important;
-                margin-bottom: 5px !important;
-            }
-            
-            .ctc-detail-label {
-                font-weight: bold;
-                margin-right: 6px;
-                min-width: 80px;
-                font-size: 12px;
-            }
-            
-            .ctc-detail-value {
-                flex: 1 !important;
-                padding-bottom: 1px !important;
-                height: 17px !important;
-                font-size: 11px !important;
-            }
-            
-            .signature-line {
-                border-bottom: 2px solid #000 !important;
-                margin-bottom: 4px !important;
-                height: 1px !important;
-            }
+            .signature-section { margin-top: 0 !important; display: block !important; width: 100% !important; position: relative !important; top: -6px !important; }
+            .ctc-details-section { width: 100% !important; }
+            .ctc-detail-item { display: flex !important; align-items: center !important; margin-bottom: 5px !important; }
+            .ctc-detail-label { font-weight: bold !important; margin-right: 12px !important; min-width: 92px !important; font-size: 12px !important; }
+            .ctc-detail-label::after { content: ':'; margin-left: 6px; }
+            .ctc-detail-value { border-bottom: none !important; flex: 1 !important; padding-bottom: 1px !important; height: 17px !important; white-space: nowrap !important; font-size: 12px !important; text-transform: uppercase !important; letter-spacing: 0.3px !important; }
+            .signature-line { border-bottom: 2px solid #000 !important; margin-bottom: 4px !important; height: 1px !important; width: 250px !important; }
         }
         
         * {
@@ -501,8 +402,8 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         }
 
         .photo-placeholder {
-            width: 85px;
-            height: 85px;
+            width: 1in;
+            height: 1in;
             border: 2px solid #000;
             background: white;
             display: flex;
@@ -515,6 +416,12 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             flex-shrink: 0;
             float: right;
             margin: 0 0 10px 20px;
+        }
+        .photo-placeholder img {
+            width: 1in;
+            height: 1in;
+            object-fit: cover;
+            display: block;
         }
         
         .person-details {
@@ -671,9 +578,14 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         }
         
         .ctc-detail-value {
+            border-bottom: none;
             flex: 1;
             padding-bottom: 1px;
             height: 17px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
         }
 
         .signature-box {
@@ -851,7 +763,7 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         }
 
         .ctc-details-section {
-            width: 140%;
+            width: 100%;
         }
         
         .ctc-detail-item {
@@ -862,40 +774,52 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         
         .ctc-detail-label {
             font-weight: bold;
-            margin-right: 6px;
-            min-width: 80px;
+            margin-right: 12px;
+            min-width: 92px;
             font-size: 12px;
         }
+        .ctc-detail-label::after { content: ':'; margin-left: 6px; }
         
         .ctc-detail-value {
+            border-bottom: none;
             flex: 1;
             padding-bottom: 1px;
             height: 17px;
-            min-width: 280px;
-            font-size: 11px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
         }
 
         .signature-box {
             text-align: center;
-            width: 235px;
+            width: 250px;
+            margin: 0 auto;
         }
         
         .signature-line {
             border-bottom: 2px solid #000;
-            margin: 8px auto 8px auto;
+            margin: 0 auto 6px auto;
             height: 1px;
-            width: 200px;
+            width: 250px;
         }
         
         .signature-name {
             font-weight: bold;
             font-size: 13px;
             text-decoration: underline;
+            width: 250px;
+            margin: 0 auto;
+            text-align: center;
         }
         
         .signature-title {
             font-size: 12px;
             margin-top: 2px;
+            width: 250px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
         }
     </style>
 </head>
@@ -928,7 +852,7 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                     </div>
                 </div>
                 <div class="photo-placeholder">
-                    IMAGE
+                <img src="<?php echo htmlspecialchars($photoSrc); ?>" alt="Photo" />
                 </div>
             </div>
 
@@ -966,15 +890,18 @@ criminal Record found in our Barangay Records.</p>
                         <div class="ctc-details-section">
                             <div class="ctc-detail-item">
                                 <span class="ctc-detail-label">CTC NO</span>
+                                <span class="detail-colon">:</span>
                                 <span class="ctc-detail-value"></span>
                             </div>
                             <div class="ctc-detail-item">
                                 <span class="ctc-detail-label">ISSUED AT</span>
+                                <span class="detail-colon">:</span>
                                 <span class="ctc-detail-value">BRGY. GUMAOC EAST, CSJDM, BULACAN</span>
                             </div>
                             <div class="ctc-detail-item">
                                 <span class="ctc-detail-label">ISSUED ON</span>
-                                <span class="ctc-detail-value"><?php echo strtoupper(date('d F Y')); ?></span>
+                                <span class="detail-colon">:</span>
+                                <span class="ctc-detail-value"><?php echo date('F j, Y'); ?></span>
                             </div>
                         </div>
                     </div>

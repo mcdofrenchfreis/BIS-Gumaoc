@@ -9,13 +9,13 @@ if (!$request_id) {
     die("Certificate request ID is required.");
 }
 
-// Fetch the certificate request data
-$stmt = $pdo->prepare("SELECT * FROM certificate_requests WHERE id = ? AND certificate_type = 'CERTIFICATION OF RESIDENCY'");
+// Fetch the certificate request data (support legacy label too)
+$stmt = $pdo->prepare("SELECT * FROM certificate_requests WHERE id = ? AND certificate_type IN ('CERTIFICATION OF RESIDENCY', 'PROOF OF RESIDENCY')");
 $stmt->execute([$request_id]);
 $certificate_data = $stmt->fetch();
 
 if (!$certificate_data) {
-    die("Certificate request not found or is not a CERTIFICATION OF RESIDENCY.");
+    die("Certificate request not found or not a Residency certificate.");
 }
 
 // Calculate age from birth date
@@ -62,29 +62,13 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             @page {
                 margin: 0;
                 size: A4 portrait;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
             }
-            
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                color-adjust: exact !important;
-            }
-            
             body { 
                 margin: 0; 
                 padding: 0;
                 background: white !important;
-                font-family: 'Times New Roman', serif !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
             }
-            
-            .no-print { 
-                display: none !important; 
-            }
-            
+            .no-print { display: none !important; }
             .certificate-container { 
                 page-break-inside: avoid !important;
                 page-break-after: avoid !important;
@@ -99,7 +83,6 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                 print-color-adjust: exact !important;
                 box-shadow: none !important;
                 position: relative !important;
-                overflow: hidden !important;
             }
             .certificate-content {
                 padding: 250px 60px 60px 60px !important;
@@ -121,39 +104,38 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             .left-content { flex: 1 !important; }
             .to-whom { font-weight: bold !important; font-size: 14px !important; margin-bottom: 15px !important; }
             .main-text { font-size: 14px !important; line-height: 1.4 !important; text-align: justify !important; }
-            .photo-placeholder { width: 85px !important; height: 85px !important; border: 2px solid #000 !important; font-size: 11px !important; margin-left: 20px !important; }
+            .photo-placeholder { width: 1in !important; height: 1in !important; border: 2px solid #000 !important; font-size: 11px !important; margin-left: 20px !important; overflow: hidden !important; }
             .photo-placeholder img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
             .person-details { font-size: 13px !important; margin: 10px 0 20px 0 !important; }
             .person-details p { display: flex !important; align-items: baseline !important; margin-bottom: 7px !important; }
             .detail-label-left { min-width: 210px !important; font-weight: bold !important; display: inline-block !important; }
             .detail-colon { margin: 0 7px !important; }
-            .detail-value { font-weight: bold !important; }
-            .certification-text { margin-bottom: 18px !important; text-align: justify !important; font-size: 13px !important; line-height: 1.4 !important; max-width: 100% !important; }
             .officer-section { width: 100% !important; margin-bottom: 15px !important; }
-            .officer-label { font-weight: bold !important; margin-bottom: 2px !important; font-size: 14px !important; }
-            .officer-name { font-weight: bold !important; text-decoration: underline !important; margin-bottom: 2px !important; font-size: 14px !important; }
-            .officer-sub-label { font-size: 13px !important; margin-bottom: 0 !important; }
+            .officer-label { font-weight: bold !important; margin-bottom: 2px !important; font-size: 13px !important; }
+            .officer-name { font-weight: bold !important; text-decoration: underline !important; margin-bottom: 2px !important; font-size: 13px !important; }
+            .officer-sub-label { font-size: 12px !important; margin-bottom: 0 !important; }
             .signature-applicant-section { width: 100% !important; text-align: center !important; position: relative !important; margin-bottom: 15px !important; margin-top: 15px !important; }
             .signature-line-applicant { border-bottom: 2px solid #000 !important; width: 210px !important; height: 1px !important; margin: 0 auto 7px auto !important; }
-            .signature-applicant { font-weight: bold !important; font-size: 13px !important; }
+            .signature-applicant { font-weight: bold !important; font-size: 12px !important; }
             .thumb-mark-circle { width: 78px !important; height: 78px !important; font-size: 10px !important; }
             .thumb-mark-box { flex: 1 !important; max-width: 88px !important; }
             .thumb-mark-label { font-size: 11px !important; }
             .signature-box { width: 280px !important; }
             .signature-name { font-size: 14px !important; }
-            .bottom-sections-container { display: flex !important; justify-content: space-between !important; align-items: flex-start !important; margin-top: 15px !important; }
+            .bottom-sections-container { display: flex !important; justify-content: space-between !important; align-items: flex-start !important; margin-top: 10px !important; }
             .left-section { width: 45% !important; display: flex !important; flex-direction: column !important; gap: 8px !important; }
-            .right-section { width: 50% !important; display: flex !important; flex-direction: column !important; gap: 12px !important; align-items: center !important; margin-top: 20px !important; }
+            .right-section { width: 50% !important; display: flex !important; flex-direction: column !important; gap: 12px !important; align-items: center !important; margin-top: 15px !important; }
             .date-validity-thumb-section { display: block !important; margin: 0 !important; position: relative !important; }
             .date-validity-row { width: 100% !important; font-size: 12px !important; font-weight: bold !important; margin-top: 3px !important; position: relative !important; top: -2px !important; }
             .date-validity-row div { margin-bottom: 4px !important; }
             .thumb-marks-section { width: 100% !important; display: flex !important; flex-direction: row !important; gap: 28px !important; justify-content: center !important; align-items: center !important; }
             .signature-section { margin-top: 0 !important; display: block !important; width: 100% !important; position: relative !important; top: -6px !important; }
-            .ctc-details-section { width: 120% !important; }
+            .ctc-details-section { width: 100% !important; }
             .ctc-detail-item { display: flex !important; align-items: center !important; margin-bottom: 5px !important; }
-            .ctc-detail-label { font-weight: bold !important; margin-right: 6px !important; min-width: 80px !important; font-size: 12px !important; }
-            .ctc-detail-value { flex: 1 !important; padding-bottom: 1px !important; height: 17px !important; font-size: 11px !important; font-weight: bold !important; }
-            .signature-line { border-bottom: 2px solid #000 !important; margin: 8px auto 8px auto !important; height: 1px !important; width: 200px !important; }
+            .ctc-detail-label { font-weight: bold !important; margin-right: 12px !important; min-width: 92px !important; font-size: 12px !important; }
+            .ctc-detail-label::after { content: ':'; margin-left: 6px; }
+            .ctc-detail-value { border-bottom: none !important; flex: 1 !important; padding-bottom: 1px !important; height: 17px !important; white-space: nowrap !important; }
+            .signature-line { border-bottom: 2px solid #000 !important; margin-bottom: 4px !important; height: 1px !important; width: 250px !important; }
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -166,40 +148,37 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         .left-content { flex: 1; }
         .to-whom { font-weight: bold; font-size: 14px; margin-bottom: 15px; }
         .main-text { font-size: 14px; line-height: 1.4; text-align: justify; }
-        .photo-placeholder { width: 85px; height: 85px; border: 2px solid #000; background: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-align: center; color: #000; flex-shrink: 0; float: right; margin: 0 0 10px 20px; overflow: hidden; }
+        .photo-placeholder { width: 1in; height: 1in; border: 2px solid #000; background: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; text-align: center; color: #000; flex-shrink: 0; float: right; margin: 0 0 10px 20px; overflow: hidden; }
         .photo-placeholder img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .person-details { margin: 10px 0 20px 0; font-size: 13px; }
         .person-details p { margin-bottom: 7px; line-height: 1.3; display: flex; align-items: baseline; }
         .detail-label-left { font-weight: bold; min-width: 210px; display: inline-block; }
         .detail-colon { margin: 0 7px; }
-        .detail-value { font-weight: bold; }
-        .certification-text { margin-bottom: 18px; text-align: justify; font-size: 13px; line-height: 1.4; max-width: 100%; }
-        .bottom-sections-container { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 15px; }
-        .left-section { width: 45%; display: flex; flex-direction: column; gap: 8px; }
-        .right-section { width: 50%; display: flex; flex-direction: column; gap: 12px; align-items: center; margin-top: 20px; }
+        .certification-text { margin-bottom: 12px; text-align: justify; font-size: 13px; line-height: 1.4; max-width: 500px; }
         .officer-section { width: 100%; margin-bottom: 15px; }
-        .officer-label { font-weight: bold; margin-bottom: 2px; font-size: 14px; }
-        .officer-name { font-weight: bold; text-decoration: underline; margin-bottom: 2px; font-size: 14px; }
-        .officer-sub-label { font-size: 13px; margin-bottom: 0; }
+        .officer-label { font-weight: bold; margin-bottom: 2px; font-size: 13px; }
+        .officer-name { font-weight: bold; text-decoration: underline; margin-bottom: 2px; font-size: 13px; }
+        .officer-sub-label { font-size: 12px; margin-bottom: 0; }
         .signature-applicant-section { width: 100%; text-align: center; position: relative; margin-bottom: 15px; margin-top: 15px; }
         .signature-line-applicant { border-bottom: 2px solid #000; width: 210px; height: 1px; margin: 0 auto 7px auto; }
-        .signature-applicant { font-weight: bold; font-size: 13px; }
-        .date-validity-thumb-section { display: block; margin: 5px 0; position: relative; }
-        .date-validity-row { width: 100%; font-size: 13px; font-weight: bold; margin-top: 3px; position: relative; top: -2px; }
-        .date-validity-row div { margin-bottom: 3px; }
+        .signature-applicant { font-weight: bold; font-size: 12px; }
+        .date-validity-thumb-section { display: block; margin: 0; position: relative; }
+        .date-validity-row { width: 100%; font-size: 12px; font-weight: bold; margin-top: 3px; position: relative; top: -2px; }
+        .date-validity-row div { margin-bottom: 4px; }
         .thumb-marks-section { width: 100%; display: flex; flex-direction: row; gap: 28px; justify-content: center; align-items: center; }
         .thumb-mark-box { text-align: center; width: 88px; flex-shrink: 0; }
         .thumb-mark-circle { width: 78px; height: 78px; border: 2px solid #000; margin: 0 auto 7px auto; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; line-height: 1.1; }
         .thumb-mark-label { font-size: 11px; font-weight: bold; }
         .signature-section { margin-top: 0; display: block; width: 100%; position: relative; top: -3px; }
-        .ctc-details-section { width: 120%; }
+        .ctc-details-section { width: 100%; }
         .ctc-detail-item { display: flex; align-items: center; margin-bottom: 5px; }
-        .ctc-detail-label { font-weight: bold; margin-right: 6px; min-width: 80px; font-size: 12px; }
-        .ctc-detail-value { flex: 1; padding-bottom: 1px; height: 17px; min-width: 240px; font-size: 11px; font-weight: bold; }
-        .signature-box { text-align: center; width: 280px; margin-top: 8px; }
-        .signature-line { border-bottom: 2px solid #000; margin: 8px auto 8px auto; height: 1px; width: 200px; }
-        .signature-name { font-weight: bold; font-size: 14px; text-decoration: none; }
-        .signature-title { font-size: 12px; margin-top: 2px; }
+        .ctc-detail-label { font-weight: bold; margin-right: 12px; min-width: 92px; font-size: 12px; }
+        .ctc-detail-label::after { content: ':'; margin-left: 6px; }
+        .ctc-detail-value { border-bottom: none; flex: 1; padding-bottom: 1px; height: 17px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+        .signature-box { text-align: center; width: 250px; margin: 8px auto 0 auto; }
+        .signature-line { border-bottom: 2px solid #000; margin: 0 auto 6px auto; height: 1px; width: 250px; }
+        .signature-name { font-weight: bold; font-size: 14px; text-decoration: none; width: 250px; margin: 0 auto; text-align: center; }
+        .signature-title { font-size: 12px; margin-top: 2px; width: 250px; margin-left: auto; margin-right: auto; text-align: center; }
         .print-controls { text-align: center; margin: 20px 0; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .print-btn { background: #1a4d80; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; margin: 0 10px; }
         .print-btn:hover { background: #0d2b4a; }
@@ -233,33 +212,48 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                 </div>
                 <div class="photo-placeholder">
                     <?php
-                        // Photo priority system: photo_2x2 > photo_path > placeholder
-                        if (!empty($certificate_data['photo_2x2'])) {
-                            $photoSrc = '../' . ltrim($certificate_data['photo_2x2'], '/\\');
-                            echo '<img src="' . htmlspecialchars($photoSrc) . '" alt="Photo" />';
-                        } elseif (!empty($certificate_data['photo_path'])) {
-                            $photoSrc = '../' . ltrim($certificate_data['photo_path'], '/\\');
-                            echo '<img src="' . htmlspecialchars($photoSrc) . '" alt="Photo" />';
-                        } else {
-                            echo 'IMAGE';
+                        // Resolve applicant 1x1 photo with strict priority to this request
+                        $photoSrc = '../assets/images/forms/1x1.jpeg';
+                        try {
+                            if (!empty($certificate_data['photo_path'])) {
+                                $candidate = '../' . ltrim($certificate_data['photo_path'], '/\\');
+                                $photoSrc = $candidate;
+                            } elseif (!empty($certificate_data['photo_id'])) {
+                                $stmtPhoto = $pdo->prepare("SELECT photo_path FROM user_photos WHERE id = ? AND is_active = 1");
+                                $stmtPhoto->execute([$certificate_data['photo_id']]);
+                                $photo = $stmtPhoto->fetch(PDO::FETCH_ASSOC);
+                                if ($photo && !empty($photo['photo_path'])) {
+                                    $photoSrc = '../' . ltrim($photo['photo_path'], '/\\');
+                                }
+                            } elseif (!empty($certificate_data['user_id'])) {
+                                $stmtPhoto = $pdo->prepare("SELECT photo_path FROM user_photos WHERE user_id = ? AND certificate_request_id = ? AND is_active = 1 ORDER BY uploaded_at DESC LIMIT 1");
+                                $stmtPhoto->execute([$certificate_data['user_id'], $request_id]);
+                                $photo = $stmtPhoto->fetch(PDO::FETCH_ASSOC);
+                                if ($photo && !empty($photo['photo_path'])) {
+                                    $photoSrc = '../' . ltrim($photo['photo_path'], '/\\');
+                                }
+                            }
+                        } catch (Exception $e) {
+                            // keep fallback
                         }
                     ?>
+                    <img src="<?php echo htmlspecialchars($photoSrc); ?>" alt="Photo" />
                 </div>
             </div>
 
             <div class="person-details">
-                <p><span class="detail-label-left">NAME</span><span class="detail-colon">:</span><span class="detail-value"><?php echo htmlspecialchars($certificate_data['full_name']); ?></span></p>
-                <p><span class="detail-label-left">ADDRESS</span><span class="detail-colon">:</span><span class="detail-value"><?php echo htmlspecialchars($certificate_data['address']); ?></span></p>
-                <p><span class="detail-label-left">DATE OF BIRTH</span><span class="detail-colon">:</span><span class="detail-value"><?php echo $formatted_birth_date; ?></span></p>
-                <p><span class="detail-label-left">PLACE OF BIRTH</span><span class="detail-colon">:</span><span class="detail-value"><?php echo htmlspecialchars($certificate_data['birth_place']); ?></span></p>
-                <p><span class="detail-label-left">YEAR OF RESIDENCY</span><span class="detail-colon">:</span><span class="detail-value"><?php echo $certificate_data['years_of_residence'] ? $certificate_data['years_of_residence'] . ' years' : ''; ?></span></p>
-                <p><span class="detail-label-left">PURPOSE</span><span class="detail-colon">:</span><span class="detail-value"><?php echo htmlspecialchars($certificate_data['purpose']); ?></span></p>
+                <p><span class="detail-label-left">NAME</span><span class="detail-colon">:</span><?php echo htmlspecialchars($certificate_data['full_name']); ?></p>
+                <p><span class="detail-label-left">ADDRESS</span><span class="detail-colon">:</span><?php echo htmlspecialchars($certificate_data['address']); ?></p>
+                <p><span class="detail-label-left">DATE OF BIRTH</span><span class="detail-colon">:</span><?php echo $formatted_birth_date; ?></p>
+                <p><span class="detail-label-left">PLACE OF BIRTH</span><span class="detail-colon">:</span><?php echo htmlspecialchars($certificate_data['birth_place']); ?></p>
+                <p><span class="detail-label-left">YEAR OF RESIDENCY</span><span class="detail-colon">:</span><?php echo $certificate_data['years_of_residence'] ? $certificate_data['years_of_residence'] . ' years' : ''; ?></p>
+                <p><span class="detail-label-left">PURPOSE</span><span class="detail-colon">:</span><?php echo htmlspecialchars($certificate_data['purpose']); ?></p>
             </div>
 
             <div class="certification-text">
-                <p>This is to further certify that he/she is a bonafide resident of this Barangay and has been residing herein for a considerable period of time.</p>
-                <p>This certification is issued upon the request of the above-named person for whatever legal purpose and intents it is deemed necessary and may serve the best interest of the requesting party.</p>
-                <p>This certification shall be valid for six (6) months from the date of issuance unless sooner revoked or cancelled.</p>
+                <p>This is to further certify that he/she is a bonafide resident of this Barangay.</p>
+                <p>This certification is issued upon the request of the above-named person for whatever legal
+                purpose and intents it is deemed necessary.</p>
             </div>
 
             <div class="bottom-sections-container">
@@ -292,7 +286,7 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                             <div class="ctc-detail-item">
                                 <span class="ctc-detail-label">ISSUED ON</span>
                                 <span class="detail-colon">:</span>
-                                <span class="ctc-detail-value"><?php echo strtoupper(date('d F Y')); ?></span>
+                                <span class="ctc-detail-value"><?php echo date('F j, Y'); ?></span>
                             </div>
                         </div>
                     </div>

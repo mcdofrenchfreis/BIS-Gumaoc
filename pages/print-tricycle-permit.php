@@ -18,6 +18,76 @@ if (!$certificate_data) {
     die("Certificate request not found or is not a TRICYCLE PERMIT certificate.");
 }
 
+// Extract tricycle details from either columns or additional_data JSON
+$additional = [];
+try {
+    if (!empty($certificate_data['additional_data'])) {
+        $decoded = json_decode($certificate_data['additional_data'], true);
+        if (is_array($decoded)) { $additional = $decoded; }
+    }
+} catch (Exception $e) {
+    $additional = [];
+}
+
+$vehicle_make_type = $certificate_data['vehicle_make_type'] ?? '';
+if ($vehicle_make_type === '' && isset($additional['vehicle_make_type'])) { $vehicle_make_type = $additional['vehicle_make_type']; }
+$motor_no = $certificate_data['motor_no'] ?? '';
+if ($motor_no === '' && isset($additional['motor_no'])) { $motor_no = $additional['motor_no']; }
+$chassis_no = $certificate_data['chassis_no'] ?? '';
+if ($chassis_no === '' && isset($additional['chassis_no'])) { $chassis_no = $additional['chassis_no']; }
+$plate_no = $certificate_data['plate_no'] ?? '';
+if ($plate_no === '' && isset($additional['plate_no'])) { $plate_no = $additional['plate_no']; }
+$vehicle_color = $certificate_data['vehicle_color'] ?? '';
+if ($vehicle_color === '' && isset($additional['vehicle_color'])) { $vehicle_color = $additional['vehicle_color']; }
+$year_model = $certificate_data['year_model'] ?? '';
+if (($year_model === '' || $year_model === null) && isset($additional['year_model'])) { $year_model = $additional['year_model']; }
+$body_no = $certificate_data['body_no'] ?? '';
+if ($body_no === '' && isset($additional['body_no'])) { $body_no = $additional['body_no']; }
+$operator_license = $certificate_data['operator_license'] ?? '';
+if ($operator_license === '' && isset($additional['operator_license'])) { $operator_license = $additional['operator_license']; }
+
+// Resolve applicant 1x1 photo for this certificate
+$photoSrc = '../assets/images/forms/1x1.jpeg';
+try {
+    if (!empty($certificate_data['photo_path'])) {
+        $candidate = '../' . ltrim($certificate_data['photo_path'], '/\\');
+        $photoSrc = $candidate;
+    } elseif (!empty($certificate_data['photo_id'])) {
+        $stmtPhoto = $pdo->prepare("SELECT photo_path FROM user_photos WHERE id = ? AND is_active = 1");
+        $stmtPhoto->execute([$certificate_data['photo_id']]);
+        $photo = $stmtPhoto->fetch(PDO::FETCH_ASSOC);
+        if ($photo && !empty($photo['photo_path'])) {
+            $photoSrc = '../' . ltrim($photo['photo_path'], '/\\');
+        }
+    } elseif (!empty($certificate_data['user_id'])) {
+        // Strictly prefer the photo uploaded for this certificate request
+        $stmtPhoto = $pdo->prepare("SELECT photo_path FROM user_photos WHERE user_id = ? AND certificate_request_id = ? AND is_active = 1 ORDER BY uploaded_at DESC LIMIT 1");
+        $stmtPhoto->execute([$certificate_data['user_id'], $request_id]);
+        $photo = $stmtPhoto->fetch(PDO::FETCH_ASSOC);
+        if ($photo && !empty($photo['photo_path'])) {
+            $photoSrc = '../' . ltrim($photo['photo_path'], '/\\');
+        }
+    }
+} catch (Exception $e) {
+    // keep fallback
+}
+
+// Resolve tricycle photo from additional_data (if present)
+$tricyclePhotoSrc = '../assets/images/forms/1x1.jpeg';
+try {
+    $additional = [];
+    if (!empty($certificate_data['additional_data'])) {
+        $decoded = json_decode($certificate_data['additional_data'], true);
+        if (is_array($decoded)) { $additional = $decoded; }
+    }
+    if (!empty($additional['tricycle_image'])) {
+        // Stored as filename relative to uploads/tricycle_photos
+        $tricyclePhotoSrc = '../uploads/tricycle_photos/' . basename($additional['tricycle_image']);
+    }
+} catch (Exception $e) {
+    // keep fallback
+}
+
 // Calculate age from birth date
 $birth_date = new DateTime($certificate_data['birth_date']);
 $current_date = new DateTime();
@@ -103,6 +173,7 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                 gap: 25px !important;
                 margin-bottom: 20px !important;
             }
+            .right-photos { display: flex !important; flex-direction: column !important; gap: 8px !important; }
             
             .left-content {
                 flex: 1 !important;
@@ -121,12 +192,16 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             }
             
             .photo-placeholder {
-                width: 85px !important;
-                height: 85px !important;
+                width: 1in !important;
+                height: 1in !important;
                 border: 2px solid #000 !important;
                 font-size: 11px !important;
                 margin-left: 20px !important;
+                overflow: hidden !important;
             }
+            .photo-placeholder img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
+            .tricycle-photo { width: 1in !important; height: 1in !important; border: 2px solid #000 !important; overflow: hidden !important; background: #fff !important; float: right !important; margin: 0 0 10px 20px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+            .tricycle-photo img { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
             
             .vehicle-details {
                 font-size: 15px !important;
@@ -255,6 +330,7 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             gap: 25px;
             margin-bottom: 20px;
         }
+        .right-photos { display: flex; flex-direction: column; gap: 8px; }
         
         .left-content {
             flex: 1;
@@ -273,8 +349,8 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         }
 
         .photo-placeholder {
-            width: 85px;
-            height: 85px;
+            width: 1in;
+            height: 1in;
             border: 2px solid #000;
             background: white;
             display: flex;
@@ -287,7 +363,9 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             flex-shrink: 0;
             float: right;
             margin: 0 0 10px 20px;
+            overflow: hidden;
         }
+        .photo-placeholder img { width: 100%; height: 100%; object-fit: cover; display: block; }
         
         .vehicle-details {
             margin: 10px 0 20px 0;
@@ -310,6 +388,26 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         .detail-colon {
             margin: 0 7px;
         }
+
+        .vehicle-photo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0 16px 0;
+        }
+        .tricycle-photo {
+            width: 1in;
+            height: 1in;
+            border: 2px solid #000;
+            overflow: hidden;
+            background: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            float: right;
+            margin: 0 0 10px 20px;
+        }
+        .tricycle-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
         
         .underline-value {
             display: inline-block;
@@ -433,30 +531,36 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                             a resident of <strong><?php echo htmlspecialchars($certificate_data['address']); ?></strong> 
                             Gumaoc East, City of San Jose Del Monte, Bulacan and a legitimate owner of one unit of tricycle described as follows:</p>
                     </div>
+                    <div class="vehicle-details">
+                        <p><span class="detail-label-left">Make and Type</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($vehicle_make_type); ?></span></p>
+                        <p><span class="detail-label-left">Motor No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($motor_no); ?></span></p>
+                        <p><span class="detail-label-left">Chassis No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($chassis_no); ?></span></p>
+                        <p><span class="detail-label-left">Plate No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($plate_no); ?></span></p>
+                        <?php if (!empty($vehicle_color)): ?>
+                        <p><span class="detail-label-left">Vehicle Color</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($vehicle_color); ?></span></p>
+                        <?php endif; ?>
+                        <?php if (!empty($year_model)): ?>
+                        <p><span class="detail-label-left">Year Model</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($year_model); ?></span></p>
+                        <?php endif; ?>
+                        <?php if (!empty($body_no)): ?>
+                        <p><span class="detail-label-left">Body No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($body_no); ?></span></p>
+                        <?php endif; ?>
+                        <?php if (!empty($operator_license)): ?>
+                        <p><span class="detail-label-left">Operator's License No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($operator_license); ?></span></p>
+                        <?php endif; ?>
+                    </div>
                 </div>
-                <div class="photo-placeholder">
-                    IMAGE
+                <div class="right-photos">
+                    <div class="photo-placeholder">
+                        <img src="<?php echo htmlspecialchars($photoSrc); ?>" alt="Photo" />
+                    </div>
+                    <div class="tricycle-photo">
+                        <img src="<?php echo htmlspecialchars($tricyclePhotoSrc); ?>" alt="Tricycle Photo" />
+                    </div>
                 </div>
             </div>
 
-            <div class="vehicle-details">
-                <p><span class="detail-label-left">Make and Type</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['vehicle_make_type'] ?? ''); ?></span></p>
-                <p><span class="detail-label-left">Motor No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['motor_no'] ?? ''); ?></span></p>
-                <p><span class="detail-label-left">Chassis No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['chassis_no'] ?? ''); ?></span></p>
-                <p><span class="detail-label-left">Plate No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['plate_no'] ?? ''); ?></span></p>
-                <?php if (!empty($certificate_data['vehicle_color'])): ?>
-                <p><span class="detail-label-left">Vehicle Color</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['vehicle_color']); ?></span></p>
-                <?php endif; ?>
-                <?php if (!empty($certificate_data['year_model'])): ?>
-                <p><span class="detail-label-left">Year Model</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['year_model']); ?></span></p>
-                <?php endif; ?>
-                <?php if (!empty($certificate_data['body_no'])): ?>
-                <p><span class="detail-label-left">Body No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['body_no']); ?></span></p>
-                <?php endif; ?>
-                <?php if (!empty($certificate_data['operator_license'])): ?>
-                <p><span class="detail-label-left">Operator's License No.</span><span class="detail-colon">:</span> <span class="underline-value"><?php echo htmlspecialchars($certificate_data['operator_license']); ?></span></p>
-                <?php endif; ?>
-            </div>
+            
 
             <div class="issuance-text">
                 <p>This certification is issued upon the request of the subject person, for all legal intents and purposes it may serve him/her best.</p>

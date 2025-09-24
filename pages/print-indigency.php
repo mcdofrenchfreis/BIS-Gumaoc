@@ -50,6 +50,40 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         );
     }
 }
+
+// Resolve applicant photo (1x1) with strict per-request priority
+$photoSrc = '../assets/images/forms/1x1.jpeg';
+try {
+    if (!empty($certificate_data['photo_path'])) {
+        $candidate = '../' . ltrim($certificate_data['photo_path'], '/\\');
+        $photoSrc = $candidate;
+    } elseif (!empty($certificate_data['photo_id'])) {
+        $stmtPhoto = $pdo->prepare("SELECT photo_path FROM user_photos WHERE id = ? AND is_active = 1");
+        $stmtPhoto->execute([$certificate_data['photo_id']]);
+        $photo = $stmtPhoto->fetch(PDO::FETCH_ASSOC);
+        if ($photo && !empty($photo['photo_path'])) {
+            $photoSrc = '../' . ltrim($photo['photo_path'], '/\\');
+        }
+    } elseif (!empty($certificate_data['user_id'])) {
+        // Prefer the photo uploaded for this exact request
+        $stmtPhoto = $pdo->prepare("SELECT photo_path FROM user_photos WHERE user_id = ? AND certificate_request_id = ? AND is_active = 1 ORDER BY uploaded_at DESC LIMIT 1");
+        $stmtPhoto->execute([$certificate_data['user_id'], $request_id]);
+        $photo = $stmtPhoto->fetch(PDO::FETCH_ASSOC);
+        if ($photo && !empty($photo['photo_path'])) {
+            $photoSrc = '../' . ltrim($photo['photo_path'], '/\\');
+        } else {
+            // Fallback to latest active/default photo for the user
+            $stmtLatest = $pdo->prepare("SELECT photo_path FROM user_photos WHERE user_id = ? AND is_active = 1 ORDER BY is_default DESC, uploaded_at DESC LIMIT 1");
+            $stmtLatest->execute([$certificate_data['user_id']]);
+            $latest = $stmtLatest->fetch(PDO::FETCH_ASSOC);
+            if ($latest && !empty($latest['photo_path'])) {
+                $photoSrc = '../' . ltrim($latest['photo_path'], '/\\');
+            }
+        }
+    }
+} catch (Exception $e) {
+    // keep fallback
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -150,12 +184,14 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             }
             
             .photo-placeholder {
-                width: 85px !important;
-                height: 85px !important;
+                width: 1in !important;
+                height: 1in !important;
                 border: 2px solid #000 !important;
                 font-size: 11px !important;
                 margin-left: 20px !important;
+                overflow: hidden !important;
             }
+            .photo-placeholder img { width: 1in !important; height: 1in !important; object-fit: cover !important; display: block !important; }
             
             .bottom-sections-container {
                 display: flex !important;
@@ -249,6 +285,7 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                 font-size: 12px !important;
                 white-space: nowrap !important;
             }
+            .ctc-detail-label::after { content: ':'; margin-left: 4px; }
             
             .ctc-detail-value {
                 flex: 1 !important;
@@ -257,7 +294,9 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                 min-width: 280px !important;
                 white-space: nowrap !important;
                 overflow: visible !important;
-                font-size: 11px !important;
+                font-size: 12px !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.3px !important;
             }
             
             .main-title {
@@ -371,12 +410,15 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                 min-width: 80px;
                 font-size: 12px;
             }
+            .ctc-detail-label::after { content: ':'; margin-left: 4px; }
             
             .ctc-detail-value {
                 flex: 1 !important;
                 padding-bottom: 1px !important;
                 height: 17px !important;
-                font-size: 11px !important;
+                font-size: 12px !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.3px !important;
             }
             
             .signature-line {
@@ -521,8 +563,8 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         }
 
         .photo-placeholder {
-            width: 85px;
-            height: 85px;
+            width: 1in;
+            height: 1in;
             border: 2px solid #000;
             background: white;
             display: flex;
@@ -535,7 +577,9 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
             flex-shrink: 0;
             float: right;
             margin: 0 0 10px 20px;
+            overflow: hidden;
         }
+        .photo-placeholder img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 
         
@@ -697,36 +741,49 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
         .ctc-detail-label {
             font-weight: bold;
             margin-right: 12px;
-            min-width: 92px;
-            font-size: 13px; /* increased from 12px to 13px */
+            min-width: 100px;
+            font-size: 12px;
         }
+        .ctc-detail-label::after { content: ':'; margin-left: 4px; }
         
         .ctc-detail-value {
             flex: 1;
             padding-bottom: 1px;
             height: 17px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
         
         .signature-box {
             text-align: center;
-            width: 235px;
+            width: 250px;
+            margin: 0 auto;
         }
         
         .signature-line {
             border-bottom: 2px solid #000;
-            margin-bottom: 4px;
+            margin: 0 auto 6px auto;
             height: 1px;
+            width: 250px;
         }
         
         .signature-name {
             font-weight: bold;
             font-size: 13px;
             text-decoration: underline;
+            width: 250px;
+            margin: 0 auto;
+            text-align: center;
         }
         
         .signature-title {
             font-size: 12px;
             margin-top: 2px;
+            width: 250px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
         }
         
         .signature-box {
@@ -864,7 +921,7 @@ if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true
                     </div>
                 </div>
                 <div class="photo-placeholder">
-                    IMAGE
+                    <img src="<?php echo htmlspecialchars($photoSrc); ?>" alt="Photo" />
                 </div>
             </div>
 
