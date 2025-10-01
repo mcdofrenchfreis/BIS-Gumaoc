@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/session_bootstrap.php';
 require_once '../includes/db_connect.php';
 
 // Check if user is logged in

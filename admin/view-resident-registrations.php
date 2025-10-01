@@ -26,24 +26,9 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
         $current_data = $stmt->fetch(PDO::FETCH_ASSOC);
         $current_status = $current_data['status'];
         
-        // Check status progression rules
-        $status_valid = false;
-        $error_message = '';
-        
-        if ($current_status === 'pending') {
-            // From pending, can go to approved or rejected
-            if (in_array($new_status, ['approved', 'rejected'])) {
-                $status_valid = true;
-            } else {
-                $error_message = "From pending status, you can only approve or reject the registration.";
-            }
-        } elseif ($current_status === 'approved') {
-            // From approved, status is locked
-            $error_message = "Approved registrations cannot be changed. Status is locked.";
-        } elseif ($current_status === 'rejected') {
-            // From rejected, status is locked
-            $error_message = "Rejected registrations cannot be changed. Status is locked.";
-        }
+        // Allow status to move freely between allowed states
+        $status_valid = in_array($new_status, $allowed_statuses, true);
+        $error_message = $status_valid ? '' : 'Invalid status selected.';
         
         if ($status_valid) {
             $stmt = $pdo->prepare("UPDATE resident_registrations SET status = ? WHERE id = ?");
@@ -59,10 +44,21 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
                 $email_message = '';
                 
                 // Process emails based on status change
-                if ($new_status === 'approved' && $registration_data['email']) {
+                if ($new_status === 'approved' && $current_status !== 'approved' && $registration_data['email']) {
                     try {
-                        // Generate RFID and temporary password
-                        $generated_rfid = EmailService::generateUniqueRFID($pdo);
+                        // Get an available RFID code from scanned_rfid_codes table
+                        $rfid_stmt = $pdo->prepare("SELECT id, rfid_code FROM scanned_rfid_codes WHERE status = 'available' ORDER BY scanned_at ASC LIMIT 1");
+                        $rfid_stmt->execute();
+                        $rfid_data = $rfid_stmt->fetch(PDO::FETCH_ASSOC);
+                        
+                        if (!$rfid_data) {
+                            throw new Exception("No available RFID codes found. Please scan new RFID codes in the RFID Scanner page.");
+                        }
+                        
+                        $generated_rfid = $rfid_data['rfid_code'];
+                        $rfid_id = $rfid_data['id'];
+                        
+                        // Generate temporary password
                         $temp_password = EmailService::generateTempPassword();
                         $hashed_password = password_hash($temp_password, PASSWORD_DEFAULT);
                         
@@ -86,6 +82,17 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
                             ]);
                             
                             if ($update_result) {
+                                // Update RFID code status to 'assigned' in scanned_rfid_codes table
+                                $update_rfid_stmt = $pdo->prepare("
+                                    UPDATE scanned_rfid_codes 
+                                    SET status = 'assigned', 
+                                        assigned_at = NOW(), 
+                                        assigned_to_resident_id = ?, 
+                                        assigned_to_email = ? 
+                                    WHERE id = ?
+                                ");
+                                $update_rfid_stmt->execute([$resident_id, $registration_data['email'], $rfid_id]);
+                                
                                 // Assign the RFID code
                                 EmailService::assignRFIDCode($pdo, $generated_rfid, $resident_id, $registration_data['email']);
                                 
@@ -125,7 +132,7 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
                         $email_message = " Registration approved, but there was an error processing the account activation.";
                     }
                     
-                } elseif ($new_status === 'rejected' && $registration_data['email']) {
+                } elseif ($new_status === 'rejected' && $current_status !== 'rejected' && $registration_data['email']) {
                     try {
                         // Send rejection email
                         $emailService = new EmailService();
@@ -247,6 +254,37 @@ if (isset($_SESSION['toast_message'])) {
     <title>Census Registrations - Admin</title>
     <link rel="stylesheet" href="../css/styles.css">
     <style>
+        /* Page background */
+        body {
+            background: #f8faf8;
+            background-attachment: fixed;
+            min-height: 100vh;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                /* vertical lines */
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(10, 93, 10, 0.04) 0px,
+                    rgba(10, 93, 10, 0.04) 1px,
+                    transparent 1px,
+                    transparent 26px
+                ),
+                /* horizontal lines */
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(10, 93, 10, 0.03) 0px,
+                    rgba(10, 93, 10, 0.03) 1px,
+                    transparent 1px,
+                    transparent 26px
+                );
+            pointer-events: none;
+            z-index: -1;
+        }
         /* Toast Notification Styles */
         .toast-overlay {
             position: fixed;
@@ -379,6 +417,7 @@ if (isset($_SESSION['toast_message'])) {
             max-width: 1400px;
             margin: 0 auto;
             padding: 2rem;
+            padding-top: 90px; /* offset for fixed admin mini nav */
             background: #f8f9fa;
             min-height: 100vh;
         }
@@ -547,7 +586,9 @@ if (isset($_SESSION['toast_message'])) {
         }
         
         .admin-btn {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             padding: 0.6rem 1.2rem;
             background: linear-gradient(135deg, #4CAF50, #45a049);
             color: white;
@@ -557,6 +598,14 @@ if (isset($_SESSION['toast_message'])) {
             border: none;
             cursor: pointer;
             transition: all 0.3s ease;
+        }
+
+        /* Make Search and Clear buttons exactly the same size */
+        .search-form .admin-btn {
+            width: 160px;
+            height: 44px;
+            padding: 0; /* height controls size; keep content centered */
+            box-sizing: border-box;
         }
 
         .admin-btn:hover {
@@ -695,13 +744,11 @@ if (isset($_SESSION['toast_message'])) {
     </div>
     <?php endif; ?>
 
+    <?php $base_path = '../'; include __DIR__ . '/../includes/admin_mini_nav.php'; ?>
     <div class="admin-container">
-        <div class="admin-header">
-            <div>
-                <h1>👥 Census Registrations</h1>
-                <p>Total: <?php echo $total_records; ?> registrations</p>
-            </div>
-            <a href="dashboard.php" class="admin-btn">← Back to Dashboard</a>
+        <!-- Header removed in favor of admin mini nav -->
+        <div style="margin-bottom: 1rem; color:#2e7d32; font-weight:700;">
+            👥 Census Registrations · <span style="font-weight:600; color:#444;">Total: <?php echo $total_records; ?></span>
         </div>
         
         <div class="admin-controls">
@@ -778,9 +825,6 @@ if (isset($_SESSION['toast_message'])) {
                         <td>
                             <span class="status-badge status-<?php echo $reg['status']; ?>">
                                 <?php echo ucfirst($reg['status']); ?>
-                                <?php if ($reg['status'] !== 'pending'): ?>
-                                    🔒
-                                <?php endif; ?>
                             </span>
                         </td>
                         <td>
@@ -794,21 +838,15 @@ if (isset($_SESSION['toast_message'])) {
                             </button>
                         </td>
                         <td>
-                            <?php if ($reg['status'] === 'pending'): ?>
                             <form method="POST" style="margin: 0;">
                                 <input type="hidden" name="action" value="update_status">
                                 <input type="hidden" name="id" value="<?php echo $reg['id']; ?>">
                                 <select name="status" class="action-select" onchange="this.form.submit()">
-                                    <option value="pending" selected>Pending</option>
-                                    <option value="approved">Approve</option>
-                                    <option value="rejected">Reject</option>
+                                    <option value="pending" <?php echo $reg['status']==='pending'?'selected':''; ?>>Pending</option>
+                                    <option value="approved" <?php echo $reg['status']==='approved'?'selected':''; ?>>Approve</option>
+                                    <option value="rejected" <?php echo $reg['status']==='rejected'?'selected':''; ?>>Reject</option>
                                 </select>
                             </form>
-                            <?php else: ?>
-                            <div class="action-select status-locked">
-                                <?php echo ucfirst($reg['status']); ?> (Locked)
-                            </div>
-                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>

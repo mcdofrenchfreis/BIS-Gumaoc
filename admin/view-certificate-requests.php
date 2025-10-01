@@ -374,11 +374,43 @@ function getRequestDetails($request) {
             color: #666;
             transform: scale(1.1);
         }
+        
+        /* Certificate Summary Styles */
+        .summary-section {
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+        
+        .summary-section h3 {
+            color: #2e7d32;
+            font-size: 16px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .summary-row {
+            display: flex;
+            margin-bottom: 8px;
+            padding: 4px 0;
+        }
+        
+        .summary-label {
+            flex: 0 0 40%;
+            font-weight: 500;
+            color: #555;
+        }
+        
+        .summary-value {
+            flex: 0 0 60%;
+            color: #333;
+        }
 
         .admin-container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 2rem;
+            padding-top: 90px; /* offset for fixed admin mini nav */
             background: #f8f9fa;
             min-height: 100vh;
         }
@@ -527,11 +559,16 @@ function getRequestDetails($request) {
             border: 2px solid #e9ecef;
             border-radius: 6px;
             font-size: 0.85rem;
-            background: white;
+            background: transparent !important;
             color: #495057;
             cursor: pointer;
             transition: all 0.3s ease;
-            min-width: 120px;
+            width: 140px; /* Fixed width for consistency */
+            height: 38px; /* Fixed height for consistency */
+            position: relative;
+            display: block;
+            margin: 0 auto;
+            box-sizing: border-box; /* Ensures padding doesn't affect dimensions */
         }
 
         .action-select:focus {
@@ -587,6 +624,42 @@ function getRequestDetails($request) {
         .pagination a:hover {
             background: #e8f5e8;
             border-color: #4CAF50;
+        }
+        
+        
+        .summary-container {
+            margin-top: 20px;
+        }
+        
+        .summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .summary-details {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .summary-row {
+            display: flex;
+            border-bottom: 1px solid #f5f5f5;
+            padding-bottom: 10px;
+        }
+        
+        .summary-label {
+            font-weight: bold;
+            width: 120px;
+            color: #555;
+        }
+        
+        .summary-value {
+            flex: 1;
         }
         
         .admin-btn {
@@ -901,15 +974,12 @@ function getRequestDetails($request) {
     </div>
     <?php endif; ?>
 
+    <?php $base_path = '../'; include __DIR__ . '/../includes/admin_mini_nav.php'; ?>
     <div class="admin-container">
-        <div class="admin-header">
-            <div>
-                <h1>📄 Certificate Requests</h1>
-                <p>Total: <?php echo $total_records; ?> requests | Processing: <?php echo count(array_filter($requests, fn($r) => $r['status'] === 'processing')); ?> ready to print</p>
-            </div>
-            <a href="dashboard.php" class="admin-btn">← Back to Dashboard</a>
+        <div style="margin-bottom: 1rem; color:#2e7d32; font-weight:700;">
+            <span style="font-weight:600;">📄 Certificate Requests</span> · <span style="font-weight:600; color:#444;">Total: <?php echo $total_records; ?></span>
         </div>
-        
+
         <!-- Tab Navigation -->
         <div class="tab-container">
             <div class="tab-navigation">
@@ -1034,9 +1104,9 @@ function getRequestDetails($request) {
                         </td>
                         <td>
                             <div class="action-buttons">
-                                <button onclick="viewFormDetails(<?php echo $req['id']; ?>)" class="view-form-btn">
-                                    👁️ View Form
-                                </button>
+                                <a href="get-certificate-summary.php?standalone=1&id=<?php echo $req['id']; ?>" target="_blank" class="view-form-btn" onclick="logCertView(<?php echo $req['id']; ?>)">
+                                    👁️ View Summary
+                                </a>
                                 <?php 
                                 // Show print button when status is "processing" for all certificate types
                                 if ($req['status'] === 'processing') {
@@ -1081,7 +1151,15 @@ function getRequestDetails($request) {
                                         default:
                                             echo '<option value="' . htmlspecialchars($req['status']) . '" selected>' . ucfirst($req['status']) . '</option>';
                                     }
-                                    ?>
+                    
+                    // Close the summary details and container divs
+                    $summaryHTML = "
+                            </div>
+                        </div>
+                    ";
+                    
+                    // Update modal content
+                    echo $summaryHTML;                ?>
                                 </select>
                             </form>
                             <?php else: ?>
@@ -1168,21 +1246,26 @@ function getRequestDetails($request) {
         </div>
         <?php endif; ?>
     </div>
-
+    
     <script>
-        function viewFormDetails(requestId) {
-            // Open the certificate request form with pre-filled data
-            window.open('../pages/certificate-request.php?admin_view=' + requestId + '&readonly=1', '_blank');
-        }
-        
-        function switchTab(tabName) {
-            // Update URL with tab parameter and preserve other filters
-            const urlParams = new URLSearchParams(window.location.search);
-            urlParams.set('tab', tabName);
-            urlParams.delete('page'); // Reset to page 1 when switching tabs
+        function viewCertificateSummary(requestId) {
+            // Log the form view action (non-blocking)
+            fetch('../includes/log-action.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'form_view',
+                    target_type: 'certificate_request',
+                    target_id: requestId,
+                    description: `Viewed certificate request summary ID #${requestId}`
+                })
+            });
             
-            // Redirect to new URL
-            window.location.href = '?' + urlParams.toString();
+            // Open the existing summary endpoint in a new tab (works even if certificate-summary.php isn't deployed)
+            const parts = window.location.pathname.split('/admin/');
+            const base = parts[0]; // '' if root, or '/GUMAOC' if under subfolder
+            const url = `${base}/admin/get-certificate-summary.php?id=${encodeURIComponent(requestId)}`;
+            window.open(url, '_blank');
         }
 
         // Toast notification functionality
@@ -1238,6 +1321,7 @@ function getRequestDetails($request) {
                 hideToast();
             }
         });
+        
     </script>
 </body>
 </html>

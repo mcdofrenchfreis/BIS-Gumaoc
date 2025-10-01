@@ -40,17 +40,235 @@ if ($admin_view) {
         $family_organizations = $organizations_stmt->fetchAll();
         
         $header_title = 'Census Registration Details - ID #' . str_pad($admin_view, 5, '0', STR_PAD_LEFT);
-        $header_subtitle = 'Submitted on ' . date('F j, Y \a\t g:i A', strtotime($registration_data['submitted_at']));
+        $header_subtitle = 'Submitted on ' . date('F j, Y \\a\\t g:i A', strtotime($registration_data['submitted_at']));
     }
 }
 
-include '../includes/header.php';
+// Header/navigation removed for standalone view
 
 // Include database connection for blotter checking
 if (!$admin_view) {
     include '../includes/db_connect.php';
 }
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><?php echo htmlspecialchars($page_title ?? 'Barangay Gumaoc East E-Services System'); ?></title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <link rel="stylesheet" href="<?php echo $base_path; ?>css/styles.css">
+  <style>
+    .kiosk-submit-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1002;
+      background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+      color: #fff;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+    }
+    .kiosk-submit-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 16px;
+    }
+    .kiosk-submit-btn {
+      appearance: none;
+      border: none;
+      background: #ffd54f;
+      color: #2d2d2d;
+      font-weight: 800;
+      font-size: 1.05rem;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      transition: transform 0.1s ease, box-shadow 0.2s ease, background 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .kiosk-submit-btn:hover { background: #ffca28; }
+    .kiosk-submit-btn:active { transform: translateY(1px); box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+    .kiosk-submit-hint {
+      font-size: 0.95rem;
+      opacity: 0.9;
+    }
+    .kiosk-submit-spacer { height: 58px; }
+    /* Hidden submit controls until valid */
+    .hidden-submit { display: none !important; }
+    /* Floating Back Button removed; using shared mini_nav.php instead */
+    @media (max-width: 768px) {
+      .kiosk-submit-inner { padding: 10px 12px; }
+      .kiosk-submit-btn { width: 100%; justify-content: center; font-size: 1rem; padding: 12px 16px; }
+      .kiosk-submit-hint { display: none; }
+      .kiosk-submit-spacer { height: 56px; }
+    }
+  </style>
+</head>
+<body>
+<?php include '../includes/mini_nav.php'; ?>
+<style> body { padding-top: 64px; } </style>
+
+<?php if (!$admin_view): ?>
+  <div class="kiosk-submit-bar" id="kioskTopBar" style="display: none;">
+    <div class="kiosk-submit-inner">
+      <div style="font-weight:700; letter-spacing:0.3px; display:flex; align-items:center; gap:10px;">
+        <span style="font-size:1.2rem">📝</span>
+        <span>Ready to submit your census form?</span>
+      </div>
+      <button type="button" id="kioskTopSubmit" class="kiosk-submit-btn">✔ Submit Registration</button>
+    </div>
+  </div>
+  <div class="kiosk-submit-spacer" id="kioskSpacer" style="display: none;"></div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var btn = document.getElementById('kioskTopSubmit');
+      var bar = document.getElementById('kioskTopBar');
+      var spacer = document.getElementById('kioskSpacer');
+      var form = document.getElementById('censusForm');
+      var nativeSubmits = [];
+
+      // Elements for Tab 1 and Tab 3 (Tab 2 is optional)
+      var tab1 = document.getElementById('tab-content-1');
+      var tab3 = document.getElementById('tab-content-3');
+
+      function isTabs1And3Valid() {
+        var containers = [tab1, tab3].filter(Boolean);
+        if (containers.length === 0) return false;
+        for (var i = 0; i < containers.length; i++) {
+          var container = containers[i];
+          // Validate required fields inside Tab 1 & Tab 3 only
+          var fields = container.querySelectorAll('input, select, textarea');
+          for (var j = 0; j < fields.length; j++) {
+            var el = fields[j];
+            // Only enforce elements that are required and not disabled/readonly
+            if (el.required && !el.disabled) {
+              if (typeof el.checkValidity === 'function') {
+                if (!el.checkValidity()) {
+                  return false;
+                }
+              } else {
+                // Fallback: basic non-empty check for text-like inputs
+                if ((el.type === 'text' || el.tagName === 'TEXTAREA') && !el.value.trim()) {
+                  return false;
+                }
+              }
+            }
+          }
+        }
+        return true;
+      }
+
+      function scrollToFirstInvalidInTabs() {
+        var containers = [tab1, tab3].filter(Boolean);
+        for (var i = 0; i < containers.length; i++) {
+          var container = containers[i];
+          var invalid = container.querySelector(':invalid');
+          if (!invalid) {
+            // Fallback: find required empty
+            invalid = container.querySelector('[required]:not([disabled])');
+            if (invalid && invalid.value && invalid.value.trim) {
+              if (invalid.value.trim()) invalid = null;
+            }
+          }
+          if (invalid && typeof invalid.scrollIntoView === 'function') {
+            invalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            try { invalid.focus({ preventScroll: true }); } catch (e) {}
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function updateKioskBarVisibility() {
+        if (!form || !bar || !spacer) return;
+        try {
+          // Only require Tabs 1 and 3 to be valid; Tab 2 is optional
+          var isValid = isTabs1And3Valid();
+          if (isValid) {
+            bar.style.display = '';
+            spacer.style.display = '';
+            // Show/enable native submit controls when valid
+            nativeSubmits.forEach(function(ctrl){
+              ctrl.classList.remove('hidden-submit');
+              ctrl.disabled = false;
+            });
+          } else {
+            bar.style.display = 'none';
+            spacer.style.display = 'none';
+            // Hide/disable native submit controls when invalid
+            nativeSubmits.forEach(function(ctrl){
+              ctrl.classList.add('hidden-submit');
+              ctrl.disabled = true;
+            });
+          }
+        } catch (e) {
+          // Fallback: hide if any error
+          bar.style.display = 'none';
+          spacer.style.display = 'none';
+          nativeSubmits.forEach(function(ctrl){
+            ctrl.classList.add('hidden-submit');
+            ctrl.disabled = true;
+          });
+        }
+      }
+
+      if (form) {
+        // Collect native submit controls inside the form (excluding our kiosk button)
+        nativeSubmits = Array.prototype.slice.call(
+          form.querySelectorAll('button[type="submit"], input[type="submit"]')
+        );
+        // Initially hide/disable them until valid
+        nativeSubmits.forEach(function(ctrl){
+          ctrl.classList.add('hidden-submit');
+          ctrl.disabled = true;
+        });
+
+        // Update visibility on user interaction
+        form.addEventListener('input', updateKioskBarVisibility, true);
+        form.addEventListener('change', updateKioskBarVisibility, true);
+        form.addEventListener('blur', updateKioskBarVisibility, true);
+
+        // Initial evaluation
+        updateKioskBarVisibility();
+      }
+
+      if (btn) {
+        btn.addEventListener('click', function() {
+          if (!form) return;
+          // Enforce only Tabs 1 and 3
+          if (!isTabs1And3Valid()) {
+            scrollToFirstInvalidInTabs();
+            return;
+          }
+          // Temporarily bypass native validation (which could include Tab 2 optional constraints)
+          var restoreNoValidate = form.hasAttribute('novalidate');
+          var previousNoValidate = form.getAttribute('novalidate');
+          form.setAttribute('novalidate', 'novalidate');
+          try {
+            if (typeof form.requestSubmit === 'function') { form.requestSubmit(); }
+            else { form.submit(); }
+          } finally {
+            if (!restoreNoValidate) {
+              form.removeAttribute('novalidate');
+            } else if (previousNoValidate !== null) {
+              form.setAttribute('novalidate', previousNoValidate);
+            }
+          }
+        });
+      }
+    });
+  </script>
+<?php endif; ?>
 
 <?php if ($admin_view && $readonly): ?>
 <!-- ULTRA-ROBUST ADMIN VISIBILITY ENHANCEMENTS -->

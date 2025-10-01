@@ -1,7 +1,7 @@
-<?php
+﻿<?php
 session_start();
 include '../includes/db_connect.php';
-
+header('Content-Type: text/html; charset=UTF-8');
 // Check if admin is logged in
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header('Location: login.php');
@@ -61,17 +61,17 @@ $family_organizations = $organizations_stmt->fetchAll();
             min-height: 100vh;
         }
         
-        .summary-header {
+                .summary-header {
             background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
-            color: white;
-            padding: 2rem;
+            color: #fff;
+            padding: 1.5rem 2rem;
             border-radius: 12px;
             margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
+            gap: 1rem 1.25rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
         }
         
         .summary-section {
@@ -187,24 +187,24 @@ $family_organizations = $organizations_stmt->fetchAll();
             box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
         }
         
-        .back-btn {
-            background: linear-gradient(135deg, #6c757d, #5a6268);
-            color: white;
-            border: none;
-            padding: 0.8rem 1.5rem;
+                .back-btn {
+            background: #ffffff;
+            color: #2e7d32;
+            text-decoration: none;
+            padding: 0.45rem 0.85rem;
             border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
+            font-weight: 700;
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            text-decoration: none;
-            transition: all 0.3s ease;
+            gap: 0.4rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+            transition: transform 0.08s ease, box-shadow 0.2s ease;
+            border: none;
         }
         
-        .back-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+                .back-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.16);
         }
         
         .actions {
@@ -224,9 +224,18 @@ $family_organizations = $organizations_stmt->fetchAll();
                 background: white;
             }
             
-            .summary-header {
-                box-shadow: none;
-            }
+                    .summary-header {
+            background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+            color: #fff;
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 1rem 1.25rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
         }
         
         @media (max-width: 768px) {
@@ -234,9 +243,18 @@ $family_organizations = $organizations_stmt->fetchAll();
                 padding: 1rem;
             }
             
-            .summary-header {
-                padding: 1rem;
-            }
+                    .summary-header {
+            background: linear-gradient(135deg, #2e7d32 0%, #4caf50 100%);
+            color: #fff;
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 1rem 1.25rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
             
             .info-grid {
                 grid-template-columns: 1fr;
@@ -247,26 +265,65 @@ $family_organizations = $organizations_stmt->fetchAll();
                 align-items: center;
             }
             
-            .print-btn, .back-btn {
-                width: 100%;
-                justify-content: center;
-            }
+            .print-btn,         .back-btn {
+            background: #ffffff;
+            color: #2e7d32;
+            text-decoration: none;
+            padding: 0.45rem 0.85rem;
+            border-radius: 8px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+            transition: transform 0.08s ease, box-shadow 0.2s ease;
+            border: none;
         }
-    </style>
+        }
+            .title-block h1 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1.4rem;
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+        }
+        .title-block p {
+            margin: 0;
+            opacity: 0.95;
+            font-size: 0.95rem;
+        }
+        .requester {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+        .requester h2 {
+            margin: 0;
+            font-size: 1.15rem;
+            font-weight: 700;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+        }
+</style>
 </head>
 <body>
     <div class="summary-container">
-        <div class="summary-header">
-            <div>
-                <h1>📋 Registration Summary</h1>
-                <p><strong>ID:</strong> #<?php echo $registration_data['id']; ?> | 
-                   <strong>Submitted:</strong> <?php echo date('F j, Y \a\t g:i A', strtotime($registration_data['submitted_at'])); ?> | 
-                   <span class="badge status-<?php echo $registration_data['status']; ?>">
-                       Status: <?php echo ucfirst($registration_data['status']); ?>
-                   </span>
+                <div class="summary-header">
+            <a href="view-resident-registrations.php" class="back-btn" onclick="if (window.history.length > 1) { history.back(); return false; } return true;">&larr; Back</a>
+            <div class="title-block">
+                <h1>&#128203; Registration Summary</h1>
+                <p>
+                    <strong>ID:</strong> #<?php echo $registration_data['id']; ?>
+                    &nbsp;|&nbsp;
+                    <strong>Submitted:</strong> <?php echo date('F j, Y \\a\\t g:i A', strtotime($registration_data['submitted_at'])); ?>
                 </p>
             </div>
-            <h2><?php echo htmlspecialchars($registration_data['first_name'] . ' ' . $registration_data['last_name']); ?></h2>
+            <div class="requester">
+                <h2><?php echo htmlspecialchars($registration_data['first_name'] . ' ' . $registration_data['last_name']); ?></h2>
+                <span class="badge status-<?php echo htmlspecialchars($registration_data['status']); ?>"><?php echo ucfirst($registration_data['status']); ?></span>
+            </div>
         </div>
         
         <!-- Personal Information Section -->
@@ -596,3 +653,8 @@ $family_organizations = $organizations_stmt->fetchAll();
     </div>
 </body>
 </html>
+
+
+
+
+

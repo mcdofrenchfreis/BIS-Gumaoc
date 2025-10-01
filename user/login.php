@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/session_bootstrap.php';
 require_once '../includes/db_connect.php';
 
 $page_title = 'User Login';
@@ -17,11 +17,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
         
         if ($user && $user['password'] && password_verify($password, $user['password'])) {
+            session_regenerate_id(true);
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
             $_SESSION['user_type'] = 'resident';
             $_SESSION['user_email'] = $user['email'];
             
+            // Ensure session is flushed before redirect
+            session_write_close();
+
             // Check if profile is complete
             if (isset($user['profile_complete']) && $user['profile_complete'] == 0) {
                 $_SESSION['profile_incomplete'] = true;
@@ -43,11 +47,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
         
         if ($user) {
+            session_regenerate_id(true);
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
             $_SESSION['user_type'] = 'resident';
             $_SESSION['user_email'] = $user['email'];
             $_SESSION['rfid_authenticated'] = true;
+            // Ensure session is flushed before redirect
+            session_write_close();
             
             // Check if profile is complete
             if (isset($user['profile_complete']) && $user['profile_complete'] == 0) {

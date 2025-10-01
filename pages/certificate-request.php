@@ -59,52 +59,36 @@ if ($request_data) {
     }
 }
 
-include '../includes/header.php';
 ?>
 
+<!-- Minimal Top Navigation (Back on left, Profile on right) -->
+<style>
+  /* Page background to replace plain white gutters */
+  body {
+    background: url('<?php echo $base_path; ?>assets/images/background.jpg') center/cover no-repeat fixed;
+    background-color: #2d5a27; /* fallback */
+    min-height: 100vh;
+    position: relative;
+    padding-top: 64px; /* space for sticky nav */
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(135deg,
+      rgba(45, 90, 39, 0.7) 0%,
+      rgba(74, 124, 89, 0.6) 25%,
+      rgba(53, 122, 60, 0.65) 50%,
+      rgba(45, 90, 39, 0.7) 75%,
+      rgba(30, 58, 26, 0.8) 100%);
+    z-index: 0;
+    pointer-events: none;
+  }
+  /* Ensure top-level app content renders above the overlay */
+  .container, .section, .form-container, .certificate-selection-screen { position: relative; z-index: 1; }
+\n</style>
+<?php include '../includes/mini_nav.php'; ?>
 <script>
-// Define dismiss functions immediately when page loads
-function dismissNotification() {
-  console.log('Debug: dismissNotification called');
-  
-  const notification = document.getElementById('autoPopulatedNotification');
-  
-  if (!notification) {
-    console.log('Debug: Notification element not found');
-    return false;
-  }
-  
-  console.log('Debug: Starting dismiss animation');
-  
-  // Immediate visual feedback
-  notification.style.pointerEvents = 'none';
-  
-  // Apply animation styles
-  notification.style.transition = 'all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-  notification.style.transform = 'translateX(100px) scale(0.8)';
-  notification.style.opacity = '0';
-  
-  // Remove element after animation
-  setTimeout(function() {
-    console.log('Debug: Removing notification from DOM');
-    if (notification && notification.parentNode) {
-      notification.parentNode.removeChild(notification);
-      console.log('Debug: Notification removed successfully');
-    }
-  }, 400);
-  
-  return false;
-}
-
-// Alternative simple hide function
-function forceHideNotification() {
-  const notification = document.getElementById('autoPopulatedNotification');
-  if (notification) {
-    notification.style.display = 'none';
-    console.log('Debug: Notification hidden with display:none');
-  }
-}
-
 // Add pulse animation
 const style = document.createElement('style');
 style.textContent = `
@@ -901,10 +885,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <div class="form-grid-two">
           <div class="form-group">
-            <label for="address1">Street Address *</label>
+            <label for="address1">Address Line 1 *</label>
             <div class="address-input-container">
               <input type="text" id="address1" name="address1" required 
-                     placeholder="Search street address in Barangay Gumaoc East..." 
+                     placeholder="House/Lot/Block No., Street Name, Subdivision/Village" 
                      value="<?php 
                      if ($request_data) {
                          echo htmlspecialchars($request_data['address']);
@@ -916,13 +900,22 @@ document.addEventListener('DOMContentLoaded', function() {
                      autocomplete="off">
               <div id="addressSuggestions" class="address-suggestions"></div>
             </div>
+            <small class="input-help">Enter your specific house address details</small>
           </div>
 
           <div class="form-group">
-            <label for="address2">Complete Address</label>
+            <label for="address2">Address Line 2</label>
             <input type="text" id="address2" name="address2" 
-                   value="Barangay Gumaoc East, San Jose Del Monte, Bulacan, Philippines" 
-                   readonly style="background-color: #f8f9fa; cursor: not-allowed;">
+                   placeholder="Purok/Zone/Sitio (optional)"
+                   value="<?php 
+                   if ($request_data) {
+                       echo htmlspecialchars($request_data['address2'] ?? 'Barangay Gumaoc East, San Jose Del Monte, Bulacan');
+                   } else {
+                       echo 'Barangay Gumaoc East, San Jose Del Monte, Bulacan';
+                   }
+                   ?>" 
+                   <?php echo $readonly ? 'readonly' : ''; ?>>
+            <small class="input-help">Additional address details (Barangay is pre-filled)</small>
           </div>
         </div>
 
@@ -1614,7 +1607,7 @@ body {
   font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
   color: #2c3e50;
-  background: white;
+  background-color: transparent; /* keep earlier body background image visible */
   min-height: 100vh;
   margin: 0;
   padding: 0;
@@ -1622,11 +1615,11 @@ body {
 
 /* Container and Layout */
 .container {
-  max-width: 95%;
+  max-width: 1400px; /* wider to match kiosk feel */
   width: 95%;
   margin: 20px auto;
   padding: 20px 15px;
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.85); /* more transparent for bg visibility */
   border-radius: 24px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
@@ -1636,7 +1629,7 @@ body {
 
 .section {
   margin-bottom: 25px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.88); /* slightly more transparent */
   backdrop-filter: blur(20px);
   border-radius: 20px;
   padding: 2rem;

@@ -88,9 +88,7 @@ if ($_POST && !$readonly) {
     }
 }
 
-include '../includes/header.php';
 ?>
-
 <div class="container">
     <?php if ($admin_view): ?>
     <div class="admin-view-banner">
@@ -736,4 +734,4 @@ input[readonly], textarea[readonly] {
 }
 </style>
 
-<?php include '../includes/footer.php'; ?>
+

@@ -19,7 +19,9 @@ try {
     $first_name = trim($_POST['firstName'] ?? '');
     $middle_name = trim($_POST['middleName'] ?? '');
     $last_name = trim($_POST['lastName'] ?? '');
-    $address = trim($_POST['address1'] ?? '');
+    $address1 = trim($_POST['address1'] ?? '');
+    $address2 = trim($_POST['address2'] ?? '');
+    $address = $address1 . (empty($address2) ? '' : ', ' . $address2); // Combine both address lines
     $mobile_number = trim($_POST['mobileNumber'] ?? '');
     $civil_status = $_POST['civilStatus'] ?? '';
     $gender = $_POST['gender'] ?? '';
@@ -37,7 +39,7 @@ try {
     }
     
     // Validate certificate type
-    $allowed_types = ['BRGY. CLEARANCE', 'BRGY. INDIGENCY', 'TRICYCLE PERMIT', 'PROOF OF RESIDENCY', 'BUSINESS APPLICATION'];
+    $allowed_types = ['BRGY. CLEARANCE', 'BRGY. INDIGENCY', 'TRICYCLE PERMIT', 'PROOF OF RESIDENCY', 'BUSINESS APPLICATION', 'CEDULA/CTC'];
     if (!in_array($certificate_type, $allowed_types)) {
         throw new Exception('Invalid certificate type selected.');
     }
@@ -175,6 +177,55 @@ try {
         throw new Exception('Birth date cannot be in the future.');
     }
     
+    // Prepare additional data container for certain certificate types
+    $additional_data = [];
+
+    // Cedula/CTC specific fields captured into additional_data JSON
+    if ($certificate_type === 'CEDULA/CTC') {
+        // Basic validation of key fields
+        $cedula_required = ['cedulaYear', 'placeOfIssue', 'dateIssued', 'professionOccupation'];
+        foreach ($cedula_required as $field) {
+            if (empty($_POST[$field])) {
+                throw new Exception('Please fill in all required CTC fields.');
+            }
+        }
+
+        $additional_data = [
+            'cedula_year' => (int)($_POST['cedulaYear'] ?? date('Y')),
+            'place_of_issue' => trim($_POST['placeOfIssue'] ?? ''),
+            'date_issued' => $_POST['dateIssued'] ?? null,
+            'cedula_citizenship' => trim($_POST['cedulaCitizenship'] ?? ''),
+            'cedula_place_of_birth' => trim($_POST['cedulaPlaceOfBirth'] ?? ''),
+            'cedula_date_of_birth' => $_POST['cedulaDateOfBirth'] ?? null,
+            'cedula_civil_status' => $_POST['cedulaCivilStatus'] ?? null,
+            'profession_occupation' => trim($_POST['professionOccupation'] ?? ''),
+            'height' => isset($_POST['height']) && $_POST['height'] !== '' ? (float)$_POST['height'] : null,
+            'weight' => isset($_POST['weight']) && $_POST['weight'] !== '' ? (float)$_POST['weight'] : null,
+            'basic_tax_type' => $_POST['basicCommunityTaxType'] ?? 'voluntary',
+            'basic_community_tax' => isset($_POST['basicCommunityTax']) ? (float)$_POST['basicCommunityTax'] : null,
+            'gross_receipts_business' => isset($_POST['grossReceiptsBusiness']) && $_POST['grossReceiptsBusiness'] !== '' ? (float)$_POST['grossReceiptsBusiness'] : null,
+            'salaries_profession' => isset($_POST['salariesProfession']) && $_POST['salariesProfession'] !== '' ? (float)$_POST['salariesProfession'] : null,
+            'income_real_property' => isset($_POST['incomeRealProperty']) && $_POST['incomeRealProperty'] !== '' ? (float)$_POST['incomeRealProperty'] : null,
+            'total_tax' => isset($_POST['totalTax']) && $_POST['totalTax'] !== '' ? (float)$_POST['totalTax'] : null,
+            'interest' => isset($_POST['interest']) ? (float)$_POST['interest'] : 0.00,
+            'total_amount_paid' => isset($_POST['totalAmountPaid']) && $_POST['totalAmountPaid'] !== '' ? (float)$_POST['totalAmountPaid'] : null
+        ];
+    }
+
+    // Also capture tricycle fields into additional_data for consistency
+    if ($certificate_type === 'TRICYCLE PERMIT') {
+        $additional_data = [
+            'vehicle_make_type' => $vehicle_make_type,
+            'motor_no' => $motor_no,
+            'chassis_no' => $chassis_no,
+            'plate_no' => $plate_no,
+            'vehicle_color' => $vehicle_color,
+            'year_model' => $year_model,
+            'body_no' => $body_no,
+            'operator_license' => $operator_license
+        ];
+    }
+
     // Begin transaction
     $pdo->beginTransaction();
     
@@ -267,17 +318,17 @@ try {
         // Handle regular certificate requests
         // Prepare SQL statement
         $sql = "INSERT INTO certificate_requests (
-            full_name, address, mobile_number, civil_status, gender, 
-            birth_date, birth_place, citizenship, years_of_residence, 
-            certificate_type, purpose, vehicle_make_type, motor_no, 
-            chassis_no, plate_no, vehicle_color, year_model, body_no, 
-            operator_license, submitted_at, status
+            full_name, address, mobile_number, civil_status, gender,
+            birth_date, birth_place, citizenship, years_of_residence,
+            certificate_type, purpose, additional_data,
+            vehicle_make_type, motor_no, chassis_no, plate_no, vehicle_color, year_model, body_no, operator_license,
+            submitted_at, status
         ) VALUES (
             :full_name, :address, :mobile_number, :civil_status, :gender,
             :birth_date, :birth_place, :citizenship, :years_of_residence,
-            :certificate_type, :purpose, :vehicle_make_type, :motor_no,
-            :chassis_no, :plate_no, :vehicle_color, :year_model, :body_no,
-            :operator_license, NOW(), 'pending'
+            :certificate_type, :purpose, :additional_data,
+            :vehicle_make_type, :motor_no, :chassis_no, :plate_no, :vehicle_color, :year_model, :body_no, :operator_license,
+            NOW(), 'pending'
         )";
         
         $stmt = $pdo->prepare($sql);
@@ -294,6 +345,7 @@ try {
     $stmt->bindParam(':years_of_residence', $years_of_residence, PDO::PARAM_INT);
     $stmt->bindParam(':certificate_type', $certificate_type);
     $stmt->bindParam(':purpose', $purpose);
+    $stmt->bindValue(':additional_data', json_encode($additional_data));
     $stmt->bindParam(':vehicle_make_type', $vehicle_make_type);
     $stmt->bindParam(':motor_no', $motor_no);
     $stmt->bindParam(':chassis_no', $chassis_no);
@@ -306,6 +358,43 @@ try {
     // Execute the statement
     if ($stmt->execute()) {
         $request_id = $pdo->lastInsertId();
+
+        // If Cedula/CTC, persist detailed fields into dedicated table (table must already exist)
+        if ($certificate_type === 'CEDULA/CTC') {
+            $cedulaIns = $pdo->prepare("INSERT INTO cedula_request (
+                certificate_request_id, cedula_year, place_of_issue, date_issued,
+                cedula_citizenship, cedula_place_of_birth, cedula_date_of_birth, cedula_civil_status,
+                profession_occupation, height, weight, basic_tax_type, basic_community_tax,
+                gross_receipts_business, salaries_profession, income_real_property, total_tax, interest, total_amount_paid
+            ) VALUES (
+                :req_id, :cedula_year, :place_of_issue, :date_issued,
+                :cedula_citizenship, :cedula_place_of_birth, :cedula_date_of_birth, :cedula_civil_status,
+                :profession_occupation, :height, :weight, :basic_tax_type, :basic_community_tax,
+                :gross_receipts_business, :salaries_profession, :income_real_property, :total_tax, :interest, :total_amount_paid
+            )");
+
+            $cedulaIns->execute([
+                ':req_id' => $request_id,
+                ':cedula_year' => (int)($_POST['cedulaYear'] ?? date('Y')),
+                ':place_of_issue' => trim($_POST['placeOfIssue'] ?? ''),
+                ':date_issued' => $_POST['dateIssued'] ?? null,
+                ':cedula_citizenship' => trim($_POST['cedulaCitizenship'] ?? ''),
+                ':cedula_place_of_birth' => trim($_POST['cedulaPlaceOfBirth'] ?? ''),
+                ':cedula_date_of_birth' => $_POST['cedulaDateOfBirth'] ?? null,
+                ':cedula_civil_status' => $_POST['cedulaCivilStatus'] ?? null,
+                ':profession_occupation' => trim($_POST['professionOccupation'] ?? ''),
+                ':height' => isset($_POST['height']) && $_POST['height'] !== '' ? (float)$_POST['height'] : null,
+                ':weight' => isset($_POST['weight']) && $_POST['weight'] !== '' ? (float)$_POST['weight'] : null,
+                ':basic_tax_type' => $_POST['basicCommunityTaxType'] ?? 'voluntary',
+                ':basic_community_tax' => isset($_POST['basicCommunityTax']) ? (float)$_POST['basicCommunityTax'] : null,
+                ':gross_receipts_business' => isset($_POST['grossReceiptsBusiness']) && $_POST['grossReceiptsBusiness'] !== '' ? (float)$_POST['grossReceiptsBusiness'] : null,
+                ':salaries_profession' => isset($_POST['salariesProfession']) && $_POST['salariesProfession'] !== '' ? (float)$_POST['salariesProfession'] : null,
+                ':income_real_property' => isset($_POST['incomeRealProperty']) && $_POST['incomeRealProperty'] !== '' ? (float)$_POST['incomeRealProperty'] : null,
+                ':total_tax' => isset($_POST['totalTax']) && $_POST['totalTax'] !== '' ? (float)$_POST['totalTax'] : null,
+                ':interest' => isset($_POST['interest']) ? (float)$_POST['interest'] : 0.00,
+                ':total_amount_paid' => isset($_POST['totalAmountPaid']) && $_POST['totalAmountPaid'] !== '' ? (float)$_POST['totalAmountPaid'] : null,
+            ]);
+        }
         
         // NEW: Generate queue ticket automatically using enhanced method
         $queueManager = new QueueManager($pdo);

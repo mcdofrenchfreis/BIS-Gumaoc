@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 $base_path = '../';
 $page_title = 'Forms - Barangay Gumaoc East';
@@ -115,7 +115,7 @@ $page_description = 'Access various forms and documents for barangay services an
                             </span>
                         </div>
                     </div>
-                    <a href="assistance-applications.php" class="form-btn secondary apply-assistance">Apply Now</a>
+                    <a href="assistance-applications.php" class="form-btn secondary">Apply Now</a>
                 </div>
 
                 <div class="form-card">
@@ -395,32 +395,6 @@ $page_description = 'Access various forms and documents for barangay services an
     box-shadow: 0 8px 25px rgba(108, 117, 125, 0.2);
 }
 
-/* Specific border update for Assistance Applications "Apply Now" button */
-a.form-btn.secondary[href="assistance-applications.php"] {
-    border-width: 3px;
-    border-color: #1b5e20 !important; /* green brand color */
-}
-
-a.form-btn.secondary[href="assistance-applications.php"]:hover {
-    border-color: #154a19 !important; /* darker green on hover */
-    box-shadow: 0 8px 25px rgba(27, 94, 32, 0.3);
-}
-
-/* Extra-specific class override to win against any cascade */
-a.form-btn.secondary.apply-assistance {
-    border-width: 3px !important;
-    border-color: #1b5e20 !important;
-    color: #1b5e20 !important;
-    background: rgba(27, 94, 32, 0.08) !important;
-}
-
-a.form-btn.secondary.apply-assistance:hover {
-    border-color: #154a19 !important;
-    color: #154a19 !important;
-    background: rgba(27, 94, 32, 0.16) !important;
-    box-shadow: 0 8px 25px rgba(27, 94, 32, 0.3);
-}
-
 .form-btn.emergency {
     background: rgba(220, 53, 69, 0.1);
     backdrop-filter: blur(10px);
@@ -445,10 +419,9 @@ a.form-btn.secondary.apply-assistance:hover {
         transform: translateY(0);
     }
 }
+
 .forms-intro,
-.form-card {
-    animation: fadeInUp 0.6s ease forwards;
-}
+.form-card,
 
 .forms-intro { animation-delay: 0.1s; }
 .form-card:nth-child(1) { animation-delay: 0.2s; }
@@ -546,6 +519,5 @@ a.form-btn.secondary.apply-assistance:hover {
 </style>
 
 <?php include '../includes/footer.php'; ?>
-
 
 

@@ -2,11 +2,23 @@
 session_start();
 include '../includes/db_connect.php';
 
+// Include admin authentication check
+require_once 'auth_check.php';
+
 // Check if admin is logged in
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header('Location: login.php');
     exit;
 }
+
+// Note: Role handling can be added here if needed.
+
+// Add admin stylesheet and Font Awesome if not already included
+$base_path = '../';
+$additional_css = [
+    '<link rel="stylesheet" href="' . $base_path . 'assets/css/admin.css">',
+    '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">'
+];
 
 // Get form submission counts
 try {
@@ -143,19 +155,21 @@ try {
             max-width: 1400px;
             margin: 0 auto;
             padding: 2rem;
+            /* Offset for fixed admin mini nav */
+            padding-top: 90px;
         }
         
         /* Header */
         .dashboard-header {
-            background: linear-gradient(135deg, rgba(0, 100, 0, 0.95) 0%, rgba(34, 139, 34, 0.95) 100%);
+            background: linear-gradient(135deg, #0a5d0a 0%, #1d7a1d 100%);
             backdrop-filter: blur(10px);
             color: white;
             padding: 2rem;
-            border-radius: 8px;
+            border-radius: 16px;
             margin-bottom: 2rem;
             text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 40px rgba(10, 93, 10, 0.18);
             position: relative;
             overflow: hidden;
         }
@@ -236,59 +250,63 @@ try {
         
         /* Navigation */
         .admin-nav {
-            background: #fff;
-            padding: 0.75rem;
-            border-radius: 8px;
+            background: rgba(255,255,255,0.88);
+            padding: 0.85rem;
+            border-radius: 14px;
             margin-bottom: 2rem;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e0e0e0;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(0,0,0,0.04);
             display: flex;
             flex-wrap: wrap;
             justify-content: flex-start;
-            gap: 0.25rem;
+            gap: 0.5rem;
+            backdrop-filter: saturate(1.1) blur(6px);
         }
         
         .admin-nav a {
-            color: #006400;
+            color: #0a5d0a;
             text-decoration: none;
-            font-weight: 500;
-            padding: 0.6rem 1rem;
-            border-radius: 4px;
+            font-weight: 600;
+            padding: 0.55rem 0.9rem;
+            border-radius: 999px;
             transition: all 0.2s ease;
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            background-color: transparent;
-            border-bottom: 2px solid transparent;
+            background-color: #f4faf4;
+            border: 1px solid rgba(10,93,10,0.12);
+            box-shadow: 0 1px 2px rgba(10,93,10,0.05);
         }
         
         .admin-nav a:hover {
-            color: #fff;
-            background-color: #228B22;
-            border-bottom: 2px solid #006400;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 100, 0, 0.1);
+            color: #0a5d0a;
+            background-color: #eaf6ea;
+            border-color: rgba(10,93,10,0.25);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(10, 93, 10, 0.10);
         }
         
         /* Stats Grid - Simplified */
         .dashboard-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
+            gap: 1.2rem;
             margin-bottom: 2rem;
         }
         
         .stat-card {
-            background: white;
+            background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.90));
             padding: 1.2rem 1rem;
-            border-radius: 8px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
-            border-left: 4px solid #228B22;
+            border-radius: 14px;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(0,0,0,0.04);
             text-align: left;
-            transition: transform 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            backdrop-filter: saturate(1.1) blur(4px);
         }
         
         .stat-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-4px);
+            box-shadow: 0 16px 28px rgba(0,0,0,0.10);
         }
         
         .stat-card h3 {
@@ -304,42 +322,44 @@ try {
         }
         
         .stat-number {
-            font-size: 1.8rem;
-            font-weight: 600;
-            color: #006400;
+            font-size: 2.1rem;
+            font-weight: 700;
+            color: #0a5d0a;
             margin-bottom: 0.3rem;
         }
         
         .stat-pending {
             font-size: 0.8rem;
-            color: #d14836;
-            font-weight: 500;
-            background: rgba(209, 72, 54, 0.1);
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
+            color: #b33a2f;
+            font-weight: 600;
+            background: linear-gradient(180deg, rgba(255, 235, 234, 0.9), rgba(255, 245, 245, 0.9));
+            padding: 0.25rem 0.55rem;
+            border-radius: 999px;
             display: inline-block;
+            border: 1px solid rgba(179, 58, 47, 0.15);
         }
 
         /* Main Content Grid */
         .dashboard-main {
             display: grid;
             grid-template-columns: 1fr;
-            gap: 1.5rem;
+            gap: 1.6rem;
             margin-bottom: 2rem;
         }
         
         .dashboard-section {
-            background: #ffffff;
-            border-radius: 8px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92));
+            border-radius: 16px;
             padding: 1.75rem;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            border: 1px solid #e8f0e8;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(0,0,0,0.04);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            backdrop-filter: saturate(1.1) blur(6px);
         }
         
         .dashboard-section:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            transform: translateY(-4px);
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.10);
         }
         
         .section-title {
@@ -357,16 +377,16 @@ try {
         }
         
         .section-icon {
-            background: #228B22;
+            background: linear-gradient(135deg, #0a5d0a, #228B22);
             color: white;
             width: 36px;
             height: 36px;
-            border-radius: 50%;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 1.1rem;
-            box-shadow: 0 4px 8px rgba(0, 100, 0, 0.2);
+            box-shadow: 0 6px 14px rgba(0, 100, 0, 0.18);
         }
         
         /* Action Cards - Enhanced */
@@ -377,13 +397,13 @@ try {
         }
         
         .action-card {
-            background: white;
+            background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.94));
             padding: 1.8rem;
-            border-radius: 8px;
+            border-radius: 14px;
             text-align: left;
             transition: all 0.3s ease;
-            border: 1px solid #e8f0e8;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0,0,0,0.04);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
             position: relative;
             overflow: hidden;
         }
@@ -394,14 +414,14 @@ try {
             top: 0;
             left: 0;
             width: 100%;
-            height: 5px;
-            background: linear-gradient(90deg, #006400, #228B22);
+            height: 4px;
+            background: linear-gradient(90deg, #0a5d0a, #228B22);
         }
         
         .action-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-            border-color: #228B22;
+            transform: translateY(-6px);
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.10);
+            border-color: rgba(34,139,34,0.25);
         }
         
         .action-icon {
@@ -432,26 +452,26 @@ try {
         
         .admin-btn {
             display: inline-block;
-            padding: 0.75rem 1.5rem;
-            background: #228B22;
+            padding: 0.7rem 1.3rem;
+            background: linear-gradient(135deg, #1b6e1b, #228B22);
             color: white;
             text-decoration: none;
-            border-radius: 4px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0, 100, 0, 0.15);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.85rem;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.25s ease;
+            box-shadow: 0 10px 20px rgba(0, 100, 0, 0.15);
+            text-transform: none;
+            letter-spacing: 0.2px;
+            font-size: 0.9rem;
             position: relative;
             z-index: 1;
-            border: none;
+            border: 1px solid rgba(255,255,255,0.15);
         }
         
         .admin-btn:hover {
-            background: #006400;
+            background: linear-gradient(135deg, #155915, #1d7a1d);
             transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 100, 0, 0.2);
+            box-shadow: 0 16px 28px rgba(0, 100, 0, 0.20);
             text-decoration: none;
             color: white;
         }
@@ -825,7 +845,7 @@ try {
             .queue-section .queue-stats {
                 grid-template-columns: repeat(2, 1fr);
             }
-        }sparent; }
+        }
         .qbadge.waiting { background:#fff8e1; color:#856404; border-color: #ffe082; }
         .qbadge.serving { background:#e8f5e9; color:#1b5e20; border-color: #a5d6a7; }
         .qbadge.urgent { background:#ffebee; color:#b71c1c; border-color: #ef9a9a; }
@@ -840,10 +860,11 @@ try {
     </style>
 </head>
 <body>
+    <?php $base_path = '../'; include __DIR__ . '/../includes/admin_mini_nav.php'; ?>
     <div class="admin-dashboard">
         <div class="dashboard-header">
             <div class="gov-seal">
-                <img src="../assets/images/ph-seal.svg" alt="Republic of the Philippines" class="gov-logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9IjAuMzVlbSIgZmlsbD0iI2ZmZiI+UmVwdWJsaWMgb2YgdGhlPC90ZXh0Pjx0ZXh0IHg9IjUwIiB5PSI2NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iMC4zNWVtIiBmaWxsPSIjZmZmIj5QaGlsaXBwaW5lczwvdGV4dD48L3N2Zz4='">
+                <img src="../assets/images/logo.png" alt="Republic of the Philippines" class="gov-logo" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiLz48dGV4dCB4PSI1MCIgeT0iNTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9IjAuMzVlbSIgZmlsbD0iI2ZmZiI+UmVwdWJsaWMgb2YgdGhlPC90ZXh0Pjx0ZXh0IHg9IjUwIiB5PSI2NSIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjEwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iMC4zNWVtIiBmaWxsPSIjZmZmIj5QaGlsaXBwaW5lczwvdGV4dD48L3N2Zz4='">
             </div>
             <div class="gov-header-text">
                 <div class="gov-header-top">Republic of the Philippines</div>
@@ -858,17 +879,6 @@ try {
                     </button>
                 </div>
             </div>
-        </div>
-        
-        <div class="admin-nav">
-            <a href="forms-manager.php">📋 Forms Manager</a>
-            <a href="rfid-scanner.php">📱 RFID Scanner</a>
-            <a href="manage-blotter.php">📝 Blotter Management</a>
-            <a href="captain-clearances.php">🛡️ Captain Clearances</a>
-            <a href="blotter-reports.php">📊 Blotter Reports</a>
-            <a href="queue-monitor.php">📺 Queue Monitor</a>
-            <a href="../index.php" target="_blank">🌐 View Website</a>
-            <a href="logout.php">🚪 Logout</a>
         </div>
         
         <?php if (isset($error_message)): ?>
@@ -916,21 +926,7 @@ try {
                     Management Tools
                 </h2>
                 
-                <div class="dashboard-actions">
-                    <div class="action-card">
-                        <div class="action-icon">⚙️</div>
-                        <h3>Manage Services</h3>
-                        <p>Configure service cards, descriptions, and links displayed on the homepage</p>
-                        <a href="manage-services.php" class="admin-btn">Manage Services</a>
-                    </div>
-                    
-                    <div class="action-card">
-                        <div class="action-icon">📢</div>
-                        <h3>Manage Updates</h3>
-                        <p>Add, edit, and manage community announcements and latest news updates</p>
-                        <a href="manage-updates.php" class="admin-btn">Manage Updates</a>
-                    </div>
-                    
+                <div class="dashboard-actions">                    
                     <div class="action-card">
                         <div class="action-icon">👥</div>
                         <h3>Census Registrations</h3>
@@ -974,10 +970,10 @@ try {
                     </div>
                     
                     <div class="action-card">
-                        <div class="action-icon">📊</div>
-                        <h3>Forms Manager</h3>
-                        <p>Comprehensive form management and analytics</p>
-                        <a href="forms-manager.php" class="admin-btn">Open Manager</a>
+                        <div class="action-icon">🆘</div>
+                        <h3>Assistance Requests</h3>
+                        <p>Review and manage assistance requests submitted by residents</p>
+                        <a href="assist-requests.php" class="admin-btn">View Requests</a>
                     </div>
                     
                     <div class="action-card">

@@ -2,7 +2,12 @@
 $page_title = "Services - Barangay Gumaoc East";
 $page_description = "Explore the comprehensive e-services offered by Barangay Gumaoc East for residents' convenience.";
 $base_path = "../";
-include '../includes/header.php';
+?>
+
+<?php
+// Lightweight fixed mini navigation (back + profile)
+// Uses $base_path defined above
+include '../includes/mini_nav.php';
 ?>
 
 <div class="page-container">
@@ -67,26 +72,7 @@ include '../includes/header.php';
                 </div>
             </div>
 
-            <div class="service-hours">
-                <div class="hours-card">
-                    <h3>Service Hours</h3>
-                    <div class="hours-content">
-                        <div class="hours-item">
-                            <span class="day">Monday - Friday</span>
-                            <span class="time">8:00 AM - 5:00 PM</span>
-                        </div>
-                        <div class="hours-item">
-                            <span class="day">Saturday</span>
-                            <span class="time">8:00 AM - 12:00 PM</span>
-                        </div>
-                        <div class="hours-item">
-                            <span class="day">Sunday</span>
-                            <span class="time">Emergency Only</span>
-                        </div>
-                    </div>
-                    <p class="hours-note">💡 Online services are available 24/7. Processing may be delayed outside office hours.</p>
-                </div>
-            </div>
+            
         </div>
     </div>
 </div>
@@ -100,6 +86,8 @@ include '../includes/header.php';
     background-attachment: fixed;
     background-repeat: no-repeat;
     position: relative;
+    /* Offset for fixed mini nav height */
+    padding-top: 70px;
 }
 
 .page-container::before {
@@ -289,19 +277,9 @@ include '../includes/header.php';
 
 .hours-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 20px 45px rgba(27, 94, 32, 0.15);
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(25px);
-}
-
-.hours-card h3 {
-    color: #1b5e20;
-    font-size: 2rem;
-    text-align: center;
-    margin-bottom: 30px;
-    border-bottom: 3px solid #4caf50;
-    padding-bottom: 15px;
-    font-weight: 700;
+    box-shadow: 0 20px 45px rgba(27, 94, 32, 0.12);
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(18px);
 }
 
 .hours-content {
@@ -444,6 +422,25 @@ include '../includes/header.php';
         padding: 25px 10px;
     }
 }
+</style>
+
+<style>
+/* Restore footer to original solid green and remove top gap on this page */
+.minimalist-footer { background: #1b5e20 !important; margin-top: 0 !important; }
+footer.minimalist-footer { background: #1b5e20 !important; }
+</style>
+
+<style>
+/* Footer seam and spacing overrides (page-specific) */
+.page-container { padding-bottom: 0 !important; }
+.content-section { padding-bottom: 48px !important; }
+.service-hours { margin-bottom: 0 !important; }
+</style>
+
+
+<style>
+/* Page-edge fix: remove default browser margins/padding that can show white strips */
+html, body { margin: 0 !important; padding: 0 !important; background-color: transparent !important; }
 </style>
 
 <?php include '../includes/footer.php'; ?>

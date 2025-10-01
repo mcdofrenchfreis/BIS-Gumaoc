@@ -29,15 +29,18 @@ $offset = ($page - 1) * $per_page;
 
 // Build query
 $where_conditions = [];
+$where_conditions_ba = [];
 $params = [];
 
 if ($status_filter && in_array($status_filter, ['pending', 'reviewing', 'approved', 'rejected'])) {
-    $where_conditions[] = "status = ?";
+    $where_conditions[] = "status = ?"; // for count query (no alias)
+    $where_conditions_ba[] = "ba.status = ?"; // for main query (with alias)
     $params[] = $status_filter;
 }
 
 if ($search) {
-    $where_conditions[] = "(owner_name LIKE ? OR business_name LIKE ? OR business_type LIKE ?)";
+    $where_conditions[] = "(owner_name LIKE ? OR business_name LIKE ? OR business_type LIKE ?)"; // unaliased for count
+    $where_conditions_ba[] = "(ba.owner_name LIKE ? OR ba.business_name LIKE ? OR ba.business_type LIKE ?)"; // aliased for main
     $search_term = "%$search%";
     $params[] = $search_term;
     $params[] = $search_term;
@@ -45,6 +48,7 @@ if ($search) {
 }
 
 $where_clause = $where_conditions ? "WHERE " . implode(" AND ", $where_conditions) : "";
+$where_clause_ba = $where_conditions_ba ? "WHERE " . implode(" AND ", $where_conditions_ba) : "";
 
 // Get total count
 $count_sql = "SELECT COUNT(*) FROM business_applications $where_clause";
@@ -54,7 +58,31 @@ $total_records = $count_stmt->fetchColumn();
 $total_pages = ceil($total_records / $per_page);
 
 // Get records
-$sql = "SELECT * FROM business_applications $where_clause ORDER BY submitted_at DESC LIMIT $per_page OFFSET $offset";
+$sql = "SELECT 
+            ba.*, 
+            r.first_name AS res_first_name,
+            r.middle_name AS res_middle_name,
+            r.last_name AS res_last_name,
+            r.address AS resident_address,
+            r.phone AS resident_phone,
+            r.civil_status AS resident_civil_status,
+            r.gender AS resident_gender,
+            r.birthdate AS resident_birthdate,
+            r.birth_place AS resident_birth_place,
+            cr.years_of_residence AS cr_years_of_residence,
+            cr.purpose AS cr_purpose
+        FROM business_applications ba
+        LEFT JOIN residents r ON ba.user_id = r.id
+        LEFT JOIN certificate_requests cr
+          ON cr.user_id = ba.user_id
+         AND cr.submitted_at = (
+              SELECT MAX(cr2.submitted_at)
+                FROM certificate_requests cr2
+               WHERE cr2.user_id = ba.user_id
+            )
+        $where_clause_ba
+        ORDER BY ba.submitted_at DESC
+        LIMIT $per_page OFFSET $offset";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $applications = $stmt->fetchAll();
@@ -71,6 +99,7 @@ $applications = $stmt->fetchAll();
             max-width: 1400px;
             margin: 0 auto;
             padding: 2rem;
+            padding-top: 90px; /* offset for fixed admin mini nav */
             background: #f8f9fa;
             min-height: 100vh;
         }
@@ -142,6 +171,9 @@ $applications = $stmt->fetchAll();
             text-decoration: none;
             white-space: nowrap;
             margin-bottom: 0.3rem;
+            height: 36px;
+            min-height: 36px;
+            box-sizing: border-box;
         }
         
         .view-form-btn:hover {
@@ -166,6 +198,9 @@ $applications = $stmt->fetchAll();
             text-decoration: none;
             white-space: nowrap;
             margin-bottom: 0.3rem;
+            height: 36px;
+            min-height: 36px;
+            box-sizing: border-box;
         }
         
         .print-clearance-btn:hover {
@@ -180,9 +215,9 @@ $applications = $stmt->fetchAll();
         
         .view-column .view-form-btn,
         .view-column .print-clearance-btn {
-            width: 100%;
+            width: 160px; /* fixed width */
             justify-content: center;
-            margin-bottom: 0.3rem;
+            margin: 0.15rem auto;
         }
         
         .status-badge {
@@ -402,15 +437,13 @@ $applications = $stmt->fetchAll();
             }
         }
     </style>
-</head>
-<body>
+ </head>
+ <body>
+    <?php $base_path = '../'; include __DIR__ . '/../includes/admin_mini_nav.php'; ?>
     <div class="admin-container">
-        <div class="admin-header">
-            <div>
-                <h1>🏢 Business Applications</h1>
-                <p>Total: <?php echo $total_records; ?> applications</p>
-            </div>
-            <a href="dashboard.php" class="admin-btn">← Back to Dashboard</a>
+        <!-- Header removed in favor of admin mini nav -->
+        <div style="margin-bottom: 1rem; color:#2e7d32; font-weight:700;">
+            🏢 Business Applications · <span style="font-weight:600; color:#444;">Total: <?php echo $total_records; ?></span>
         </div>
         
         <?php if (isset($_SESSION['success'])): ?>
@@ -478,6 +511,57 @@ $applications = $stmt->fetchAll();
                                     CTC: <?php echo htmlspecialchars($app['ctc_number']); ?>
                                 </div>
                             <?php endif; ?>
+                            <?php
+                                // Attempt to retrieve dedicated images (CTC and Business certificate)
+                                $ctcImg = '';
+                                $certImg = '';
+                                try {
+                                    // Try reading from business_attachments table if it exists
+                                    $attachmentStmt = $pdo->prepare("SELECT ctc_image, certificate_image FROM business_attachments WHERE business_id = ? LIMIT 1");
+                                    if ($attachmentStmt->execute([(int)$app['id']])) {
+                                        $att = $attachmentStmt->fetch(PDO::FETCH_ASSOC);
+                                        if ($att) {
+                                            $ctcImg = $att['ctc_image'] ?? '';
+                                            $certImg = $att['certificate_image'] ?? '';
+                                        }
+                                    }
+                                } catch (Exception $e) {
+                                    // Table may not exist – fall back to filesystem by reference_no prefix patterns
+                                }
+
+                                // Fallback: search upload dir using reference number
+                                $uploadDir = realpath(__DIR__ . '/../assets/uploads/business_applications');
+                                if ($uploadDir !== false && is_dir($uploadDir)) {
+                                    $ref = $app['reference_no'] ?? '';
+                                    if ($ref) {
+                                        if (empty($ctcImg)) {
+                                            foreach (glob($uploadDir . DIRECTORY_SEPARATOR . 'ctc_' . $ref . '*') as $path) {
+                                                $ctcImg = basename($path); break;
+                                            }
+                                        }
+                                        if (empty($certImg)) {
+                                            foreach (glob($uploadDir . DIRECTORY_SEPARATOR . 'cert_' . $ref . '*') as $path) {
+                                                $certImg = basename($path); break;
+                                            }
+                                        }
+                                    }
+                                }
+                            ?>
+                            <?php if (!empty($ctcImg)): ?>
+                                <div class="business-info">
+                                    🖼️ <a href="../assets/uploads/business_applications/<?php echo htmlspecialchars($ctcImg); ?>" target="_blank">View CTC Image</a>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($certImg)): ?>
+                                <div class="business-info">
+                                    🖼️ <a href="../assets/uploads/business_applications/<?php echo htmlspecialchars($certImg); ?>" target="_blank">View Business Certificate Image</a>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($app['proof_image'])): ?>
+                                <div class="business-info">
+                                    📎 <a href="../assets/uploads/business_applications/<?php echo htmlspecialchars($app['proof_image']); ?>" target="_blank">View Proof Image</a>
+                                </div>
+                            <?php endif; ?>
                         </td>
                         <td>
                             <div class="business-details">
@@ -496,19 +580,77 @@ $applications = $stmt->fetchAll();
                             </div>
                         </td>
                         <td>
+                            <?php
+                                // Derive full name (prefer explicit first/middle/last if present)
+                                $display_full_name = trim(
+                                    ($app['first_name'] ?? '') . ' ' .
+                                    (!empty($app['middle_name']) ? $app['middle_name'] . ' ' : '') .
+                                    ($app['last_name'] ?? '')
+                                );
+                                if ($display_full_name === '') {
+                                    $display_full_name = trim(
+                                        ($app['res_first_name'] ?? '') . ' ' .
+                                        (!empty($app['res_middle_name']) ? $app['res_middle_name'] . ' ' : '') .
+                                        ($app['res_last_name'] ?? '')
+                                    );
+                                }
+
+                                // Contact number preference (avoid placeholder)
+                                $display_contact = (!empty($app['contact_number']) && $app['contact_number'] !== '09000000000')
+                                    ? $app['contact_number']
+                                    : ($app['resident_phone'] ?? '');
+
+                                // Address preference: owner_address -> resident address
+                                $display_address = $app['owner_address'] ?? '';
+                                if (empty($display_address)) {
+                                    $display_address = $app['resident_address'] ?? '';
+                                }
+
+                                // Birthdate, age computation
+                                $birthdate = $app['resident_birthdate'] ?? null;
+                                $age_text = '';
+                                if (!empty($birthdate)) {
+                                    try {
+                                        $dob = new DateTime($birthdate);
+                                        $now = new DateTime();
+                                        $age = $dob->diff($now)->y;
+                                        $age_text = $dob->format('M j, Y') . ' (Age ' . $age . ')';
+                                    } catch (Exception $e) {
+                                        $age_text = htmlspecialchars((string)$birthdate);
+                                    }
+                                }
+                            ?>
                             <div class="owner-details">
                                 <div class="owner-name">
-                                    <?php echo htmlspecialchars($app['owner_name']); ?>
+                                    <?php echo htmlspecialchars($display_full_name ?: ($app['owner_name'] ?? '')); ?>
                                 </div>
-                                <?php if (!empty($app['contact_number']) && $app['contact_number'] !== '09000000000'): ?>
-                                    <div class="contact-info">
-                                        📞 <?php echo htmlspecialchars($app['contact_number']); ?>
+                                <?php if (!empty($display_address)): ?>
+                                    <div class="business-info">
+                                        🏠 <?php echo htmlspecialchars($display_address); ?>
                                     </div>
                                 <?php endif; ?>
-                                <?php if (!empty($app['owner_address'])): ?>
-                                    <div class="business-info">
-                                        🏠 <?php echo htmlspecialchars(substr($app['owner_address'], 0, 50)); ?><?php echo strlen($app['owner_address']) > 50 ? '...' : ''; ?>
+                                <?php if (!empty($display_contact)): ?>
+                                    <div class="contact-info">
+                                        📞 <?php echo htmlspecialchars($display_contact); ?>
                                     </div>
+                                <?php endif; ?>
+                                <?php if (!empty($app['resident_civil_status'])): ?>
+                                    <div class="business-info">💍 <?php echo htmlspecialchars($app['resident_civil_status']); ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($app['resident_gender'])): ?>
+                                    <div class="business-info">⚧ <?php echo htmlspecialchars($app['resident_gender']); ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($age_text)): ?>
+                                    <div class="business-info">🎂 <?php echo $age_text; ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($app['resident_birth_place'])): ?>
+                                    <div class="business-info">🗺️ <?php echo htmlspecialchars($app['resident_birth_place']); ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($app['cr_years_of_residence'])): ?>
+                                    <div class="business-info">📅 Years of Residence: <?php echo htmlspecialchars($app['cr_years_of_residence']); ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($app['cr_purpose'])): ?>
+                                    <div class="business-info">📝 Purpose: <?php echo htmlspecialchars($app['cr_purpose']); ?></div>
                                 <?php endif; ?>
                             </div>
                         </td>
@@ -526,9 +668,14 @@ $applications = $stmt->fetchAll();
                             </div>
                         </td>
                         <td class="view-column">
-                            <button onclick="viewFormDetails(<?php echo $app['id']; ?>)" class="view-form-btn">
-                                👁️ View Form
-                            </button>
+                            <a
+                                href="get-business-application-summary.php?id=<?php echo (int)$app['id']; ?>"
+                                target="_blank"
+                                class="view-form-btn"
+                                title="Open summary in new tab"
+                            >
+                                👁️ View Summary
+                            </a>
                             <?php if ($app['status'] === 'approved'): ?>
                                 <a href="generate-business-clearance.php?id=<?php echo $app['id']; ?>" class="print-clearance-btn" target="_blank">
                                     🖨️ Print Clearance
@@ -576,11 +723,6 @@ $applications = $stmt->fetchAll();
         <?php endif; ?>
     </div>
 
-    <script>
-    function viewFormDetails(applicationId) {
-        // Open the certificate request form where business applications are now located
-        window.open('../user/certificate-request.php?admin_view=' + applicationId + '&readonly=1', '_blank');
-    }
-    </script>
+    
 </body>
 </html>

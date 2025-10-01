@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once __DIR__ . '/session_bootstrap.php';
 require_once '../includes/db_connect.php';
 
 $page_title = 'RFID Login';
@@ -9,18 +9,22 @@ $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rfid_code'])) {
     $rfid_code = trim($_POST['rfid_code']);
-    
     // Check if RFID exists in residents database
     $stmt = $pdo->prepare("SELECT * FROM residents WHERE (rfid_code = ? OR rfid = ?) AND status = 'active'");
     $stmt->execute([$rfid_code, $rfid_code]);
     $user = $stmt->fetch();
     
     if ($user) {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
         $_SESSION['user_type'] = 'resident';
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['rfid_authenticated'] = true;
+        // Ensure session is flushed before redirect
+        session_write_close();
         
         // Check if profile is complete
         if (isset($user['profile_complete']) && $user['profile_complete'] == 0) {
@@ -31,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rfid_code'])) {
         
         header('Location: dashboard.php');
         exit();
+{{ ... }}
     } else {
         $error = 'Invalid RFID or user not found.';
     }

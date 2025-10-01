@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 $base_path = '../';
 $page_title = 'Forms - Barangay Gumaoc East';
@@ -115,7 +115,7 @@ $page_description = 'Access various forms and documents for barangay services an
                             </span>
                         </div>
                     </div>
-                    <a href="assistance-applications.php" class="form-btn secondary apply-assistance">Apply Now</a>
+                    <a href="assistance-applications.php" class="form-btn secondary">Apply Now</a>
                 </div>
 
                 <div class="form-card">
@@ -151,6 +151,35 @@ $page_description = 'Access various forms and documents for barangay services an
                     </div>
                     <a href="report.php" class="form-btn emergency">Report Now</a>
                 </div>
+            </div>
+
+            <div class="forms-help">
+                <div class="help-card">
+                    <h3>Need Help?</h3>
+                    <p>If you need assistance with any form or have questions about the application process, don't hesitate to contact us.</p>
+                    <div class="help-options">
+                        <div class="help-option">
+                            <div class="help-icon">ðŸ“ž</div>
+                            <div class="help-info">
+                                <h4>Call Us</h4>
+                                <p>(044) 123-4567</p>
+                            </div>
+                        </div>
+                        <div class="help-option">
+                            <div class="help-icon">ðŸ“§</div>
+                            <div class="help-info">
+                                <h4>Email Us</h4>
+                                <p>info@gumaoceast.gov.ph</p>
+                            </div>
+                        </div>
+                        <div class="help-option">
+                            <div class="help-icon">ðŸ•’</div>
+                            <div class="help-info">
+                                <h4>Office Hours</h4>
+                                <p>Mon-Fri: 8AM-5PM</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -395,32 +424,6 @@ $page_description = 'Access various forms and documents for barangay services an
     box-shadow: 0 8px 25px rgba(108, 117, 125, 0.2);
 }
 
-/* Specific border update for Assistance Applications "Apply Now" button */
-a.form-btn.secondary[href="assistance-applications.php"] {
-    border-width: 3px;
-    border-color: #1b5e20 !important; /* green brand color */
-}
-
-a.form-btn.secondary[href="assistance-applications.php"]:hover {
-    border-color: #154a19 !important; /* darker green on hover */
-    box-shadow: 0 8px 25px rgba(27, 94, 32, 0.3);
-}
-
-/* Extra-specific class override to win against any cascade */
-a.form-btn.secondary.apply-assistance {
-    border-width: 3px !important;
-    border-color: #1b5e20 !important;
-    color: #1b5e20 !important;
-    background: rgba(27, 94, 32, 0.08) !important;
-}
-
-a.form-btn.secondary.apply-assistance:hover {
-    border-color: #154a19 !important;
-    color: #154a19 !important;
-    background: rgba(27, 94, 32, 0.16) !important;
-    box-shadow: 0 8px 25px rgba(27, 94, 32, 0.3);
-}
-
 .form-btn.emergency {
     background: rgba(220, 53, 69, 0.1);
     backdrop-filter: blur(10px);
@@ -434,6 +437,91 @@ a.form-btn.secondary.apply-assistance:hover {
     box-shadow: 0 8px 25px rgba(220, 53, 69, 0.2);
 }
 
+.forms-help {
+    display: flex;
+    justify-content: center;
+}
+
+.help-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(27, 94, 32, 0.1);
+    border: 1px solid rgba(27, 94, 32, 0.1);
+    max-width: 800px;
+    width: 100%;
+    transition: all 0.3s ease;
+}
+
+.help-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 45px rgba(27, 94, 32, 0.15);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(25px);
+}
+
+.help-card h3 {
+    color: #1b5e20;
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: 700;
+    border-bottom: 3px solid #4caf50;
+    padding-bottom: 15px;
+}
+
+.help-card p {
+    color: #333;
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 1.1rem;
+    line-height: 1.6;
+}
+
+.help-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.help-option {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 20px;
+    background: rgba(232, 245, 233, 0.6);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    border: 1px solid rgba(76, 175, 80, 0.2);
+    transition: all 0.3s ease;
+}
+
+.help-option:hover {
+    background: rgba(232, 245, 233, 0.8);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.2);
+}
+
+.help-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.help-info h4 {
+    color: #1b5e20;
+    margin: 0 0 5px 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.help-info p {
+    color: #333;
+    margin: 0;
+    font-size: 0.95rem;
+    text-align: left;
+}
+
 /* Animation for cards */
 @keyframes fadeInUp {
     from {
@@ -445,8 +533,10 @@ a.form-btn.secondary.apply-assistance:hover {
         transform: translateY(0);
     }
 }
+
 .forms-intro,
-.form-card {
+.form-card,
+.help-card {
     animation: fadeInUp 0.6s ease forwards;
 }
 
@@ -456,6 +546,7 @@ a.form-btn.secondary.apply-assistance:hover {
 .form-card:nth-child(3) { animation-delay: 0.4s; }
 .form-card:nth-child(4) { animation-delay: 0.5s; }
 .form-card:nth-child(5) { animation-delay: 0.6s; }
+.help-card { animation-delay: 0.7s; }
 
 @media (max-width: 768px) {
     .page-container {
@@ -483,7 +574,15 @@ a.form-btn.secondary.apply-assistance:hover {
     .form-content {
         padding: 25px 25px 20px 25px;
     }
-
+    
+    .help-card {
+        padding: 25px;
+        margin: 0 10px;
+    }
+    
+    .help-options {
+        grid-template-columns: 1fr;
+    }
     
     .content-section {
         padding: 30px 10px;
@@ -517,7 +616,10 @@ a.form-btn.secondary.apply-assistance:hover {
     .form-card h3 {
         font-size: 1.5rem;
     }
-
+    
+    .help-card {
+        padding: 20px 15px;
+    }
     
     .content-section {
         padding: 25px 10px;
@@ -546,6 +648,5 @@ a.form-btn.secondary.apply-assistance:hover {
 </style>
 
 <?php include '../includes/footer.php'; ?>
-
 
 

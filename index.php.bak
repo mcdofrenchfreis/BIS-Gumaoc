@@ -47,8 +47,14 @@
       background: linear-gradient(135deg, var(--brand-strong), var(--brand));
       color: #fff;
     }
-    .logo { width: 64px; height: 64px; border-radius: 14px; display: grid; place-items: center; background: transparent; border: none; }
-    .logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 12px; }
+    .logo {
+      width: 54px; height: 54px; border-radius: 14px;
+      display: grid; place-items: center;
+      background: linear-gradient(135deg, rgba(255,255,255,.25), rgba(255,255,255,.12));
+      border: 1px solid rgba(255,255,255,.35);
+      font-weight: 800; letter-spacing: .5px;
+      text-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
     .title h1 { margin: 0; font-size: 1.35rem; font-weight: 800; letter-spacing: .3px; }
     .title p { margin: 2px 0 0; opacity: .9; font-weight: 500; font-size: .98rem; }
     .panel-body { padding: 28px; background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(255,255,255,.95)); }
@@ -91,7 +97,7 @@
   <div class="wrap">
     <div class="panel">
       <div class="panel-header">
-        <div class="logo"><img src="assets/images/logo.png" alt="Barangay Gumaoc East Logo" /></div>
+        <div class="logo">BRGY</div>
         <div class="title">
           <h1>Barangay Gumaoc East</h1>
           <p>Digital Services and Administration</p>
@@ -141,4 +147,3 @@
   </div>
 </body>
 </html>
-

@@ -1,6 +1,18 @@
 <?php
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
+// Load the correct session bootstrap for the current area instead of starting a default session
+if (session_status() === PHP_SESSION_NONE) {
+    $script = $_SERVER['SCRIPT_NAME'] ?? '';
+    if (strpos($script, '/user/') !== false) {
+        $p = __DIR__ . '/../user/session_bootstrap.php';
+        if (file_exists($p)) { require_once $p; }
+    } elseif (strpos($script, '/kiosk/') !== false) {
+        $p = __DIR__ . '/../kiosk/session_bootstrap.php';
+        if (file_exists($p)) { require_once $p; }
+    } else {
+        // Default to user session so shared pages can see resident sessions
+        $p = __DIR__ . '/../user/session_bootstrap.php';
+        if (file_exists($p)) { require_once $p; }
+    }
 }
 
 // Dynamic base path configuration
@@ -11,6 +23,8 @@ if (!isset($base_path)) {
         $base_path = '../';
     } elseif (strpos($current_dir, '/admin') !== false) {
         $base_path = '../';
+    } elseif (strpos($current_dir, '/kiosk') !== false) {
+        $base_path = '../';
     } elseif (strpos($current_dir, '/user') !== false) {
         $base_path = '../';
     } else {
@@ -18,7 +32,7 @@ if (!isset($base_path)) {
     }
 }
 
-$is_logged_in = isset($_SESSION['rfid_authenticated']) && $_SESSION['rfid_authenticated'] === true;
+$is_logged_in = !empty($_SESSION['user_id']);
 $user_name = $_SESSION['user_name'] ?? 'User';
 $user_id = $_SESSION['user_id'] ?? null;
 $page_title = $page_title ?? 'Barangay Gumaoc East E-Services System';
@@ -705,6 +719,8 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
             <ul class="navbar-nav" id="navbarNav">
                 <?php 
                 $base_path = isset($base_path) ? $base_path : '../';
+                $current_dir = dirname($_SERVER['PHP_SELF']);
+                $is_admin_context = (strpos($current_dir, '/admin') !== false) || (!empty($_SESSION['is_admin']));
                 if (!$is_logged_in): ?>
                     <!-- Guest Navigation -->
                     <li><a href="<?php echo $base_path; ?>index.php" class="nav-link">🏠 Home</a></li>
@@ -728,17 +744,19 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                     </li>
                     <li><a href="<?php echo $base_path; ?>pages/report.php" class="nav-link">🚨 Report</a></li>
                     <li><a href="<?php echo $base_path; ?>pages/queue-status.php" class="nav-link">🎫 Queue</a></li>
+                    <?php if ($is_admin_context): ?>
+                        <li><a href="<?php echo $base_path; ?>admin/assist-requests.php" class="nav-link">🆘 Assistance</a></li>
+                    <?php endif; ?>
                     <li><a href="<?php echo $base_path; ?>pages/contact.php" class="nav-link">📞 Contact</a></li>
                     <li><a href="<?php echo $base_path; ?>user/login.php" class="nav-link">🔐 User Login</a></li>
                     <li><a href="<?php echo $base_path; ?>pages/resident-registration.php" class="nav-link">📝 Register</a></li>
                 <?php else: ?>
                     <!-- Authenticated User Navigation -->
-                    <li><a href="<?php echo $base_path; ?>index.php" class="nav-link">🏠 Dashboard</a></li>
-                    <li><a href="<?php echo $base_path; ?>pages/services.php" class="nav-link">🛠️ Services</a></li>
                     <li class="nav-dropdown">
                         <a href="<?php echo $base_path; ?>pages/forms.php" class="nav-link">
                             📋 E-Services <span class="dropdown-arrow">▼</span>
                         </a>
+                        
                         <ul class="dropdown-menu">
                             <li><a href="<?php echo $base_path; ?>pages/resident-registration.php">
                                 <span class="dropdown-icon">👥</span>Census Registration
@@ -753,6 +771,9 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                     </li>
                     <li><a href="<?php echo $base_path; ?>pages/report.php" class="nav-link">🚨 Report</a></li>
                     <li><a href="<?php echo $base_path; ?>pages/queue-status.php" class="nav-link">🎫 Queue</a></li>
+                    <?php if ($is_admin_context): ?>
+                        <li><a href="<?php echo $base_path; ?>admin/assist-requests.php" class="nav-link">🆘 Assistance</a></li>
+                    <?php endif; ?>
                     <li><a href="<?php echo $base_path; ?>pages/notifications.php" class="nav-link" style="position: relative;">
                         🔔 Notifications
                         <span class="notification-badge">3</span>

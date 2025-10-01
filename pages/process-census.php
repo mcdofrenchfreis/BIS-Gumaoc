@@ -128,12 +128,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 status, profile_complete, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, NOW())";
             
-            $residents_stmt = $pdo->prepare($residents_sql);
-            $residents_result = $residents_stmt->execute([
+            // Defensive placeholder check
+            $residents_expected = substr_count($residents_sql, '?');
+            $residents_params = [
                 $first_name, $middle_name, $last_name, $email, $contact_number, $hashed_password,
                 $full_address, $house_number, 'Gumaoc East', 'BLOCK', $interviewer, $interviewer_title,
                 $birth_date, $birth_place, $gender, $civil_status, $generated_rfid, $generated_rfid
-            ]);
+            ];
+            if ($residents_expected !== count($residents_params)) {
+                throw new Exception("Residents INSERT placeholder mismatch: expected $residents_expected, got " . count($residents_params));
+            }
+            $residents_stmt = $pdo->prepare($residents_sql);
+            $residents_result = $residents_stmt->execute($residents_params);
             
             if (!$residents_result) {
                 throw new Exception("Failed to create resident account");
@@ -154,10 +160,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 waste_disposal, waste_disposal_other, appliances, transportation, transportation_other,
                 business, business_other, contraceptive, interviewer, interviewer_title,
                 resident_disability, resident_organization
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             
-            $stmt = $pdo->prepare($sql);
-            $result = $stmt->execute([
+            $expected = substr_count($sql, '?');
+            $params = [
                 $first_name, $middle_name, $last_name, $birth_date, $birth_place, $age,
                 $civil_status, $gender, $contact_number, $email, $house_number, $street_address, $pangkabuhayan,
                 $land_ownership, $land_ownership_other, $house_ownership, $house_ownership_other,
@@ -166,7 +172,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $waste_disposal, $waste_disposal_other, $appliances, $transportation, $transportation_other,
                 $business, $business_other, $contraceptive, $interviewer, $interviewer_title,
                 $resident_disability, $resident_organization
-            ]);
+            ];
+            if ($expected !== count($params)) {
+                throw new Exception("resident_registrations INSERT placeholder mismatch: expected $expected, got " . count($params));
+            }
+            $stmt = $pdo->prepare($sql);
+            $result = $stmt->execute($params);
             
             if (!$result) {
                 throw new Exception("Failed to insert census registration");
