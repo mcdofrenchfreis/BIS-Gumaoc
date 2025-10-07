@@ -12,24 +12,32 @@ if (isset($_SESSION['admin_id'])) {
 // Process login
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_once '../includes/db_connect.php';
-    
+
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
-    
+
     $stmt = $pdo->prepare("SELECT * FROM admin_users WHERE username = ?");
     $stmt->execute([$username]);
     $user = $stmt->fetch();
-    
+
     if ($user && password_verify($password, $user['password'])) {
         $_SESSION['admin_id'] = $user['id'];
         $_SESSION['admin_username'] = $user['username'];
         $_SESSION['admin_logged_in'] = true;
-        
+        // Persist role in session (fallback to 'secretary' if null)
+        $_SESSION['admin_role'] = isset($user['role']) && $user['role'] !== '' ? $user['role'] : 'secretary';
+        // Optional: display name convenience
+        if (!empty($user['full_name'])) {
+            $_SESSION['admin_name'] = $user['full_name'];
+        } else {
+            $_SESSION['admin_name'] = $user['username'];
+        }
+
         // Log successful login
         include '../includes/AdminLogger.php';
         $logger = new AdminLogger($pdo);
         $logger->logAdminLogin($username, true);
-        
+
         header('Location: dashboard.php');
         exit();
     } else {
@@ -37,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         include '../includes/AdminLogger.php';
         $logger = new AdminLogger($pdo);
         $logger->logAdminLogin($username, false);
-        
+
         $error = "Invalid username or password";
     }
 }

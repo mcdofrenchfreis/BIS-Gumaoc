@@ -2,6 +2,7 @@
 session_start();
 include '../includes/db_connect.php';
 header('Content-Type: text/html; charset=UTF-8');
+
 // Check if admin is logged in
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
     header('Location: login.php');
@@ -10,9 +11,20 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
 
 // Get registration ID from URL
 $registration_id = isset($_GET['id']) ? (int)$_GET['id'] : null;
-
 if (!$registration_id) {
     header('Location: view-resident-registrations.php');
+    exit;
+}
+
+// Handle status update POST action
+if (($_POST['action'] ?? '') === 'update_status' && isset($_POST['status'])) {
+    $new_status = $_POST['status'];
+    $allowed_statuses = ['pending', 'approved', 'rejected'];
+    if (in_array($new_status, $allowed_statuses, true)) {
+        $updateStmt = $pdo->prepare("UPDATE resident_registrations SET status = ? WHERE id = ?");
+        $updateStmt->execute([$new_status, $registration_id]);
+    }
+    header('Location: resident-summary.php?id=' . $registration_id);
     exit;
 }
 
@@ -44,7 +56,6 @@ $organizations_stmt = $pdo->prepare("SELECT * FROM family_organizations WHERE re
 $organizations_stmt->execute([$registration_id]);
 $family_organizations = $organizations_stmt->fetchAll();
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -306,6 +317,50 @@ $family_organizations = $organizations_stmt->fetchAll();
             font-weight: 700;
             text-shadow: 0 1px 1px rgba(0,0,0,0.2);
         }
+        /* Status update form */
+        .status-update-form {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 0.75rem;
+        }
+        .status-update-form select {
+            padding: 0.35rem 0.5rem;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+        .status-update-form button {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: #fff;
+            border: none;
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        /* Scroll to top button */
+        .scroll-top-btn {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: #4CAF50;
+            color: #fff;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        .scroll-top-btn.show {
+            display: inline-flex;
+        }
 </style>
 </head>
 <body>
@@ -323,337 +378,244 @@ $family_organizations = $organizations_stmt->fetchAll();
             <div class="requester">
                 <h2><?php echo htmlspecialchars($registration_data['first_name'] . ' ' . $registration_data['last_name']); ?></h2>
                 <span class="badge status-<?php echo htmlspecialchars($registration_data['status']); ?>"><?php echo ucfirst($registration_data['status']); ?></span>
+                <form method="POST" class="status-update-form" title="Change status of this registration">
+                    <input type="hidden" name="action" value="update_status">
+                    <label for="status" style="font-weight:600; color:#fff;">Status:</label>
+                    <select name="status" id="status" onchange="this.form.submit()">
+                        <option value="pending" <?php echo $registration_data['status']==='pending'?'selected':''; ?>>Pending</option>
+                        <option value="approved" <?php echo $registration_data['status']==='approved'?'selected':''; ?>>Approved</option>
+                        <option value="rejected" <?php echo $registration_data['status']==='rejected'?'selected':''; ?>>Rejected</option>
+                    </select>
+                    
+                </form>
             </div>
         </div>
-        
         <!-- Personal Information Section -->
-        <div class="summary-section">
-            <h3 class="section-title">👤 Personal Information</h3>
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-label">Full Name</div>
-                    <div class="info-value">
-                        <?php echo htmlspecialchars($registration_data['first_name'] . ' ' . ($registration_data['middle_name'] ?? '') . ' ' . $registration_data['last_name']); ?>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Age</div>
-                    <div class="info-value"><?php echo $registration_data['age'] ?? 'N/A'; ?></div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Gender</div>
-                    <div class="info-value"><?php echo $registration_data['gender'] ?? 'N/A'; ?></div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Civil Status</div>
-                    <div class="info-value"><?php echo $registration_data['civil_status'] ?? 'N/A'; ?></div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Date of Birth</div>
-                    <div class="info-value">
-                        <?php echo $registration_data['birth_date'] ? date('F j, Y', strtotime($registration_data['birth_date'])) : 'N/A'; ?>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Place of Birth</div>
-                    <div class="info-value"><?php echo $registration_data['birth_place'] ?? 'N/A'; ?></div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Email</div>
-                    <div class="info-value"><?php echo $registration_data['email'] ?? 'N/A'; ?></div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Contact Number</div>
-                    <div class="info-value"><?php echo $registration_data['contact_number'] ?? 'N/A'; ?></div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">House Number</div>
-                    <div class="info-value"><?php echo $registration_data['house_number'] ?? 'N/A'; ?></div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Address</div>
-                    <div class="info-value"><?php echo $registration_data['address'] ?? 'N/A'; ?></div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Interviewer Name</div>
-                    <div class="info-value"><?php echo $registration_data['interviewer'] ?? 'N/A'; ?></div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Interviewer Position</div>
-                    <div class="info-value"><?php echo $registration_data['interviewer_title'] ?? 'N/A'; ?></div>
-                </div>
-            </div>
+<div class="summary-section">
+    <h3 class="section-title">Personal Information</h3>
+    <div class="info-grid">
+        <div class="info-item">
+            <div class="info-label">First Name</div>
+            <div class="info-value"><?php echo htmlspecialchars($registration_data['first_name'] ?? ''); ?></div>
         </div>
-        
-        <!-- Livelihood Information Section -->
-        <div class="summary-section">
-            <h3 class="section-title">🏠 Livelihood Information</h3>
-            <div class="info-grid">
-                <div class="info-item">
-                    <div class="info-label">Land Ownership</div>
-                    <div class="info-value">
-                        <?php 
-                        echo $registration_data['land_ownership'] ?? 'N/A';
-                        if ($registration_data['land_ownership'] === 'Iba pa' && $registration_data['land_ownership_other']) {
-                            echo ' - ' . htmlspecialchars($registration_data['land_ownership_other']);
-                        }
-                        ?>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">House Ownership</div>
-                    <div class="info-value">
-                        <?php 
-                        echo $registration_data['house_ownership'] ?? 'N/A';
-                        if ($registration_data['house_ownership'] === 'Iba pa' && $registration_data['house_ownership_other']) {
-                            echo ' - ' . htmlspecialchars($registration_data['house_ownership_other']);
-                        }
-                        ?>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Agricultural/Farm Land</div>
-                    <div class="info-value"><?php echo $registration_data['farmland'] ?? 'N/A'; ?></div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Cooking Energy Source</div>
-                    <div class="info-value">
-                        <?php 
-                        echo $registration_data['cooking_energy'] ?? 'N/A';
-                        if ($registration_data['cooking_energy'] === 'Iba pa' && $registration_data['cooking_energy_other']) {
-                            echo ' - ' . htmlspecialchars($registration_data['cooking_energy_other']);
-                        }
-                        ?>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Toilet Type</div>
-                    <div class="info-value">
-                        <?php 
-                        echo $registration_data['toilet_type'] ?? 'N/A';
-                        if ($registration_data['toilet_type'] === 'Iba pa' && $registration_data['toilet_type_other']) {
-                            echo ' - ' . htmlspecialchars($registration_data['toilet_type_other']);
-                        }
-                        ?>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Electricity Source</div>
-                    <div class="info-value">
-                        <?php 
-                        echo $registration_data['electricity_source'] ?? 'N/A';
-                        if ($registration_data['electricity_source'] === 'Iba pa' && $registration_data['electricity_source_other']) {
-                            echo ' - ' . htmlspecialchars($registration_data['electricity_source_other']);
-                        }
-                        ?>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Water Source</div>
-                    <div class="info-value">
-                        <?php 
-                        echo $registration_data['water_source'] ?? 'N/A';
-                        if ($registration_data['water_source'] === 'Iba pa' && $registration_data['water_source_other']) {
-                            echo ' - ' . htmlspecialchars($registration_data['water_source_other']);
-                        }
-                        ?>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Waste Disposal Method</div>
-                    <div class="info-value">
-                        <?php 
-                        echo $registration_data['waste_disposal'] ?? 'N/A';
-                        if ($registration_data['waste_disposal'] === 'Iba pa' && $registration_data['waste_disposal_other']) {
-                            echo ' - ' . htmlspecialchars($registration_data['waste_disposal_other']);
-                        }
-                        ?>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Household Appliances</div>
-                    <div class="info-value">
-                        <?php 
-                        if ($registration_data['appliances']) {
-                            $appliances = explode(',', $registration_data['appliances']);
-                            echo implode(', ', array_map('htmlspecialchars', $appliances));
-                        } else {
-                            echo 'N/A';
-                        }
-                        ?>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Transportation</div>
-                    <div class="info-value">
-                        <?php 
-                        if ($registration_data['transportation']) {
-                            $transportation = explode(',', $registration_data['transportation']);
-                            echo implode(', ', array_map('htmlspecialchars', $transportation));
-                            if ($registration_data['transportation_other']) {
-                                echo ', ' . htmlspecialchars($registration_data['transportation_other']);
-                            }
-                        } else {
-                            echo 'N/A';
-                        }
-                        ?>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Business/Income Sources</div>
-                    <div class="info-value">
-                        <?php 
-                        if ($registration_data['business']) {
-                            $business = explode(',', $registration_data['business']);
-                            echo implode(', ', array_map('htmlspecialchars', $business));
-                            if ($registration_data['business_other']) {
-                                echo ', ' . htmlspecialchars($registration_data['business_other']);
-                            }
-                        } else {
-                            echo 'N/A';
-                        }
-                        ?>
-                    </div>
-                </div>
-                
-                <div class="info-item">
-                    <div class="info-label">Contraceptive Methods</div>
-                    <div class="info-value">
-                        <?php 
-                        if ($registration_data['contraceptive']) {
-                            $contraceptive = explode(',', $registration_data['contraceptive']);
-                            echo implode(', ', array_map('htmlspecialchars', $contraceptive));
-                        } else {
-                            echo 'N/A';
-                        }
-                        ?>
-                    </div>
-                </div>
-            </div>
+        <div class="info-item">
+            <div class="info-label">Middle Name</div>
+            <div class="info-value"><?php echo htmlspecialchars($registration_data['middle_name'] ?? ''); ?></div>
         </div>
-        
-        <!-- Family Members Section -->
-        <div class="summary-section">
-            <h3 class="section-title">👨‍👩‍👧‍👦 Family Members (<?php echo count($family_members); ?>)</h3>
-            <?php if (!empty($family_members)): ?>
-            <div class="table-responsive">
-                <table class="family-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Relationship</th>
-                            <th>Birth Date</th>
-                            <th>Age</th>
-                            <th>Gender</th>
-                            <th>Civil Status</th>
-                            <th>Email</th>
-                            <th>Occupation</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($family_members as $member): ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($member['full_name'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($member['relationship'] ?? 'N/A'); ?></td>
-                            <td><?php echo $member['birth_date'] ? date('M j, Y', strtotime($member['birth_date'])) : 'N/A'; ?></td>
-                            <td><?php echo $member['age'] ?? 'N/A'; ?></td>
-                            <td><?php echo htmlspecialchars($member['gender'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($member['civil_status'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($member['email'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($member['occupation'] ?? 'N/A'); ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php else: ?>
-            <p>No family members recorded.</p>
-            <?php endif; ?>
+        <div class="info-item">
+            <div class="info-label">Last Name</div>
+            <div class="info-value"><?php echo htmlspecialchars($registration_data['last_name'] ?? ''); ?></div>
         </div>
-        
-        <!-- Disabilities Section -->
-        <div class="summary-section">
-            <h3 class="section-title">♿ Family Members with Disabilities (<?php echo count($family_disabilities); ?>)</h3>
-            <?php if (!empty($family_disabilities)): ?>
-            <div class="table-responsive">
-                <table class="family-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Disability</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($family_disabilities as $disability): ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($disability['name'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($disability['disability_type'] ?? 'N/A'); ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php else: ?>
-            <p>No family members with disabilities recorded.</p>
-            <?php endif; ?>
+        <div class="info-item">
+            <div class="info-label">Gender</div>
+            <div class="info-value"><?php echo $registration_data['gender'] ?? 'N/A'; ?></div>
         </div>
-        
-        <!-- Organizations Section -->
-        <div class="summary-section">
-            <h3 class="section-title">🏢 Family Members in Organizations (<?php echo count($family_organizations); ?>)</h3>
-            <?php if (!empty($family_organizations)): ?>
-            <div class="table-responsive">
-                <table class="family-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Organization</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($family_organizations as $organization): ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($organization['name'] ?? 'N/A'); ?></td>
-                            <td><?php echo htmlspecialchars($organization['organization_type'] ?? 'N/A'); ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-            <?php else: ?>
-            <p>No family members in organizations recorded.</p>
-            <?php endif; ?>
+        <div class="info-item">
+            <div class="info-label">Civil Status</div>
+            <div class="info-value"><?php echo $registration_data['civil_status'] ?? 'N/A'; ?></div>
         </div>
-        
-        <div class="actions">
-            <button class="print-btn" onclick="window.print()">🖨️ Print Summary</button>
-            <a href="view-resident-registrations.php" class="back-btn">← Back to Registrations</a>
+        <div class="info-item">
+            <div class="info-label">Date of Birth</div>
+            <div class="info-value"><?php echo $registration_data['birth_date'] ? date('F j, Y', strtotime($registration_data['birth_date'])) : 'N/A'; ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Place of Birth</div>
+            <div class="info-value"><?php echo $registration_data['birth_place'] ?? 'N/A'; ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Email</div>
+            <div class="info-value"><?php echo $registration_data['email'] ?? 'N/A'; ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Contact Number</div>
+            <div class="info-value"><?php echo $registration_data['contact_number'] ?? 'N/A'; ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">House Number</div>
+            <div class="info-value"><?php echo $registration_data['house_number'] ?? 'N/A'; ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Address</div>
+            <div class="info-value"><?php echo $registration_data['address'] ?? 'N/A'; ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Interviewer Name</div>
+            <div class="info-value"><?php echo $registration_data['interviewer'] ?? 'N/A'; ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Interviewer Position</div>
+            <div class="info-value"><?php echo $registration_data['interviewer_title'] ?? 'N/A'; ?></div>
         </div>
     </div>
+</div>
+
+<!-- Livelihood Information Section -->
+<div class="summary-section">
+    <h3 class="section-title">Livelihood Information</h3>
+    <div class="info-grid">
+        <div class="info-item">
+            <div class="info-label">Land Ownership</div>
+            <div class="info-value"><?php echo $registration_data['land_ownership'] ?? 'N/A'; if ($registration_data['land_ownership'] === 'Iba pa' && $registration_data['land_ownership_other']) { echo ' - ' . htmlspecialchars($registration_data['land_ownership_other']); } ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">House Ownership</div>
+            <div class="info-value"><?php echo $registration_data['house_ownership'] ?? 'N/A'; if ($registration_data['house_ownership'] === 'Iba pa' && $registration_data['house_ownership_other']) { echo ' - ' . htmlspecialchars($registration_data['house_ownership_other']); } ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Agricultural/Farm Land</div>
+            <div class="info-value"><?php echo $registration_data['farmland'] ?? 'N/A'; ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Cooking Energy Source</div>
+            <div class="info-value"><?php echo $registration_data['cooking_energy'] ?? 'N/A'; if ($registration_data['cooking_energy'] === 'Iba pa' && $registration_data['cooking_energy_other']) { echo ' - ' . htmlspecialchars($registration_data['cooking_energy_other']); } ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Toilet Type</div>
+            <div class="info-value"><?php echo $registration_data['toilet_type'] ?? 'N/A'; if ($registration_data['toilet_type'] === 'Iba pa' && $registration_data['toilet_type_other']) { echo ' - ' . htmlspecialchars($registration_data['toilet_type_other']); } ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Electricity Source</div>
+            <div class="info-value"><?php echo $registration_data['electricity_source'] ?? 'N/A'; if ($registration_data['electricity_source'] === 'Iba pa' && $registration_data['electricity_source_other']) { echo ' - ' . htmlspecialchars($registration_data['electricity_source_other']); } ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Water Source</div>
+            <div class="info-value"><?php echo $registration_data['water_source'] ?? 'N/A'; if ($registration_data['water_source'] === 'Iba pa' && $registration_data['water_source_other']) { echo ' - ' . htmlspecialchars($registration_data['water_source_other']); } ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Waste Disposal Method</div>
+            <div class="info-value"><?php echo $registration_data['waste_disposal'] ?? 'N/A'; if ($registration_data['waste_disposal'] === 'Iba pa' && $registration_data['waste_disposal_other']) { echo ' - ' . htmlspecialchars($registration_data['waste_disposal_other']); } ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Household Appliances</div>
+            <div class="info-value"><?php if ($registration_data['appliances']) { $appliances = explode(',', $registration_data['appliances']); echo implode(', ', array_map('htmlspecialchars', $appliances)); } else { echo 'N/A'; } ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Transportation</div>
+            <div class="info-value"><?php if ($registration_data['transportation']) { $transportation = explode(',', $registration_data['transportation']); echo implode(', ', array_map('htmlspecialchars', $transportation)); if ($registration_data['transportation_other']) { echo ', ' . htmlspecialchars($registration_data['transportation_other']); } } else { echo 'N/A'; } ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Business/Income Sources</div>
+            <div class="info-value"><?php if ($registration_data['business']) { $business = explode(',', $registration_data['business']); echo implode(', ', array_map('htmlspecialchars', $business)); if ($registration_data['business_other']) { echo ', ' . htmlspecialchars($registration_data['business_other']); } } else { echo 'N/A'; } ?></div>
+        </div>
+        <div class="info-item">
+            <div class="info-label">Contraceptive Methods</div>
+            <div class="info-value"><?php if ($registration_data['contraceptive']) { $contraceptive = explode(',', $registration_data['contraceptive']); echo implode(', ', array_map('htmlspecialchars', $contraceptive)); } else { echo 'N/A'; } ?></div>
+        </div>
+    </div>
+</div>
+
+<!-- Family Members Section -->
+<div class="summary-section">
+    <h3 class="section-title">Family Members (<?php echo count($family_members); ?>)</h3>
+    <?php if (!empty($family_members)): ?>
+    <div class="table-responsive">
+        <table class="family-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Relationship</th>
+                    <th>Birth Date</th>
+                    <th>Age</th>
+                    <th>Gender</th>
+                    <th>Civil Status</th>
+                    <th>Email</th>
+                    <th>Occupation</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($family_members as $member): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($member['full_name'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($member['relationship'] ?? 'N/A'); ?></td>
+                    <td><?php echo $member['birth_date'] ? date('M j, Y', strtotime($member['birth_date'])) : 'N/A'; ?></td>
+                    <td><?php echo $member['age'] ?? 'N/A'; ?></td>
+                    <td><?php echo htmlspecialchars($member['gender'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($member['civil_status'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($member['email'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($member['occupation'] ?? 'N/A'); ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php else: ?>
+    <p>No family members recorded.</p>
+    <?php endif; ?>
+</div>
+
+<!-- Disabilities Section -->
+<div class="summary-section">
+    <h3 class="section-title">Family Members with Disabilities (<?php echo count($family_disabilities); ?>)</h3>
+    <?php if (!empty($family_disabilities)): ?>
+    <div class="table-responsive">
+        <table class="family-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Disability</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($family_disabilities as $disability): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($disability['name'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($disability['disability_type'] ?? 'N/A'); ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php else: ?>
+    <p>No family members with disabilities recorded.</p>
+    <?php endif; ?>
+</div>
+
+<!-- Organizations Section -->
+<div class="summary-section">
+    <h3 class="section-title">Family Members in Organizations (<?php echo count($family_organizations); ?>)</h3>
+    <?php if (!empty($family_organizations)): ?>
+    <div class="table-responsive">
+        <table class="family-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Organization</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($family_organizations as $organization): ?>
+                <tr>
+                    <td><?php echo htmlspecialchars($organization['name'] ?? 'N/A'); ?></td>
+                    <td><?php echo htmlspecialchars($organization['organization_type'] ?? 'N/A'); ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php else: ?>
+    <p>No family members in organizations recorded.</p>
+    <?php endif; ?>
+</div>
+<button id="scrollTopBtn" class="scroll-top-btn" aria-label="Scroll to top">↑</button>
+    <script>
+        (function(){
+            const btn = document.getElementById('scrollTopBtn');
+            const onScroll = () => {
+                if (window.scrollY > 300) {
+                    btn.classList.add('show');
+                } else {
+                    btn.classList.remove('show');
+                }
+            };
+            window.addEventListener('scroll', onScroll);
+            btn.addEventListener('click', () => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+            onScroll();
+        })();
+    </script>
 </body>
 </html>
-
 
 
 

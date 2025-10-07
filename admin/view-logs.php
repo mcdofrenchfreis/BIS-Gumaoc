@@ -81,7 +81,7 @@ $distinct_targets = $pdo->query("SELECT DISTINCT target_type FROM admin_logs ORD
     <title>System Logs - Admin</title>
     <link rel="stylesheet" href="../css/styles.css">
     <style>
-        .admin-container {
+        body { background: #ffffff; margin: 0; padding: 90px 0 0; }.admin-container {
             max-width: 1600px;
             margin: 0 auto;
             padding: 2rem;
@@ -391,13 +391,14 @@ $distinct_targets = $pdo->query("SELECT DISTINCT target_type FROM admin_logs ORD
     </style>
 </head>
 <body>
+    <?php $base_path = '../'; include $base_path . 'includes/admin_mini_nav.php'; ?>
     <div class="admin-container">
         <div class="admin-header">
             <div>
                 <h1>📊 System Activity Logs</h1>
                 <p>Total: <?php echo number_format($total_logs); ?> log entries</p>
             </div>
-            <a href="dashboard.php" class="admin-btn">← Back to Dashboard</a>
+            
         </div>
         
         <!-- Statistics -->

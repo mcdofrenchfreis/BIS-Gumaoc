@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 class QueueManager {
     private $pdo;
     
@@ -180,7 +180,14 @@ class QueueManager {
             JOIN queue_services qs ON qt.service_id = qs.id 
             {$where} AND qt.status = 'waiting' 
             AND DATE(qt.created_at) = CURDATE() 
-            ORDER BY qt.queue_position ASC
+            ORDER BY 
+                CASE qt.priority_level 
+                    WHEN 'senior' THEN 1
+                    WHEN 'pwd' THEN 2
+                    WHEN 'priority' THEN 3
+                    ELSE 4
+                END,
+                qt.created_at ASC
         ");
         $stmt->execute($params);
         return $stmt->fetchAll();
@@ -223,12 +230,20 @@ class QueueManager {
                 qs.service_name,
                 qs.service_code,
                 qt.queue_position,
+                qt.priority_level,
                 qt.estimated_time
             FROM queue_tickets qt
             JOIN queue_services qs ON qt.service_id = qs.id
             WHERE qt.status = 'waiting' 
             AND DATE(qt.created_at) = CURDATE()
-            ORDER BY qt.queue_position ASC
+            ORDER BY 
+                CASE qt.priority_level 
+                    WHEN 'senior' THEN 1
+                    WHEN 'pwd' THEN 2
+                    WHEN 'priority' THEN 3
+                    ELSE 4
+                END,
+                qt.created_at ASC
             LIMIT {$limit}
         ");
         $stmt->execute();
@@ -255,7 +270,14 @@ class QueueManager {
                     SELECT * FROM queue_tickets 
                     WHERE service_id IN (1,2,3,4) AND status = 'waiting' 
                     AND DATE(created_at) = CURDATE()
-                    ORDER BY queue_position ASC 
+                    ORDER BY 
+                        CASE priority_level 
+                            WHEN 'senior' THEN 1
+                            WHEN 'pwd' THEN 2
+                            WHEN 'priority' THEN 3
+                            ELSE 4
+                        END,
+                        created_at ASC 
                     LIMIT 1
                 ");
                 $ticket_stmt->execute();
@@ -266,7 +288,14 @@ class QueueManager {
                     SELECT * FROM queue_tickets 
                     WHERE service_id = ? AND status = 'waiting' 
                     AND DATE(created_at) = CURDATE()
-                    ORDER BY queue_position ASC 
+                    ORDER BY 
+                        CASE priority_level 
+                            WHEN 'senior' THEN 1
+                            WHEN 'pwd' THEN 2
+                            WHEN 'priority' THEN 3
+                            ELSE 4
+                        END,
+                        created_at ASC 
                     LIMIT 1
                 ");
                 $ticket_stmt->execute([$counter['service_id']]);
@@ -279,7 +308,14 @@ class QueueManager {
                         SELECT * FROM queue_tickets 
                         WHERE status = 'waiting' 
                         AND DATE(created_at) = CURDATE()
-                        ORDER BY queue_position ASC 
+                        ORDER BY 
+                        CASE priority_level 
+                            WHEN 'senior' THEN 1
+                            WHEN 'pwd' THEN 2
+                            WHEN 'priority' THEN 3
+                            ELSE 4
+                        END,
+                        created_at ASC 
                         LIMIT 1
                     ");
                     $ticket_stmt->execute();

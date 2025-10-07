@@ -48,7 +48,8 @@ $is_admin_dashboard = ($current_script === 'dashboard.php');
       <div class="admin-pill">
         <div class="admin-avatar"><?php echo htmlspecialchars($initials); ?></div>
         <div class="admin-name"><?php echo htmlspecialchars($admin_name); ?></div>
-        <span class="admin-role">Admin</span>
+        <?php $role_label = isset($_SESSION['admin_role']) && $_SESSION['admin_role'] ? ucfirst($_SESSION['admin_role']) : 'Admin'; ?>
+        <span class="admin-role"><?php echo htmlspecialchars($role_label); ?></span>
       </div>
       <a href="<?php echo $base_path; ?>logout.php" class="admin-quick-link" title="Logout">🚪 Logout</a>
     </div>

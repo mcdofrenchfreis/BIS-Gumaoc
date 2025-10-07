@@ -11,7 +11,16 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     exit;
 }
 
-// Note: Role handling can be added here if needed.
+// Role-based visibility setup
+$role = $_SESSION['admin_role'] ?? 'secretary';
+$isCaptain = ($role === 'captain');
+$isSecretary = ($role === 'secretary');
+$isTreasurer = ($role === 'treasurer');
+
+// Visibility rules
+$showCensus = !$isTreasurer;                  // Treasurer cannot see census
+$showCertificates = !$isTreasurer;            // Treasurer cannot see certificates
+$showBusinessApps = !$isSecretary;            // Secretary cannot see business applications
 
 // Add admin stylesheet and Font Awesome if not already included
 $base_path = '../';
@@ -291,6 +300,7 @@ try {
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 1.2rem;
             margin-bottom: 2rem;
+            align-items: stretch; /* ensure equal height columns */
         }
         
         .stat-card {
@@ -302,6 +312,16 @@ try {
             text-align: left;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             backdrop-filter: saturate(1.1) blur(4px);
+            display: flex;            /* stack content vertically */
+            flex-direction: column;   /* title, number, badge */
+            height: 100%;             /* fill grid cell */
+            min-height: 150px;        /* consistent baseline height */
+        }
+
+        /* When stat-card is an anchor, keep default look */
+        a.stat-card {
+            text-decoration: none;
+            color: inherit;
         }
         
         .stat-card:hover {
@@ -337,6 +357,7 @@ try {
             border-radius: 999px;
             display: inline-block;
             border: 1px solid rgba(179, 58, 47, 0.15);
+            margin-top: auto;         /* pin to bottom of card */
         }
 
         /* Main Content Grid */
@@ -394,6 +415,7 @@ try {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
+            align-items: stretch; /* ensure cards have equal height */
         }
         
         .action-card {
@@ -406,6 +428,10 @@ try {
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
             position: relative;
             overflow: hidden;
+            display: flex;              /* make vertical layout */
+            flex-direction: column;     /* stack icon, title, text, button */
+            height: 100%;               /* stretch to grid cell height */
+            min-height: 260px;          /* ensure consistent minimum height */
         }
         
         .action-card::before {
@@ -448,6 +474,12 @@ try {
             font-size: 0.95rem;
             position: relative;
             z-index: 1;
+        }
+
+        /* Fix button at bottom inside the card */
+        .action-card .admin-btn {
+            margin-top: auto;           /* push button to the bottom */
+            align-self: flex-start;     /* keep left alignment */
         }
         
         .admin-btn {
@@ -870,14 +902,6 @@ try {
                 <div class="gov-header-top">Republic of the Philippines</div>
                 <h1>Barangay Gumaoc East Admin Portal</h1>
                 <p>Official Management System for Barangay Services and Records</p>
-                <div class="header-actions">
-                    <button class="header-btn">
-                        <i class="fas fa-bell"></i> Notifications
-                    </button>
-                    <button class="header-btn">
-                        <i class="fas fa-cog"></i> Settings
-                    </button>
-                </div>
             </div>
         </div>
         
@@ -888,35 +912,41 @@ try {
         <?php endif; ?>
         
         <div class="dashboard-stats">
-            <div class="stat-card">
+            <?php if ($showCensus): ?>
+            <a class="stat-card" href="view-resident-registrations.php">
                 <h3>👥 Census Registrations</h3>
                 <div class="stat-number"><?php echo $resident_count; ?></div>
                 <div class="stat-pending"><?php echo $pending_resident; ?> pending review</div>
-            </div>
+            </a>
+            <?php endif; ?>
             
-            <div class="stat-card">
+            <?php if ($showCertificates): ?>
+            <a class="stat-card" href="view-certificate-requests.php">
                 <h3>📄 Certificate Requests</h3>
                 <div class="stat-number"><?php echo $certificate_count; ?></div>
                 <div class="stat-pending"><?php echo $pending_certificate; ?> pending approval</div>
-            </div>
+            </a>
+            <?php endif; ?>
             
-            <div class="stat-card">
+            <?php if ($showBusinessApps): ?>
+            <a class="stat-card" href="view-business-applications.php">
                 <h3>🏢 Business Applications</h3>
                 <div class="stat-number"><?php echo $business_count; ?></div>
                 <div class="stat-pending"><?php echo $pending_business; ?> pending processing</div>
-            </div>
+            </a>
+            <?php endif; ?>
             
-            <div class="stat-card">
+            <a class="stat-card" href="rfid-scanner.php">
                 <h3>📱 Available RFID Codes</h3>
                 <div class="stat-number"><?php echo $rfid_available; ?></div>
                 <div class="stat-pending">Ready for assignment</div>
-            </div>
+            </a>
             
-            <div class="stat-card">
+            <a class="stat-card" href="rfid-scanner.php">
                 <h3>🆔 Assigned RFID Codes</h3>
                 <div class="stat-number"><?php echo $rfid_assigned; ?></div>
                 <div class="stat-pending">Currently in use</div>
-            </div>
+            </a>
         </div>
         
         <div class="dashboard-main">
@@ -927,26 +957,32 @@ try {
                 </h2>
                 
                 <div class="dashboard-actions">                    
+                    <?php if ($showCensus): ?>
                     <div class="action-card">
                         <div class="action-icon">👥</div>
                         <h3>Census Registrations</h3>
                         <p>View and manage resident census registrations</p>
                         <a href="view-resident-registrations.php" class="admin-btn">View Submissions</a>
                     </div>
+                    <?php endif; ?>
                     
+                    <?php if ($showCertificates): ?>
                     <div class="action-card">
                         <div class="action-icon">📄</div>
                         <h3>Certificate Requests</h3>
                         <p>Process certificate requests and approvals</p>
                         <a href="view-certificate-requests.php" class="admin-btn">View Requests</a>
                     </div>
+                    <?php endif; ?>
                     
+                    <?php if ($showBusinessApps): ?>
                     <div class="action-card">
                         <div class="action-icon">🏢</div>
                         <h3>Business Applications</h3>
                         <p>Review business permit applications</p>
                         <a href="view-business-applications.php" class="admin-btn">View Applications</a>
                     </div>
+                    <?php endif; ?>
                     
                     <div class="action-card">
                         <div class="action-icon">📝</div>
@@ -995,6 +1031,20 @@ try {
                         <h3>System Logs</h3>
                         <p>View activity logs and system events</p>
                         <a href="view-logs.php" class="admin-btn">View Logs</a>
+                    </div>
+
+                    <div class="action-card">
+                        <div class="action-icon">📊</div>
+                        <h3>Site Reports</h3>
+                        <p>View overall statistics and activity across modules</p>
+                        <a href="reports.php" class="admin-btn">Open Reports</a>
+                    </div>
+
+                    <div class="action-card">
+                        <div class="action-icon">💾</div>
+                        <h3>Backups</h3>
+                        <p>Create and manage barangay database backups. Configure automatic backup frequency and retention.</p>
+                        <a href="backup.php" class="admin-btn">Open Backup Module</a>
                     </div>
                 </div>
             </div>

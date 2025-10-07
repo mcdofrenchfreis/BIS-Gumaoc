@@ -316,6 +316,9 @@ if ($certType === 'BUSINESS APPLICATION'):
                     font-weight: 700;
                     text-shadow: 0 1px 1px rgba(0,0,0,0.2);
                 }
+                .status-form { display:flex; gap:0.5rem; align-items:center; margin-left: 0.75rem; }
+                .status-locked { background: #e9ecef; color: #6c757d; border: 2px solid #dee2e6; padding: 0.35rem 0.6rem; border-radius: 6px; font-weight: 600; display:inline-flex; align-items:center; gap:0.35rem; }
+                .status-locked::before { content: '🔒'; }
                 .summary-section {
                     background: white;
                     border-radius: 12px;
@@ -366,8 +369,11 @@ if ($certType === 'BUSINESS APPLICATION'):
                 .status-pending { background:#cce7ff; color:#004085; }
                 .status-approved { background:#d4edda; color:#155724; }
                 .status-rejected { background:#f8d7da; color:#721c24; }
-                .actions { display:flex; gap:1rem; margin-top: 1rem; }
+                .actions { display:flex; gap:1rem; margin-top: 1rem; align-items:center; flex-wrap: wrap; }
                 .print-btn { background: linear-gradient(135deg, #4CAF50, #45a049); color:#fff; border:none; padding:0.6rem 1rem; border-radius:8px; cursor:pointer; font-weight:600; }
+                .action-select { padding: 0.4rem 0.6rem; border: 2px solid #e9ecef; border-radius: 6px; font-size: 0.9rem; }
+                .scroll-top-btn { position: fixed; right: 20px; bottom: 20px; width: 44px; height: 44px; border-radius: 50%; border: none; background: #2e7d32; color: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.2); cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 20px; z-index: 9999; }
+                .scroll-top-btn.show { display: flex; }
                 @media (max-width: 768px) {
                     .summary-container { padding: 1rem; }
                     .summary-header { padding: 1rem; }
@@ -391,6 +397,21 @@ if ($certType === 'BUSINESS APPLICATION'):
                     <div class="requester">
                         <h2><?php echo htmlspecialchars($r['full_name'] ?: $r['certificate_type']); ?></h2>
                         <span class="badge status-<?php echo htmlspecialchars($r['status']); ?>"><?php echo ucfirst($r['status']); ?></span>
+                        <?php if ($r['status'] !== 'released'): ?>
+                        <form method="POST" action="view-certificate-requests.php" class="status-form">
+                            <input type="hidden" name="action" value="update_status">
+                            <input type="hidden" name="id" value="<?php echo (int)$r['id']; ?>">
+                            <label for="headerStatusSelect" class="info-label" style="color:#fff; opacity:0.95;">Status:</label>
+                            <select id="headerStatusSelect" name="status" class="action-select" onchange="this.form.submit()">
+                                <option value="pending" <?php echo $r['status']==='pending' ? 'selected' : ''; ?>>Pending</option>
+                                <option value="processing" <?php echo $r['status']==='processing' ? 'selected' : ''; ?>>Processing</option>
+                                <option value="ready" <?php echo $r['status']==='ready' ? 'selected' : ''; ?>>Ready</option>
+                                <option value="released" <?php echo $r['status']==='released' ? 'selected' : ''; ?>>Released</option>
+                            </select>
+                        </form>
+                        <?php else: ?>
+                            <div class="status-locked">Released (Locked)</div>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <?php
@@ -450,11 +471,20 @@ if ($certType === 'BUSINESS APPLICATION'):
 
                 echo $summary;
                 ?>
-
-                <div class="actions">
-                    <button class="print-btn" onclick="window.print()">🖨️ Print Summary</button>
-                </div>
             </div>
+            <button id="scrollTopBtn" class="scroll-top-btn" title="Back to top">↑</button>
+            <script>
+                (function(){
+                    var btn = document.getElementById('scrollTopBtn');
+                    function onScroll(){
+                        if (window.scrollY > 200) { btn.classList.add('show'); } else { btn.classList.remove('show'); }
+                    }
+                    window.addEventListener('scroll', onScroll, { passive: true });
+                    btn.addEventListener('click', function(){ window.scrollTo({ top: 0, behavior: 'smooth' }); });
+                    // Initialize state
+                    onScroll();
+                })();
+            </script>
         </body>
         </html>
         <?php

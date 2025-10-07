@@ -70,12 +70,6 @@ $page_description = 'Access various forms and documents for barangay services an
                                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                                 </svg> Status Tracking
                             </span>
-                            <span class="feature">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                                    <line x1="1" y1="10" x2="23" y2="10"></line>
-                                </svg> Online Payment
-                            </span>
                         </div>
                     </div>
                     <a href="certificate-request.php" class="form-btn primary">Request Certificate</a>

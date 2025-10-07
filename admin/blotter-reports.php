@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 include '../includes/db_connect.php';
 
@@ -118,7 +118,7 @@ try {
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; margin: 0; padding: 90px 20px 20px; }
         .container { max-width: 1400px; margin: 0 auto; }
         .header { background: linear-gradient(135deg, #2c5530 0%, #3e7b3e 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
         .date-filter { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
@@ -153,6 +153,11 @@ try {
     </style>
 </head>
 <body>
+    <?php
+        // Mini admin navigation (fixed at top)
+        $base_path = '../';
+        include '../includes/admin_mini_nav.php';
+    ?>
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-chart-bar"></i> Blotter Reports & Statistics</h1>

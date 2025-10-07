@@ -4,11 +4,19 @@ $page_description = "Explore the comprehensive e-services offered by Barangay Gu
 $base_path = "../";
 ?>
 
-<?php
-// Lightweight fixed mini navigation (back + profile)
-// Uses $base_path defined above
-include '../includes/mini_nav.php';
-?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars($page_title); ?></title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="<?php echo $base_path; ?>css/styles.css">
+</head>
+<body>
+<?php include '../includes/mini_nav.php'; ?>
+<style> body { padding-top: 64px; } </style>
 
 <div class="page-container">
     <div class="content-section">
@@ -20,7 +28,7 @@ include '../includes/mini_nav.php';
 
             <div class="services-grid">
                 <div class="service-card">
-                    <div class="service-icon">�</div>
+                    <div class="service-icon">📄</div>
                     <h3>Forms & Applications</h3>
                     <p>Access all barangay forms and applications in one centralized location including certificates, registrations, and business permits.</p>
                     <ul class="service-features">
@@ -43,19 +51,6 @@ include '../includes/mini_nav.php';
                         <li>✅ Priority classification</li>
                     </ul>
                     <a href="report.php" class="service-btn emergency">Report Incident</a>
-                </div>
-
-                <div class="service-card">
-                    <div class="service-icon">📊</div>
-                    <h3>Application Tracking</h3>
-                    <p>Track the status of your submitted applications and receive real-time updates on processing.</p>
-                    <ul class="service-features">
-                        <li>✅ Real-time status updates</li>
-                        <li>✅ Processing timeline</li>
-                        <li>✅ Notification alerts</li>
-                        <li>✅ Document downloads</li>
-                    </ul>
-                    <a href="../applications.php" class="service-btn">Track Applications</a>
                 </div>
 
                 <div class="service-card">
@@ -159,7 +154,7 @@ include '../includes/mini_nav.php';
 
 .services-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr); /* fill full width with 3 cards */
     gap: 25px;
     margin-bottom: 60px;
 }

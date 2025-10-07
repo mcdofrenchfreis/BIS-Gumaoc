@@ -78,6 +78,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['error'] = "Failed to archive RFID code.";
                 }
                 break;
+
+            case 'edit_rfid':
+                $rfid_id = (int)($_POST['rfid_id'] ?? 0);
+                $new_status = $_POST['status'] ?? 'available';
+                $scanned_at_input = trim($_POST['scanned_at'] ?? ''); // expects datetime-local format
+                $assigned_email = trim($_POST['assigned_email'] ?? '');
+                $notes_input = isset($_POST['notes']) ? trim($_POST['notes']) : null;
+
+                // Normalize scanned_at to Y-m-d H:i:s
+                $new_scanned_at = null;
+                if ($scanned_at_input !== '') {
+                    // Replace 'T' from datetime-local to space
+                    $temp = str_replace('T', ' ', $scanned_at_input);
+                    $timestamp = strtotime($temp);
+                    if ($timestamp !== false) {
+                        $new_scanned_at = date('Y-m-d H:i:s', $timestamp);
+                    }
+                }
+
+                // Determine assignment
+                $assigned_to_resident_id = null;
+                $assigned_to_email = null;
+                $set_assigned_at_to_now = false;
+
+                if ($assigned_email !== '') {
+                    // Try to find resident by email
+                    $find_res_stmt = $pdo->prepare("SELECT id, email FROM residents WHERE email = ? LIMIT 1");
+                    $find_res_stmt->execute([$assigned_email]);
+                    $resident = $find_res_stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($resident) {
+                        $assigned_to_resident_id = (int)$resident['id'];
+                        $assigned_to_email = $resident['email'];
+                    } else {
+                        // Keep as free-form email if not found in residents
+                        $assigned_to_resident_id = null;
+                        $assigned_to_email = $assigned_email;
+                    }
+                    $set_assigned_at_to_now = true;
+                    // If assigned info is provided but status isn't 'assigned', keep user's chosen status
+                } else {
+                    // No assignment -> clear assignment fields
+                    $assigned_to_resident_id = null;
+                    $assigned_to_email = null;
+                }
+
+                try {
+                    // Build update dynamically
+                    $sql = "UPDATE scanned_rfid_codes 
+                            SET status = :status,
+                                scanned_at = COALESCE(:scanned_at, scanned_at),
+                                assigned_to_resident_id = :assigned_to_resident_id,
+                                assigned_to_email = :assigned_to_email,
+                                assigned_at = :assigned_at,
+                                notes = :notes
+                            WHERE id = :id";
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->bindValue(':status', $new_status);
+                    $stmt->bindValue(':scanned_at', $new_scanned_at);
+                    if ($assigned_to_resident_id === null) {
+                        $stmt->bindValue(':assigned_to_resident_id', null, PDO::PARAM_NULL);
+                    } else {
+                        $stmt->bindValue(':assigned_to_resident_id', (int)$assigned_to_resident_id, PDO::PARAM_INT);
+                    }
+                    // Use PARAM_STR for email, allow null
+                    if ($assigned_to_email === null) {
+                        $stmt->bindValue(':assigned_to_email', null, PDO::PARAM_NULL);
+                    } else {
+                        $stmt->bindValue(':assigned_to_email', $assigned_to_email);
+                    }
+                    if ($set_assigned_at_to_now) {
+                        $stmt->bindValue(':assigned_at', date('Y-m-d H:i:s'));
+                    } else {
+                        $stmt->bindValue(':assigned_at', null, PDO::PARAM_NULL);
+                    }
+                    if ($notes_input === null || $notes_input === '') {
+                        $stmt->bindValue(':notes', null, PDO::PARAM_NULL);
+                    } else {
+                        $stmt->bindValue(':notes', $notes_input);
+                    }
+                    $stmt->bindValue(':id', $rfid_id, PDO::PARAM_INT);
+
+                    if ($stmt->execute()) {
+                        $_SESSION['success'] = "RFID details updated successfully!";
+                    } else {
+                        $_SESSION['error'] = "Failed to update RFID details.";
+                    }
+                } catch (Exception $e) {
+                    $_SESSION['error'] = "Error updating RFID: " . $e->getMessage();
+                }
+                break;
         }
         header('Location: rfid-scanner.php');
         exit;
@@ -122,19 +212,31 @@ while ($row = $stats_stmt->fetch()) {
 }
 
 $base_path = '../';
-$page_title = 'RFID Scanner - Admin Panel';
-$header_title = 'RFID Code Scanner';
-$header_subtitle = 'Scan and manage RFID codes for resident registration';
-
-include '../includes/admin_header.php';
 ?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFID Scanner - Admin Panel</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background: #ffffff; margin: 0; padding: 90px 0 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    </style>
+</head>
+<body>
+    <?php
+        // Mini admin navigation (fixed at top)
+        $base_path = '../';
+        include '../includes/admin_mini_nav.php';
+    ?>
 
 <div class="admin-content">
     <div class="content-header">
         <h1>📱 RFID Scanner Management</h1>
         <p>Scan RFID codes to add them to the available pool for resident registration</p>
-    </div>
-
     <!-- Statistics Cards -->
     <div class="stats-grid">
         <div class="stat-card available">
@@ -254,6 +356,18 @@ include '../includes/admin_header.php';
                         <td><?php echo htmlspecialchars($code['notes'] ?: 'No notes'); ?></td>
                         <td>
                             <div class="action-buttons">
+                                <button 
+                                    type="button" 
+                                    class="btn-action btn-edit" 
+                                    title="Edit"
+                                    data-id="<?php echo $code['id']; ?>"
+                                    data-rfid="<?php echo htmlspecialchars($code['rfid_code']); ?>"
+                                    data-status="<?php echo $code['status']; ?>"
+                                    data-scanned="<?php echo htmlspecialchars($code['scanned_at']); ?>"
+                                    data-assignedresidentid="<?php echo htmlspecialchars($code['assigned_to_resident_id'] ?? ''); ?>"
+                                    data-assignedemail="<?php echo htmlspecialchars($code['assigned_to_email'] ?? $code['resident_email'] ?? ''); ?>"
+                                    data-notes="<?php echo htmlspecialchars($code['notes'] ?? '', ENT_QUOTES); ?>"
+                                    onclick="openEditModal(this)">✏️</button>
                                 <?php if ($code['status'] === 'available'): ?>
                                     <form method="POST" style="display: inline;">
                                         <input type="hidden" name="action" value="update_status">
@@ -341,12 +455,17 @@ include '../includes/admin_header.php';
     border-radius: 12px; 
     padding: 2rem; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+    overflow: hidden; /* keep children within card */
+    box-sizing: border-box;
 }
+.scanner-section { display: flex; justify-content: center; }
+.scanner-card { max-width: 720px; width: 100%; margin: 0 auto; }
 .scanner-header { text-align: center; margin-bottom: 2rem; }
 .scanner-header h3 { color: #2c3e50; margin-bottom: 0.5rem; }
 
 .scanner-input-group { max-width: 600px; margin: 0 auto; }
-.input-wrapper { position: relative; margin-bottom: 1rem; }
+.input-wrapper { position: relative; margin-bottom: 1rem; width: 100%; }
+.notes-wrapper { width: 100%; }
 
 .scanner-input { 
     width: 100%; 
@@ -359,6 +478,7 @@ include '../includes/admin_header.php';
     font-family: monospace; 
     letter-spacing: 1px;
     padding-right: 180px; /* Make space for the indicator */
+    box-sizing: border-box; /* prevent overflow from padding/border */
 }
 .scanner-input:focus { 
     outline: none; 
@@ -379,6 +499,8 @@ include '../includes/admin_header.php';
     padding: 5px 10px;
     border-radius: 20px;
     font-size: 0.8rem;
+    pointer-events: none; /* do not block clicks */
+    z-index: 1;
 }
 .pulse { 
     width: 10px; 
@@ -420,7 +542,7 @@ include '../includes/admin_header.php';
 }
 .btn-scan:hover { background: linear-gradient(135deg, rgba(46, 204, 113, 0.9), rgba(39, 174, 96, 0.9)); transform: translateY(-2px); }
 
-.codes-section { background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.codes-section { background: white; border-radius: 12px; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: relative; z-index: 2; }
 .section-header { 
     display: flex; 
     justify-content: space-between; 
@@ -428,6 +550,8 @@ include '../includes/admin_header.php';
     margin-bottom: 1.5rem; 
 }
 
+.filter-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; width: 100%; max-width: 360px; }
+.status-filter { width: 100%; box-sizing: border-box; padding: 0.5rem 0.75rem; border: 2px solid #ecf0f1; border-radius: 6px; background: #fff; }
 .btn-archive-view {
     padding: 0.5rem 1rem;
     background: linear-gradient(135deg, rgba(155, 89, 182, 0.9), rgba(142, 68, 173, 0.9));
@@ -436,6 +560,9 @@ include '../includes/admin_header.php';
     border-radius: 4px;
     font-size: 0.9rem;
     transition: all 0.3s ease;
+    display: inline-block;
+    text-align: center;
+    width: 100%;
 }
 
 .btn-archive-view:hover {
@@ -471,6 +598,7 @@ include '../includes/admin_header.php';
 .btn-disable:hover { background: #fadbd8; }
 .btn-enable:hover { background: #d5f4e6; }
 .btn-archive:hover { background: #e8f4f8; }
+.btn-edit:hover { background: #f1f2f6; }
 
 .pagination { 
     display: flex; 
@@ -518,6 +646,44 @@ include '../includes/admin_header.php';
     background: linear-gradient(135deg, #e74c3c, #c0392b);
 }
 
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 20000;
+}
+.modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 95%;
+    max-width: 640px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    max-height: 90vh; /* responsive height */
+    display: flex;
+    flex-direction: column;
+    margin: 16px;
+}
+.modal-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #ecf0f1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.modal-header h4 { margin: 0; color: #2c3e50; }
+.modal-close { background: transparent; border: none; font-size: 1.25rem; cursor: pointer; }
+.modal-body { padding: 1rem 1.25rem; overflow-y: auto; flex: 1; min-height: 0; }
+.form-row { margin-bottom: 0.9rem; }
+.form-row label { display: block; font-weight: 600; margin-bottom: 0.35rem; color: #2c3e50; }
+.form-row input, .form-row select { width: 100%; padding: 0.6rem 0.7rem; border: 2px solid #ecf0f1; border-radius: 8px; }
+.modal-footer { padding: 1rem 1.25rem; border-top: 1px solid #ecf0f1; display: flex; gap: 0.5rem; justify-content: flex-end; }
+.btn-secondary { background: #ecf0f1; border: none; padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; }
+.btn-primary { background: rgba(39, 174, 96, 0.9); color: #fff; border: none; padding: 0.6rem 1rem; border-radius: 6px; cursor: pointer; }
+
 @media (max-width: 768px) {
     .admin-content { padding: 1rem; }
     .stats-grid { grid-template-columns: 1fr; }
@@ -525,6 +691,7 @@ include '../includes/admin_header.php';
     .codes-table-wrapper { overflow-x: auto; }
     .scanner-input {
         padding-right: 10px; /* Remove padding on mobile */
+        max-width: 100%;
     }
     .scan-indicator {
         position: relative;
@@ -565,21 +732,26 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Keep focus when window is focused
+    // Keep focus when window is focused (but not when modal is open or user is interacting elsewhere)
     window.addEventListener('focus', function() {
-        rfidInput.focus();
+        const overlay = document.getElementById('editModalOverlay');
+        const form = document.getElementById('editForm');
+        if (!overlay || !form) return;
+        const modalOpen = overlay.style.display === 'flex';
+        const active = document.activeElement && document.activeElement !== document.body;
+        if (!modalOpen && !active) {
+            rfidInput.focus();
+        }
     });
-    
-    // Show toast notifications
-    <?php if (isset($_SESSION['success'])): ?>
-        showToast('<?php echo addslashes($_SESSION['success']); ?>', 'success');
-        <?php unset($_SESSION['success']); ?>
-    <?php endif; ?>
-    
-    <?php if (isset($_SESSION['error'])): ?>
-        showToast('<?php echo addslashes($_SESSION['error']); ?>', 'error');
-        <?php unset($_SESSION['error']); ?>
-    <?php endif; ?>
+    // Close modal when clicking outside content
+    const overlay = document.getElementById('editModalOverlay');
+    if (overlay) {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                closeEditModal();
+            }
+        });
+    }
 });
 
 // Filter functionality
@@ -592,6 +764,47 @@ function filterByStatus(status) {
             row.style.display = 'none';
         }
     });
+}
+
+// Open edit modal with prefilled values
+function openEditModal(btn) {
+    const overlay = document.getElementById('editModalOverlay');
+    const form = document.getElementById('editForm');
+    if (!overlay || !form) return;
+
+    // Fill fields
+    form.querySelector('input[name="rfid_id"]').value = btn.dataset.id || '';
+    const rfidCodeEl = document.getElementById('edit_rfid_code');
+    if (rfidCodeEl) rfidCodeEl.textContent = btn.dataset.rfid || '';
+
+    // Status
+    const statusSel = form.querySelector('select[name="status"]');
+    if (statusSel) statusSel.value = btn.dataset.status || 'available';
+
+    // Scanned at -> convert "YYYY-MM-DD HH:MM:SS" to datetime-local value "YYYY-MM-DDTHH:MM"
+    const scannedRaw = btn.dataset.scanned || '';
+    let dtValue = '';
+    if (scannedRaw) {
+        const parts = scannedRaw.replace(' ', 'T').slice(0,16);
+        dtValue = parts;
+    }
+    const scannedEl = form.querySelector('input[name="scanned_at"]');
+    if (scannedEl) scannedEl.value = dtValue;
+
+    // Assigned email
+    const emailEl = form.querySelector('input[name="assigned_email"]');
+    if (emailEl) emailEl.value = btn.dataset.assignedemail || '';
+
+    // Notes
+    const notesEl = form.querySelector('textarea[name="notes"]');
+    if (notesEl) notesEl.value = btn.dataset.notes || '';
+
+    overlay.style.display = 'flex';
+}
+
+function closeEditModal() {
+    const overlay = document.getElementById('editModalOverlay');
+    if (overlay) overlay.style.display = 'none';
 }
 
 // Toast notification function
@@ -633,4 +846,46 @@ setInterval(function() {
 }, 30000);
 </script>
 
-<?php include '../includes/admin_footer.php'; ?>
+<!-- Edit RFID Modal -->
+<div id="editModalOverlay" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h4>Edit RFID: <span id="edit_rfid_code"></span></h4>
+            <button class="modal-close" onclick="closeEditModal()">✖</button>
+        </div>
+        <form method="POST" id="editForm">
+            <input type="hidden" name="action" value="edit_rfid">
+            <input type="hidden" name="rfid_id" value="">
+            <div class="modal-body">
+                <div class="form-row">
+                    <label>Status</label>
+                    <select name="status" required>
+                        <option value="available">Available</option>
+                        <option value="assigned">Assigned</option>
+                        <option value="disabled">Disabled</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label>Scanned Date</label>
+                    <input type="datetime-local" name="scanned_at">
+                </div>
+                <div class="form-row">
+                    <label>Assigned To (Resident Email)</label>
+                    <input type="email" name="assigned_email" placeholder="name@example.com">
+                </div>
+                <div class="form-row">
+                    <label>Notes</label>
+                    <textarea name="notes" rows="3" placeholder="Optional notes..."></textarea>
+                </div>
+                <small>Leave "Assigned To" empty to unassign. If the email matches a resident, it will be linked automatically.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button type="submit" class="btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

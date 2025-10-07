@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 session_start();
 include '../includes/db_connect.php';
 
@@ -131,7 +131,7 @@ $stats = $stats_stmt->fetch();
     <link rel="stylesheet" href="../css/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; margin: 0; padding: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; margin: 0; padding: 90px 20px 20px; }
         .container { max-width: 1200px; margin: 0 auto; }
         .header { background: linear-gradient(135deg, #2c5530 0%, #3e7b3e 100%); color: white; padding: 30px; border-radius: 10px; text-align: center; margin-bottom: 20px; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
@@ -168,6 +168,11 @@ $stats = $stats_stmt->fetch();
     </style>
 </head>
 <body>
+    <?php
+        // Mini admin navigation (fixed at top)
+        $base_path = '../';
+        include '../includes/admin_mini_nav.php';
+    ?>
     <div class="container">
         <div class="header">
             <h1><i class="fas fa-clipboard-list"></i> Barangay Blotter Management</h1>

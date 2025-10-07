@@ -454,6 +454,14 @@ function getRequestDetails($request) {
             text-align: center;
             border-bottom: 1px solid #eee;
         }
+        /* Fix ID column: keep on one line and give a fixed width */
+        .admin-table .col-id {
+            width: 110px;
+            min-width: 110px;
+            white-space: nowrap;
+            overflow-wrap: normal;
+            word-break: normal;
+        }
         
         .admin-table th {
             background: #f8f9fa;
@@ -1048,24 +1056,33 @@ function getRequestDetails($request) {
             <table>
                 <thead>
                     <tr>
-                        <th>ID</th>
+                        <th class="col-id">ID</th>
                         <th>Certificate Type</th>
                         <th>Applicant Name</th>
-                        <th>Details</th>
+                        <th>Purpose</th>
                         <th>Status</th>
                         <th>Submitted</th>
                         <th>View Form</th>
                         <?php if ($active_tab !== 'released'): ?>
                         <th>Actions</th>
                         <?php endif; ?>
-                        <th>Method of Application</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($requests as $req): ?>
                     <?php $certDisplay = getCertificateTypeDisplay($req['certificate_type']); ?>
                     <tr>
-                        <td><strong>#<?php echo $req['id']; ?></strong></td>
+                        <?php 
+                            $typeNorm = strtoupper(trim($req['certificate_type']));
+                            $prefixMap = [
+                                'CERTIFICATION OF RESIDENCY' => 'COR-',
+                                'BRGY. CLEARANCE' => 'BC-',
+                                'BRGY. INDIGENCY' => 'BI-',
+                                'TRICYCLE PERMIT' => 'TP-'
+                            ];
+                            $idPrefix = $prefixMap[$typeNorm] ?? '';
+                        ?>
+                        <td class="col-id"><strong><?php echo $idPrefix . $req['id']; ?></strong></td>
                         <td>
                             <span class="cert-type <?php echo $certDisplay['class']; ?>">
                                 <?php echo $certDisplay['icon']; ?>
@@ -1169,43 +1186,7 @@ function getRequestDetails($request) {
                             <?php endif; ?>
                         </td>
                         <?php endif; ?>
-                        <td>
-                            <?php if ($req['queue_ticket']): ?>
-                                <div class="application-method walk-in">
-                                    <span class="method-badge walk-in-badge">🚶 Walk-in</span>
-                                    <div class="queue-details">
-                                        <span class="queue-ticket"><?php echo htmlspecialchars($req['queue_ticket']); ?></span>
-                                        <span class="queue-status status-<?php echo $req['queue_status']; ?>">
-                                            <?php echo ucfirst($req['queue_status']); ?>
-                                        </span>
-                                        <?php 
-                                        // Show sync indicator based on certificate-queue status alignment
-                                        $cert_status = $req['status'];
-                                        $queue_status = $req['queue_status'];
-                                        $is_synced = (
-                                            ($cert_status === 'pending' && $queue_status === 'waiting') ||
-                                            ($cert_status === 'processing' && $queue_status === 'serving') ||
-                                            ($cert_status === 'ready' && $queue_status === 'serving') ||
-                                            ($cert_status === 'released' && $queue_status === 'completed')
-                                        );
-                                        ?>
-                                        <?php if ($is_synced): ?>
-                                            <div class="queue-sync-indicator">
-                                                ✓ Synchronized
-                                            </div>
-                                        <?php else: ?>
-                                            <div class="queue-sync-indicator" style="color: #ffc107;">
-                                                ⚠ Needs sync
-                                            </div>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            <?php else: ?>
-                                <div class="application-method online">
-                                    <span class="method-badge online-badge">💻 Online Registration</span>
-                                </div>
-                            <?php endif; ?>
-                        </td>
+                        
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
@@ -1248,6 +1229,18 @@ function getRequestDetails($request) {
     </div>
     
     <script>
+        function switchTab(tab) {
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', tab);
+                url.searchParams.delete('page');
+                window.location.href = url.toString();
+            } catch (e) {
+                // Fallback
+                window.location.href = 'view-certificate-requests.php?tab=' + encodeURIComponent(tab);
+            }
+        }
+
         function viewCertificateSummary(requestId) {
             // Log the form view action (non-blocking)
             fetch('../includes/log-action.php', {

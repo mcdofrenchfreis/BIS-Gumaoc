@@ -462,6 +462,14 @@ if (isset($_SESSION['toast_message'])) {
             border-bottom: 1px solid #eee;
         }
         
+        /* Wider ID column since we include the CR- suffix */
+        .admin-table th:first-child,
+        .admin-table td:first-child {
+            min-width: 130px;
+            width: 130px;
+            white-space: nowrap;
+        }
+        
         .admin-table th {
             background: #f8f9fa;
             font-weight: 600;
@@ -606,6 +614,7 @@ if (isset($_SESSION['toast_message'])) {
             height: 44px;
             padding: 0; /* height controls size; keep content centered */
             box-sizing: border-box;
+            font-size: 0.95rem; /* ensure same text size on both */
         }
 
         .admin-btn:hover {
@@ -774,7 +783,7 @@ if (isset($_SESSION['toast_message'])) {
                         <th>Name</th>
                         <th>Age</th>
                         <th>Gender</th>
-                        <th>Birth Info</th>
+                        <th>Email</th>
                         <th>Family Data</th>
                         <th>Status</th>
                         <th>Submitted</th>
@@ -785,7 +794,7 @@ if (isset($_SESSION['toast_message'])) {
                 <tbody>
                     <?php foreach ($registrations as $reg): ?>
                     <tr>
-                        <td><strong>#<?php echo $reg['id']; ?></strong></td>
+                        <td><strong>CR-<?php echo $reg['id']; ?></strong></td>
                         <td>
                             <strong><?php echo htmlspecialchars($reg['first_name'] . ' ' . $reg['last_name']); ?></strong>
                             <?php if ($reg['middle_name'] ?? false): ?>
@@ -795,14 +804,13 @@ if (isset($_SESSION['toast_message'])) {
                         <td><?php echo $reg['age']; ?></td>
                         <td><?php echo htmlspecialchars($reg['gender']); ?></td>
                         <td>
-                            <div style="font-size: 0.85rem;">
-                                <?php if ($reg['birth_date'] ?? false): ?>
-                                    <strong><?php echo date('M j, Y', strtotime($reg['birth_date'])); ?></strong>
+                            <div style="font-size: 0.95rem;">
+                                <?php if ($reg['email'] ?? false): ?>
+                                    <a href="mailto:<?php echo htmlspecialchars($reg['email']); ?>" style="color:#2e7d32; font-weight:600; text-decoration:none;">
+                                        <?php echo htmlspecialchars($reg['email']); ?>
+                                    </a>
                                 <?php else: ?>
-                                    <span style="color: #999; font-style: italic;">No birth date</span>
-                                <?php endif; ?>
-                                <?php if ($reg['birth_place'] ?? false): ?>
-                                    <br><small style="color: #666; font-style: italic;">📍 <?php echo htmlspecialchars($reg['birth_place']); ?></small>
+                                    <span style="color: #999; font-style: italic;">No email provided</span>
                                 <?php endif; ?>
                             </div>
                         </td>

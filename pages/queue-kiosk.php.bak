@@ -321,20 +321,7 @@ try {
         .refresh-indicator.show {
             opacity: 1;
         }
-            .priority-badge {
-            display: inline-block;
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-weight: 800;
-            font-size: 0.95rem;
-            margin-bottom: 10px;
-            letter-spacing: 0.5px;
-        }
-        .priority-senior { background: #8e24aa; color: #fff; }
-        .priority-pwd { background: #3949ab; color: #fff; }
-        .priority-priority { background: #ef6c00; color: #fff; }
-        .priority-normal { background: #cfd8dc; color: #263238; }
-</style>
+    </style>
 </head>
 <body>
     <!-- Background Music -->
@@ -345,12 +332,12 @@ try {
 
     <!-- Auto-refresh indicator -->
     <div id="refreshIndicator" class="refresh-indicator">
-        &#x1F504; Updating...
+        🔄 Updating...
     </div>
 
     <!-- Kiosk Header -->
     <div class="kiosk-header">
-        <h1 class="kiosk-title">&#x1F3AB; QUEUE MONITOR</h1>
+        <h1 class="kiosk-title">🎫 QUEUE MONITOR</h1>
         <p class="kiosk-subtitle">Barangay Gumaoc East - Live Queue Status</p>
         <div class="live-time" id="liveTime"></div>
     </div>
@@ -358,9 +345,9 @@ try {
     <!-- Currently Serving Section -->
     <?php if (count($currently_serving) > 0): ?>
     <div class="serving-section">
-        <h2 class="section-title">&#x1F3AF; NOW SERVING</h2>
+        <h2 class="section-title">🎯 NOW SERVING</h2>
         <div class="serving-grid">
-            <?php foreach (array_slice($currently_serving, 0, 3) as $serving): ?>
+            <?php foreach ($currently_serving as $serving): ?>
             <div class="serving-card">
                 <div class="serving-ticket-number"><?php echo htmlspecialchars($serving['ticket_number']); ?></div>
                 <div class="serving-service"><?php echo htmlspecialchars($serving['service_name']); ?></div>
@@ -374,14 +361,11 @@ try {
     <!-- Next in Queue Section -->
     <?php if (count($next_in_queue) > 0): ?>
     <div class="next-section">
-        <h2 class="section-title">&#x23ED;&#xFE0F; NEXT IN QUEUE</h2>
+        <h2 class="section-title">⏭️ NEXT IN QUEUE</h2>
         <div class="next-grid">
             <?php foreach ($next_in_queue as $index => $next): ?>
             <div class="next-card" style="animation-delay: <?php echo $index * 0.1; ?>s;">
-                <?php $pl = isset($next['priority_level']) ? strtolower($next['priority_level']) : 'normal'; ?>
-                <div class="priority-badge priority-<?php echo htmlspecialchars($pl); ?>">
-                    <?php echo strtoupper(htmlspecialchars($pl)); ?>
-                </div><div class="next-ticket-number"><?php echo htmlspecialchars($next['ticket_number']); ?></div>
+                <div class="next-ticket-number"><?php echo htmlspecialchars($next['ticket_number']); ?></div>
                 <div class="next-service"><?php echo htmlspecialchars($next['service_name']); ?></div>
                 <div class="next-position">Position #<?php echo $next['queue_position']; ?></div>
             </div>
@@ -390,14 +374,14 @@ try {
     </div>
     <?php else: ?>
     <div class="empty-state">
-        <div class="empty-state-icon">&#x2705;</div>
+        <div class="empty-state-icon">✅</div>
         <div class="empty-state-text">No tickets waiting in queue</div>
     </div>
     <?php endif; ?>
 
     <!-- Statistics Section -->
     <div class="stats-section">
-        <h2 class="section-title">&#x1F4CA; TODAY'S STATISTICS</h2>
+        <h2 class="section-title">📊 TODAY'S STATISTICS</h2>
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-number stat-waiting"><?php echo $today_stats['waiting']; ?></div>
@@ -485,7 +469,7 @@ try {
             // Show refresh indicator
             indicator.classList.add('show');
             
-            fetch(`../api/queue-data.php?_=${Date.now()}`, { cache: 'no-store' })
+            fetch('../api/queue-data.php')
                 .then(response => response.json())
                 .then(data => {
                     updateQueueDisplay(data);
@@ -503,11 +487,11 @@ try {
             const servingSection = document.querySelector('.serving-section');
             if (data.currently_serving && data.currently_serving.length > 0) {
                 let servingHTML = `
-                    <h2 class="section-title">&#x1F3AF; NOW SERVING</h2>
+                    <h2 class="section-title">🎯 NOW SERVING</h2>
                     <div class="serving-grid">
                 `;
                 
-                (data.currently_serving.slice(0, 3)).forEach(serving => {
+                data.currently_serving.forEach(serving => {
                     servingHTML += `
                         <div class="serving-card">
                             <div class="serving-ticket-number">${serving.ticket_number}</div>
@@ -529,15 +513,14 @@ try {
             
             if (data.next_in_queue && data.next_in_queue.length > 0) {
                 let nextHTML = `
-                    <h2 class="section-title">&#x23ED;&#xFE0F; NEXT IN QUEUE</h2>
+                    <h2 class="section-title">⏭️ NEXT IN QUEUE</h2>
                     <div class="next-grid">
                 `;
                 
                 data.next_in_queue.forEach((next, index) => {
-                    const pl = (next.priority_level || 'normal').toLowerCase();
                     nextHTML += `
                         <div class="next-card" style="animation-delay: ${index * 0.1}s;">
-                                                        <div class="priority-badge priority-${pl}">${(next.priority_level || 'normal').toUpperCase()}</div><div class="next-ticket-number">${next.ticket_number}</div>
+                            <div class="next-ticket-number">${next.ticket_number}</div>
                             <div class="next-service">${next.service_name}</div>
                             <div class="next-position">Position #${next.queue_position}</div>
                         </div>
@@ -556,7 +539,7 @@ try {
                 if (!emptyState) {
                     const emptyStateHTML = `
                         <div class="empty-state">
-                            <div class="empty-state-icon">&#x2705;</div>
+                            <div class="empty-state-icon">✅</div>
                             <div class="empty-state-text">No tickets waiting in queue</div>
                         </div>
                     `;

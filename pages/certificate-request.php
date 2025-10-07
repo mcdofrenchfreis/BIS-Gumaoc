@@ -5,6 +5,16 @@ $page_title = 'Certificate Request - Barangay Gumaoc East';
 $header_title = 'Certificate Request Form';
 $header_subtitle = 'Request for Barangay Certificates';
 
+// Bridge kiosk session cookies → normal session if needed (RFID kiosk uses a different session name)
+if (empty($_SESSION['user_id']) && !empty($_COOKIE['GUMAOC_USER_ID'])) {
+    $_SESSION['user_id'] = (int)$_COOKIE['GUMAOC_USER_ID'];
+    if (!empty($_COOKIE['GUMAOC_USER_NAME'])) {
+        $_SESSION['user_name'] = (string)$_COOKIE['GUMAOC_USER_NAME'];
+    }
+    // Mark as authenticated so pages relying on this behave consistently
+    $_SESSION['rfid_authenticated'] = true;
+}
+
 // Initialize database connection
 include '../includes/db_connect.php';
 
@@ -18,19 +28,182 @@ $admin_view = isset($_GET['admin_view']) ? (int)$_GET['admin_view'] : null;
 $readonly = isset($_GET['readonly']) && $_GET['readonly'] === '1';
 $request_data = null;
 
+// Handle form submission locally: generate queue ticket and trigger print
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_GET['readonly']) && empty($_GET['admin_view'])) {
+    try {
+        require_once '../includes/QueueManager.php';
+        $queueManager = new QueueManager($pdo);
+
+        // Gather basic inputs
+        $certificate_type = $_POST['certificateType'] ?? '';
+        $first_name = trim($_POST['firstName'] ?? '');
+        $middle_name = trim($_POST['middleName'] ?? '');
+        $last_name = trim($_POST['lastName'] ?? '');
+        $full_name = trim($first_name . ' ' . $middle_name . ' ' . $last_name);
+        $mobile_number = $_POST['full_mobile_number'] ?? ($_POST['mobileNumber'] ?? '');
+        if ($mobile_number && preg_match('/^9\d{9}$/', $mobile_number)) {
+            $mobile_number = '+63' . $mobile_number;
+        }
+        $queue_priority = ($_POST['queue_priority'] ?? 'normal') === 'priority' ? 'priority' : 'normal';
+
+        // Determine age from birthdate and auto-prioritize seniors (>= 60)
+        $birthdate_str = $_POST['birthdate'] ?? null;
+        if ($birthdate_str) {
+            try {
+                $birthdate_dt = new DateTime($birthdate_str);
+                $today_dt = new DateTime();
+                $age_years = (int)$today_dt->diff($birthdate_dt)->y;
+                if ($age_years >= 60) {
+                    $queue_priority = 'priority';
+                }
+            } catch (Throwable $ignored) {
+                // ignore invalid date, leave priority as chosen
+            }
+        }
+
+        // Resolve service id from certificate type
+        $service_id = null;
+        try {
+            $svcStmt = $pdo->prepare("SELECT id FROM queue_services WHERE service_name = ? AND is_active = 1 LIMIT 1");
+            $svcStmt->execute([$certificate_type]);
+            $service_id = $svcStmt->fetchColumn();
+            if (!$service_id) {
+                $t = strtoupper($certificate_type);
+                if (strpos($t, 'TRICYCLE') !== false) {
+                    $svcStmt = $pdo->prepare("SELECT id FROM queue_services WHERE service_name LIKE '%Tricycle%' AND is_active = 1 LIMIT 1");
+                    $svcStmt->execute();
+                    $service_id = $svcStmt->fetchColumn();
+                } elseif (strpos($t, 'RESIDENCY') !== false) {
+                    $svcStmt = $pdo->prepare("SELECT id FROM queue_services WHERE service_name LIKE '%Residency%' AND is_active = 1 LIMIT 1");
+                    $svcStmt->execute();
+                    $service_id = $svcStmt->fetchColumn();
+                } elseif (strpos($t, 'CLEARANCE') !== false) {
+                    $svcStmt = $pdo->prepare("SELECT id FROM queue_services WHERE service_name LIKE '%Barangay Clearance%' AND is_active = 1 LIMIT 1");
+                    $svcStmt->execute();
+                    $service_id = $svcStmt->fetchColumn();
+                } elseif (strpos($t, 'INDIGENCY') !== false) {
+                    $svcStmt = $pdo->prepare("SELECT id FROM queue_services WHERE service_name LIKE '%Indigency%' AND is_active = 1 LIMIT 1");
+                    $svcStmt->execute();
+                    $service_id = $svcStmt->fetchColumn();
+                } elseif (strpos($t, 'BUSINESS') !== false) {
+                    $svcStmt = $pdo->prepare("SELECT id FROM queue_services WHERE service_name LIKE '%Business%' AND is_active = 1 LIMIT 1");
+                    $svcStmt->execute();
+                    $service_id = $svcStmt->fetchColumn();
+                }
+            }
+            if (!$service_id) {
+                $svcStmt = $pdo->prepare("SELECT id FROM queue_services WHERE service_name LIKE '%General Services%' AND is_active = 1 LIMIT 1");
+                $svcStmt->execute();
+                $service_id = $svcStmt->fetchColumn();
+            }
+        } catch (Throwable $ignored) {
+            $service_id = null;
+        }
+
+        if ($service_id) {
+            $ticket = $queueManager->generateTicket(
+                (int)$service_id,
+                $full_name ?: 'Guest',
+                $mobile_number ?: null,
+                $_SESSION['user_id'] ?? null,
+                'Certificate Request: ' . ($certificate_type ?: 'Unknown'),
+                $queue_priority
+            );
+
+            if (!empty($ticket['success'])) {
+                // Set session values consumed by this page for kiosk banner and print
+                $_SESSION['queue_ticket_number'] = $ticket['ticket_number'] ?? '';
+                $_SESSION['queue_position'] = $ticket['queue_position'] ?? null;
+                $_SESSION['estimated_time'] = $ticket['estimated_time'] ?? null;
+                $_SESSION['service_name'] = $ticket['service_name'] ?? 'Certificate Request';
+                $_SESSION['success'] = 'Ticket: ' . ($_SESSION['queue_ticket_number'] ?: '');
+            } else {
+                $_SESSION['error'] = $ticket['message'] ?? 'Unable to generate ticket';
+            }
+        } else {
+            $_SESSION['error'] = 'Service unavailable for selected certificate type';
+        }
+
+        // Post/Redirect/Get to avoid resubmission and trigger print on reload
+        header('Location: certificate-request.php');
+        exit;
+    } catch (Throwable $e) {
+        $_SESSION['error'] = 'Unexpected error while generating queue ticket';
+        header('Location: certificate-request.php');
+        exit;
+    }
+}
+
 // Get current user data for auto-population
 $current_user = null;
-$is_logged_in = isset($_SESSION['rfid_authenticated']) && $_SESSION['rfid_authenticated'] === true;
+// Consider the user "logged in" if a user_id exists in session
+$is_logged_in = isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 
 if ($is_logged_in && isset($_SESSION['user_id'])) {
     try {
         $stmt = $pdo->prepare("SELECT * FROM residents WHERE id = ?");
         $stmt->execute([$_SESSION['user_id']]);
         $current_user = $stmt->fetch();
+        // Fallback: if no user found, try alternate known database names
+        if (!$current_user) {
+            $altDbs = ['u138614204_gumaoc_db', 'gumaoc_db'];
+            foreach ($altDbs as $altDb) {
+                try {
+                    $altPdo = new PDO("mysql:host=localhost;dbname={$altDb};charset=utf8", 'root', '');
+                    $altPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                    $altPdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+                    $altStmt = $altPdo->prepare("SELECT * FROM residents WHERE id = ?");
+                    $altStmt->execute([$_SESSION['user_id']]);
+                    $row = $altStmt->fetch();
+                    if ($row) { $current_user = $row; break; }
+                } catch (Throwable $ignored) {
+                    // ignore and continue
+                }
+            }
+        }
     } catch (PDOException $e) {
         // Handle database error silently for form functionality
         $current_user = null;
     }
+}
+
+// Compute prefill years of residence from available data
+$prefill_years_of_residence = '';
+if ($request_data && isset($request_data['years_of_residence']) && $request_data['years_of_residence'] !== '') {
+    $prefill_years_of_residence = (string)$request_data['years_of_residence'];
+} elseif ($current_user) {
+    if (isset($current_user['years_of_residence']) && $current_user['years_of_residence'] !== '') {
+        $prefill_years_of_residence = (string)$current_user['years_of_residence'];
+    } else {
+        // Try to compute from known date fields if present
+        $date_fields = ['residency_start_date', 'move_in_date', 'created_at', 'date_registered'];
+        foreach ($date_fields as $df) {
+            if (!empty($current_user[$df])) {
+                try {
+                    $start = new DateTime($current_user[$df]);
+                    $now = new DateTime();
+                    $years = (int)$now->diff($start)->y;
+                    $prefill_years_of_residence = (string)$years;
+                    break;
+                } catch (Throwable $ignored) {}
+            }
+        }
+    }
+}
+
+// Prepare default barangay/city suffix and a cleaned street/house address for autofill
+$default_address_suffix = 'Barangay Gumaoc East, San Jose Del Monte, Bulacan';
+$prefill_address1 = '';
+if ($request_data && !empty($request_data['address'])) {
+    $prefill_address1 = (string)$request_data['address'];
+} elseif ($current_user && !empty($current_user['address'])) {
+    $prefill_address1 = (string)$current_user['address'];
+}
+if ($prefill_address1) {
+    // If stored value already includes the default suffix, strip it for the single-line street/house field
+    $suffix_pattern = '/\s*,?\s*' . preg_quote($default_address_suffix, '/') . '$/i';
+    $prefill_address1 = preg_replace($suffix_pattern, '', $prefill_address1);
+    $prefill_address1 = trim(preg_replace('/\s+,\s+$/', '', $prefill_address1));
 }
 
 if ($admin_view) {
@@ -65,7 +238,7 @@ if ($request_data) {
 <style>
   /* Page background to replace plain white gutters */
   body {
-    background: url('<?php echo $base_path; ?>assets/images/background.jpg') center/cover no-repeat fixed;
+    background: url('<?php echo $base_path; ?>assets/images/bg2.jpg') center/cover no-repeat fixed;
     background-color: #2d5a27; /* fallback */
     min-height: 100vh;
     position: relative;
@@ -249,6 +422,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
+<!-- Removed QZ Tray integration -->
 
 <div class="container">
   <div class="section">
@@ -398,7 +572,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <?php endif; ?>
       </div>
       
-      <form id="certificateForm" class="certificate-form" method="POST" action="process_certificate_request.php" enctype="multipart/form-data" <?php echo $readonly ? 'style="pointer-events: none;"' : ''; ?>>
+      <form id="certificateForm" class="certificate-form" method="POST" action="certificate-request.php" enctype="multipart/form-data" <?php echo $readonly ? 'style="pointer-events: none;"' : ''; ?>>
         <input type="hidden" id="selectedCertificateType" name="certificateType" value="<?php echo $request_data ? htmlspecialchars($request_data['certificate_type']) : ''; ?>">
 
       <!-- Tricycle Details Section -->
@@ -831,14 +1005,14 @@ document.addEventListener('DOMContentLoaded', function() {
         <legend>Personal Information</legend>
         
         <div class="form-group">
-          <label for="requestDate">Date *</label>
+          <label for="requestDate">Date</label>
           <input type="date" id="requestDate" name="requestDate" required 
                  value="<?php echo date('Y-m-d'); ?>">
         </div>
 
         <div class="form-grid">
           <div class="form-group">
-            <label for="firstName">First Name *</label>
+            <label for="firstName">First Name</label>
             <input type="text" id="firstName" name="firstName" required placeholder="Enter first name" 
                    value="<?php 
                    if ($request_data) {
@@ -864,7 +1038,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
 
           <div class="form-group">
-            <label for="lastName">Last Name *</label>
+            <label for="lastName">Last Name</label>
             <?php 
             $lastName = '';
             if ($request_data && !empty($request_data['full_name'])) {
@@ -885,37 +1059,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <div class="form-grid-two">
           <div class="form-group">
-            <label for="address1">Address Line 1 *</label>
+            <label for="address1">Address</label>
             <div class="address-input-container">
               <input type="text" id="address1" name="address1" required 
-                     placeholder="House/Lot/Block No., Street Name, Subdivision/Village" 
-                     value="<?php 
-                     if ($request_data) {
-                         echo htmlspecialchars($request_data['address']);
-                     } elseif ($current_user) {
-                         echo htmlspecialchars($current_user['address'] ?? '');
-                     }
-                     ?>" 
-                     <?php echo $readonly ? 'readonly' : ''; ?>
+                     placeholder="Blk/Lot/House No., Street Name" 
+                     value="<?php echo htmlspecialchars($prefill_address1); ?>" 
                      autocomplete="off">
               <div id="addressSuggestions" class="address-suggestions"></div>
             </div>
-            <small class="input-help">Enter your specific house address details</small>
-          </div>
-
-          <div class="form-group">
-            <label for="address2">Address Line 2</label>
-            <input type="text" id="address2" name="address2" 
-                   placeholder="Purok/Zone/Sitio (optional)"
-                   value="<?php 
-                   if ($request_data) {
-                       echo htmlspecialchars($request_data['address2'] ?? 'Barangay Gumaoc East, San Jose Del Monte, Bulacan');
-                   } else {
-                       echo 'Barangay Gumaoc East, San Jose Del Monte, Bulacan';
-                   }
-                   ?>" 
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
-            <small class="input-help">Additional address details (Barangay is pre-filled)</small>
+            <small class="input-help">Barangay details are added automatically.</small>
           </div>
         </div>
 
@@ -935,17 +1087,19 @@ document.addEventListener('DOMContentLoaded', function() {
                      value="<?php 
                      if ($request_data && $request_data['mobile_number']) {
                          echo substr($request_data['mobile_number'], 3);
-                     } elseif ($current_user && $current_user['phone']) {
-                         // Remove +63 prefix if present
-                         $phone = $current_user['phone'];
-                         if (substr($phone, 0, 3) === '+63') {
-                             echo substr($phone, 3);
-                         } elseif (substr($phone, 0, 2) === '63') {
-                             echo substr($phone, 2);
-                         } else {
-                             echo $phone;
-                         }
-                     }
+                    } elseif ($current_user && $current_user['phone']) {
+                        // Normalize phone for display: 10 digits starting with 9
+                        $phone = preg_replace('/\D+/', '', (string)$current_user['phone']);
+                        if (substr($phone, 0, 2) === '63') {
+                            $phone = substr($phone, 2);
+                        } elseif (substr($phone, 0, 3) === '063') {
+                            $phone = substr($phone, 3);
+                        }
+                        if (substr($phone, 0, 1) === '0' && strlen($phone) === 11) {
+                            $phone = substr($phone, 1);
+                        }
+                        echo htmlspecialchars($phone);
+                    }
                      ?>" 
                      <?php echo $readonly ? 'readonly' : ''; ?>>
             </div>
@@ -953,7 +1107,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
 
           <div class="form-group">
-            <label for="civilStatus">Civil Status *</label>
+            <label for="civilStatus">Civil Status</label>
             <select id="civilStatus" name="civilStatus" required <?php echo $readonly ? 'disabled' : ''; ?>>
               <option value="">Select Civil Status</option>
               <?php 
@@ -973,7 +1127,7 @@ document.addEventListener('DOMContentLoaded', function() {
           </div>
 
           <div class="form-group">
-            <label for="gender">Gender *</label>
+            <label for="gender">Gender</label>
             <select id="gender" name="gender" required <?php echo $readonly ? 'disabled' : ''; ?>>
               <option value="">Select Gender</option>
               <?php 
@@ -992,7 +1146,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
         <div class="form-grid">
           <div class="form-group">
-            <label for="birthdate">Birthdate *</label>
+            <label for="queue_priority">Queue Priority</label>
+            <select id="queue_priority" name="queue_priority">
+              <option value="normal" selected>Non-priority</option>
+              <option value="priority">Priority</option>
+            </select>
+            <small class="input-help">Priority is for PWD/Elderly only</small>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="birthdate">Birthdate</label>
             <input type="date" id="birthdate" name="birthdate" required 
                    value="<?php 
                    if ($request_data) {
@@ -1057,16 +1222,14 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="form-group">
             <label for="yearsOfResidence">Years of Residence</label>
             <input type="number" id="yearsOfResidence" name="yearsOfResidence" placeholder="Number of years" min="0"
-                   value="<?php echo $request_data ? $request_data['years_of_residence'] : ''; ?>" 
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
+                   value="<?php echo htmlspecialchars($prefill_years_of_residence); ?>" 
+                   readonly>
           </div>
-
-          <div class="form-group">
-            <label for="purpose">Purpose *</label>
-            <input type="text" id="purpose" name="purpose" required placeholder="Purpose of certificate request" 
-                   value="<?php echo $request_data ? htmlspecialchars($request_data['purpose']) : ''; ?>" 
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
-          </div>
+        </div>
+        <div class="form-group">
+          <label for="purpose">Purpose</label>
+          <textarea id="purpose" name="purpose" required rows="4" placeholder="Purpose of certificate request"
+                    <?php echo $readonly ? 'readonly' : ''; ?>><?php echo $request_data ? htmlspecialchars($request_data['purpose']) : ''; ?></textarea>
         </div>
       </fieldset>
 
@@ -1298,6 +1461,29 @@ document.addEventListener('DOMContentLoaded', function() {
     align-items: center;
 }
 
+/* Print-only 58mm thermal ticket (Firefox-friendly, shorter output) */
+@media print {
+    @page {
+        size: 58mm auto;
+        margin: 1mm;
+    }
+
+    html, body { height: auto !important; }
+    body * { visibility: hidden !important; }
+    #ticket-print, #ticket-print * { visibility: visible !important; }
+    #ticket-print {
+        position: absolute;
+        inset: 0 auto auto 0;
+        width: 58mm;
+        box-shadow: none;
+        font-family: 'Courier New', monospace;
+        color: #000;
+    }
+    #ticket-print .tp-wrap { padding: 2mm; text-align: center; }
+    #ticket-print .tp-ticket { font-size: 36px; font-weight: 700; margin: 0; letter-spacing: 0.5px; line-height: 1.05; }
+    #ticket-print .tp-note { margin-top: 2mm; font-size: 20px; line-height: 1.2; color: #000; }
+}
+
 .queue-item {
     background: white;
     padding: 10px 15px;
@@ -1459,6 +1645,26 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 }
 </style>
+
+<!-- Print-only minimal ticket markup (only ticket code) -->
+<?php if (isset($_SESSION['queue_ticket_number'])): ?>
+<div id="ticket-print" aria-hidden="true">
+  <div class="tp-wrap">
+    <div class="tp-ticket"><?php echo htmlspecialchars($_SESSION['queue_ticket_number']); ?></div>
+    <div class="tp-note">Please line up and watch the monitor for your number.</div>
+  </div>
+</div>
+<?php endif; ?>
+
+<script>
+window.addEventListener('load', function() {
+  // Auto-print when a queue ticket exists after submission (delay to settle layout)
+  var hasTicket = <?php echo isset($_SESSION['queue_ticket_number']) ? 'true' : 'false'; ?>;
+  if (hasTicket) {
+    setTimeout(function(){ window.print(); }, 900);
+  }
+});
+</script>
 
 <?php 
 // Clear queue session data after displaying
@@ -1776,7 +1982,7 @@ legend {
 
 .certificate-types {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 25px;
   margin-top: 40px;
   max-width: 1200px;
@@ -2580,7 +2786,7 @@ legend {
 /* Enhanced Certificate Types Grid */
 .certificate-types {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 15px;
   margin-top: 20px;
 }
@@ -2935,6 +3141,185 @@ function calculateAge() {
   }
 }
 
+// Prefill inputs from current user profile without overriding existing values
+function prefillFromCurrentUser() {
+  const readonly = <?php echo $readonly ? 'true' : 'false'; ?>;
+  const adminView = <?php echo $admin_view ? 'true' : 'false'; ?>;
+  const hasUser = <?php echo $current_user ? 'true' : 'false'; ?>;
+  if (readonly || adminView || !hasUser) return;
+  console.log('Prefilling from current user profile...');
+
+  const user = <?php echo json_encode([
+    'first_name' => $current_user['first_name'] ?? null,
+    'middle_name' => $current_user['middle_name'] ?? null,
+    'last_name' => $current_user['last_name'] ?? null,
+    'address' => $current_user['address'] ?? null,
+    'phone' => $current_user['phone'] ?? null,
+    'civil_status' => $current_user['civil_status'] ?? null,
+    'gender' => $current_user['gender'] ?? null,
+    'birthdate' => $current_user['birthdate'] ?? null,
+    'birth_place' => $current_user['birth_place'] ?? null,
+    'citizenship' => $current_user['citizenship'] ?? 'Filipino',
+    'occupation' => $current_user['occupation'] ?? null,
+  ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+
+  const setIfEmpty = (id, value) => {
+    const el = document.getElementById(id);
+    if (!el || value == null) return;
+    const current = (el.value || '').trim();
+    if (!current) {
+      el.value = value;
+    }
+  };
+
+  // Basic personal info
+  setIfEmpty('firstName', user.first_name);
+  setIfEmpty('middleName', user.middle_name);
+  setIfEmpty('lastName', user.last_name);
+  // Intentionally do NOT autofill address1 to let users input current address manually
+  setIfEmpty('birthdate', user.birthdate);
+  setIfEmpty('birthplace', user.birth_place);
+  setIfEmpty('citizenship', user.citizenship || 'Filipino');
+
+  // Mobile number (convert +63 / 63 prefixes to 10-digit starting with 9)
+  if (user.phone) {
+    let phone = String(user.phone).replace(/\D/g, '');
+    if (phone.startsWith('63')) phone = phone.substring(2);
+    if (phone.length === 11 && phone.startsWith('09')) phone = phone.substring(1);
+    if (phone.length === 10 && phone.startsWith('9')) {
+      const mobileEl = document.getElementById('mobileNumber');
+      if (mobileEl && !(mobileEl.value || '').trim()) mobileEl.value = phone;
+    }
+  }
+
+  // Selects: civil status and gender
+  const setSelectIfEmpty = (id, value) => {
+    const el = document.getElementById(id);
+    if (!el || !value) return;
+    if (!el.value) {
+      const opt = Array.from(el.options).find(o => o.value.toLowerCase() === String(value).toLowerCase());
+      if (opt) el.value = opt.value;
+    }
+  };
+  setSelectIfEmpty('civilStatus', user.civil_status);
+  setSelectIfEmpty('gender', user.gender);
+
+  // Cedula section defaults from user profile
+  setIfEmpty('cedulaPlaceOfBirth', user.birth_place);
+  setIfEmpty('cedulaDateOfBirth', user.birthdate);
+  setIfEmpty('cedulaCitizenship', user.citizenship || 'Filipino');
+  setSelectIfEmpty('cedulaCivilStatus', user.civil_status);
+  if (user.occupation) setIfEmpty('professionOccupation', user.occupation);
+
+  // Recompute age if birthdate was populated
+  const birthdateEl = document.getElementById('birthdate');
+  if (birthdateEl && birthdateEl.value) {
+    calculateAge();
+  }
+
+  // Autofill street/house if available from profile (keeping barangay in suffix on submit)
+  const addr1 = document.getElementById('address1');
+  if (addr1 && !addr1.value) {
+    try {
+      const stored = <?php echo json_encode($prefill_address1 ?? ''); ?>;
+      if (stored) addr1.value = stored;
+    } catch (_) {}
+  }
+}
+
+// Lock all fields (including address) except mobile number
+function lockAutofilledFields() {
+  const form = document.getElementById('certificateForm');
+  if (!form) return;
+  const alwaysEditable = new Set(['mobileNumber']);
+  const alwaysLocked = new Set(['address1','address2']);
+  const inputs = form.querySelectorAll('input, select, textarea');
+  inputs.forEach(el => {
+    if (el.type === 'hidden' || el.type === 'submit' || el.type === 'button' || el.type === 'reset') return;
+    if (alwaysEditable.has(el.id)) { el.readOnly = false; if (el.tagName === 'SELECT') el.disabled = false; return; }
+    if (alwaysLocked.has(el.id)) { if (el.tagName === 'SELECT') el.disabled = true; else el.readOnly = true; return; }
+    const hasValue = (el.tagName === 'SELECT') ? el.value !== '' : ((el.value || '').trim() !== '');
+    if (hasValue) { if (el.tagName === 'SELECT') el.disabled = true; else el.readOnly = true; }
+  });
+  const reqDate = document.getElementById('requestDate');
+  if (reqDate) reqDate.readOnly = true;
+}
+
+  // Create hidden combined address (now both address fields are locked)
+function setupAddressCombineOnSubmit() {
+  const form = document.getElementById('certificateForm');
+  if (!form) return;
+  const addr1 = document.getElementById('address1');
+  const addr2 = null; // address2 removed from this form; handled in census module
+
+  // Ensure hidden field exists
+  let hidden = document.getElementById('combinedAddress');
+  if (!hidden) {
+    hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.name = 'address';
+    hidden.id = 'combinedAddress';
+    form.appendChild(hidden);
+  }
+
+  const combine = () => {
+    const part1 = (addr1?.value || '').trim();
+    // Append default barangay/city suffix
+    const suffix = 'Barangay Gumaoc East, San Jose Del Monte, Bulacan';
+    const combined = part1 ? `${part1}, ${suffix}` : suffix;
+    hidden.value = combined;
+  };
+
+  // Update combined field whenever addr1 changes and before submit
+  // Since address is locked, just combine once
+  combine();
+
+  form.addEventListener('submit', () => {
+    combine();
+  });
+}
+
+// Create hidden mirrors for disabled/read-only fields so their values submit
+function mirrorDisabledFieldsForSubmit() {
+  const form = document.getElementById('certificateForm');
+  if (!form) return;
+
+  const fieldsToMirror = [
+    'firstName','middleName','lastName','civilStatus','gender',
+    'birthdate','age','birthplace','citizenship','mobileNumber',
+    // address2 moved to census; not mirrored here
+    'cedulaYear','placeOfIssue','dateIssued','cedulaCitizenship',
+    'cedulaPlaceOfBirth','cedulaDateOfBirth','cedulaCivilStatus','professionOccupation',
+    'height','weight','basicCommunityTax','grossReceiptsBusiness','salariesProfession',
+    'incomeRealProperty','totalTax','interest','totalAmountPaid'
+  ];
+
+  const ensureHidden = (name, value) => {
+    if (!name) return;
+    let hidden = form.querySelector(`input[type="hidden"][name="${name}"]`);
+    if (!hidden) {
+      hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = name;
+      form.appendChild(hidden);
+    }
+    hidden.value = value ?? '';
+  };
+
+  const syncMirrors = () => {
+    fieldsToMirror.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) ensureHidden(id, el.value);
+    });
+  };
+
+  // Initial sync and before submit
+  syncMirrors();
+  form.addEventListener('input', syncMirrors, true);
+  form.addEventListener('change', syncMirrors, true);
+  form.addEventListener('submit', () => { syncMirrors(); });
+}
+
 // Show certificate selection screen
 function showSelectionScreen() {
   const selectionScreen = document.getElementById('certificateSelectionScreen');
@@ -3192,17 +3577,17 @@ function setupMobileNumberValidation() {
   if (mobileInput) {
     mobileInput.addEventListener('input', function(e) {
       let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-      
-      // Limit to 10 digits
+      // Keep only 10 digits starting with 9; display without leading 0
+      if (value.startsWith('0')) {
+        value = value.substring(1);
+      }
       if (value.length > 10) {
         value = value.substring(0, 10);
       }
-      
-      // Must start with 9
-      if (value.length > 0 && value[0] !== '9') {
+      // Ensure it starts with 9 while typing
+      if (value && value[0] !== '9') {
         value = '9' + value.substring(1);
       }
-      
       e.target.value = value;
     });
   }
@@ -3821,11 +4206,40 @@ document.addEventListener('DOMContentLoaded', function() {
   if (birthdateField && birthdateField.value) {
     calculateAge();
   }
+  // Auto-set priority based on age >= 60
+  if (birthdateField) {
+    const qp = document.getElementById('queue_priority');
+    const updatePriorityFromAge = () => {
+      if (!qp) return;
+      const v = birthdateField.value;
+      if (!v) return;
+      const today = new Date();
+      const bd = new Date(v);
+      let age = today.getFullYear() - bd.getFullYear();
+      const m = today.getMonth() - bd.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < bd.getDate())) age--;
+      if (!isNaN(age) && age >= 60) {
+        qp.value = 'priority';
+      }
+    };
+    birthdateField.addEventListener('change', updatePriorityFromAge);
+    birthdateField.addEventListener('blur', updatePriorityFromAge);
+    // initial check
+    updatePriorityFromAge();
+  }
 
   // Setup all validation functions
   setupMobileNumberValidation();
   setupTricycleValidation();
   setupCedulaValidation();
+  // Prefill from logged-in user where fields are still empty
+  prefillFromCurrentUser();
+  // Lock only auto-filled fields (keep Address 1 editable)
+  lockAutofilledFields();
+  // Combine addresses on submit
+  setupAddressCombineOnSubmit();
+  // Mirror disabled fields into hidden inputs so values submit
+  mirrorDisabledFieldsForSubmit();
   
   // Show toast notifications
   const successToast = document.getElementById('successToast');
@@ -4040,11 +4454,12 @@ document.addEventListener('DOMContentLoaded', function() {
           if (mobileInput && mobileInput.value) {
             const mobilePattern = /^9[0-9]{9}$/;
             if (!mobilePattern.test(mobileInput.value)) {
-              alert('Please enter a valid Philippine mobile number starting with 9 (10 digits total)');
+              alert('Please enter a valid Philippine mobile number (10 digits starting with 9)');
               mobileInput.focus();
               return;
             }
             
+            // Convert 9XXXXXXXXX to +639XXXXXXXXX (prepend +63)
             const fullNumber = '+63' + mobileInput.value;
             const hiddenInput = document.createElement('input');
             hiddenInput.type = 'hidden';

@@ -144,6 +144,8 @@ if ($uploadDir !== false && is_dir($uploadDir)) {
     .title-block p { margin: 0; opacity: 0.95; font-size: 0.95rem; }
     .requester { display:flex; align-items:center; gap:0.5rem; white-space:nowrap; }
     .requester h2 { margin: 0; font-size: 1.15rem; font-weight: 700; text-shadow: 0 1px 1px rgba(0,0,0,0.2); }
+    .status-form { display:flex; gap:0.5rem; align-items:center; margin-left: 0.75rem; }
+    .action-select { padding: 0.4rem 0.6rem; border: 2px solid #e9ecef; border-radius: 6px; font-size: 0.9rem; }
     .summary-section { background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08); }
     .section-title { color: #2e7d32; border-bottom: 2px solid #e9ecef; padding-bottom: 0.5rem; margin-bottom: 1.5rem; font-size: 1.3rem; }
     .info-grid { display: grid; grid-template-columns: 1fr; column-gap: 1rem; row-gap: 0.45rem; grid-auto-flow: row dense; margin-bottom: 0.5rem; }
@@ -159,8 +161,10 @@ if ($uploadDir !== false && is_dir($uploadDir)) {
     .status-approved { background:#d4edda; color:#155724; }
     .status-rejected { background:#f8d7da; color:#721c24; }
     .status-reviewing { background:#fff3cd; color:#856404; }
-    .actions { display:flex; gap:1rem; margin-top: 1rem; }
+    .actions { display:flex; gap:1rem; margin-top: 1rem; align-items:center; flex-wrap:wrap; }
     .print-btn { background: linear-gradient(135deg, #4CAF50, #45a049); color:#fff; border:none; padding:0.6rem 1rem; border-radius:8px; cursor:pointer; font-weight:600; }
+    .scroll-top-btn { position: fixed; right: 20px; bottom: 20px; width: 44px; height: 44px; border-radius: 50%; border: none; background: #2e7d32; color: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.2); cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 20px; z-index: 9999; }
+    .scroll-top-btn.show { display: flex; }
     @media (max-width: 768px) {
       .summary-container { padding: 1rem; }
       .summary-header { padding: 1rem; }
@@ -185,6 +189,17 @@ if ($uploadDir !== false && is_dir($uploadDir)) {
       <div class="requester">
         <h2><?php echo h($full_name ?: ($app['business_name'] ?? 'Business Application')); ?></h2>
         <span class="badge status-<?php echo h($app['status']); ?>"><?php echo ucfirst(h($app['status'])); ?></span>
+        <form method="POST" action="view-business-applications.php" class="status-form">
+          <input type="hidden" name="action" value="update_status">
+          <input type="hidden" name="id" value="<?php echo (int)$app['id']; ?>">
+          <label for="statusSelectHeader" class="info-label" style="color:#fff; opacity:0.95;">Status:</label>
+          <select id="statusSelectHeader" name="status" class="action-select" onchange="this.form.submit()">
+            <option value="pending" <?php echo $app['status']==='pending' ? 'selected' : ''; ?>>Pending</option>
+            <option value="reviewing" <?php echo $app['status']==='reviewing' ? 'selected' : ''; ?>>Reviewing</option>
+            <option value="approved" <?php echo $app['status']==='approved' ? 'selected' : ''; ?>>Approved</option>
+            <option value="rejected" <?php echo $app['status']==='rejected' ? 'selected' : ''; ?>>Rejected</option>
+          </select>
+        </form>
       </div>
     </div>
 
@@ -192,7 +207,9 @@ if ($uploadDir !== false && is_dir($uploadDir)) {
       <div class="summary-section">
         <h3 class="section-title">Personal Information</h3>
         <div class="info-grid">
-          <div class="info-item full-row"><div class="info-label">Full Name:</div><div class="info-value"><?php echo h($full_name ?: ''); ?></div></div>
+          <div class="info-item"><div class="info-label">First Name:</div><div class="info-value"><?php echo h($app['first_name'] ?? ''); ?></div></div>
+          <div class="info-item"><div class="info-label">Middle Name:</div><div class="info-value"><?php echo h($app['middle_name'] ?? ''); ?></div></div>
+          <div class="info-item"><div class="info-label">Last Name:</div><div class="info-value"><?php echo h($app['last_name'] ?? ''); ?></div></div>
           <div class="info-item"><div class="info-label">Address:</div><div class="info-value"><?php echo h(($app['owner_address'] ?? '') ?: ($app['resident_address'] ?? '')); ?></div></div>
           <div class="info-item"><div class="info-label">Mobile Number:</div><div class="info-value"><?php echo h($contact ?: '—'); ?></div></div>
           <div class="info-item"><div class="info-label">Civil Status:</div><div class="info-value"><?php echo h($app['resident_civil_status'] ?? ''); ?></div></div>
@@ -227,10 +244,18 @@ if ($uploadDir !== false && is_dir($uploadDir)) {
         </div>
       </div>
 
-      <div class="actions">
-        <button class="print-btn" onclick="window.print()">🖨️ Print Summary</button>
-      </div>
+      
     </div>
   </div>
+  <button id="scrollTopBtn" class="scroll-top-btn" title="Back to top">↑</button>
+  <script>
+    (function(){
+      var btn = document.getElementById('scrollTopBtn');
+      function onScroll(){ if (window.scrollY > 200) { btn.classList.add('show'); } else { btn.classList.remove('show'); } }
+      window.addEventListener('scroll', onScroll, { passive: true });
+      btn.addEventListener('click', function(){ window.scrollTo({ top: 0, behavior: 'smooth' }); });
+      onScroll();
+    })();
+  </script>
 </body>
 </html>

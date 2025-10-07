@@ -8,14 +8,17 @@ if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== tru
     header('Location: login.php');
     exit;
 }
-
+$sent = headers_sent();
+if (!$sent) {
+    header('Content-Type: text/html; charset=UTF-8');
+}
 $queueManager = new QueueManager($pdo);
 $success_message = '';
 $error_message = '';
 
 // Handle AJAX requests
 if (isset($_GET['action']) && $_GET['action'] === 'get_queue_data') {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     
     try {
         $stats_query = $pdo->query("
@@ -33,12 +36,28 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_queue_data') {
         $waiting_query = $pdo->query("
             SELECT t.id, t.ticket_number, t.customer_name, s.service_name, 
                    t.priority_level, t.status, t.created_at,
-                   ROW_NUMBER() OVER (ORDER BY t.created_at ASC) as queue_position
+                   ROW_NUMBER() OVER (
+                       ORDER BY 
+                           CASE t.priority_level 
+                               WHEN 'senior' THEN 1 
+                               WHEN 'pwd' THEN 2 
+                               WHEN 'priority' THEN 3 
+                               ELSE 4 
+                           END,
+                           t.created_at ASC
+                   ) as queue_position
             FROM queue_tickets t
             JOIN queue_services s ON t.service_id = s.id
             WHERE t.status IN ('waiting', 'serving')
                 AND DATE(t.created_at) = CURDATE()
-            ORDER BY t.created_at ASC
+            ORDER BY 
+               CASE t.priority_level 
+                   WHEN 'senior' THEN 1 
+                   WHEN 'pwd' THEN 2 
+                   WHEN 'priority' THEN 3 
+                   ELSE 4 
+               END,
+               t.created_at ASC
             LIMIT 50
         ");
         $tickets = $waiting_query->fetchAll(PDO::FETCH_ASSOC);
@@ -61,7 +80,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_queue_data') {
 
 // Handle AJAX POST actions
 if ($_POST && isset($_POST['ajax']) && $_POST['ajax'] === 'true') {
-    header('Content-Type: application/json');
+    header('Content-Type: application/json; charset=UTF-8');
     $action = $_POST['action'] ?? '';
     
     try {
@@ -83,16 +102,53 @@ if ($_POST && isset($_POST['ajax']) && $_POST['ajax'] === 'true') {
                     ]);
                 }
                 break;
+            
+            case 'clear_current_queue':
+                // Cancel today's waiting/serving tickets and clear counters
+                try {
+                    $pdo->beginTransaction();
+                    // Cancel waiting and serving tickets for today
+                    $upd = $pdo->prepare("UPDATE queue_tickets SET status = 'cancelled', notes = CONCAT(COALESCE(notes,''),' - Cleared by admin') WHERE DATE(created_at) = CURDATE() AND status IN ('waiting','serving')");
+                    $upd->execute();
+                    
+                    // Clear current tickets from counters
+                    $pdo->exec("UPDATE queue_counters SET current_ticket_id = NULL");
+                    
+                    $pdo->commit();
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Current queue cleared successfully.'
+                    ]);
+                } catch (Exception $e) {
+                    if ($pdo->inTransaction()) { $pdo->rollBack(); }
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Failed to clear the current queue.'
+                    ]);
+                }
+                break;
                 
             case 'complete_ticket':
                 $counter_id = (int)$_POST['counter_id'];
                 $result = $queueManager->completeTicket($counter_id, '');
                 
                 if ($result['success']) {
-                    echo json_encode([
-                        'success' => true,
-                        'message' => 'Ticket completed successfully'
-                    ]);
+                    // Auto-call the next ticket for this counter (if any)
+                    $next = $queueManager->callNextTicket($counter_id);
+                    if (!empty($next['success'])) {
+                        echo json_encode([
+                            'success' => true,
+                            'message' => 'Ticket completed. Next called: ' . $next['ticket']['ticket_number'],
+                            'next_called' => true,
+                            'next_ticket' => $next['ticket']
+                        ]);
+                    } else {
+                        echo json_encode([
+                            'success' => true,
+                            'message' => 'Ticket completed. No more tickets to call.',
+                            'next_called' => false
+                        ]);
+                    }
                 } else {
                     echo json_encode([
                         'success' => false,
@@ -103,6 +159,17 @@ if ($_POST && isset($_POST['ajax']) && $_POST['ajax'] === 'true') {
                 
             case 'reset_counter':
                 $counter_id = (int)$_POST['counter_id'];
+                
+                // Move current ticket (if any) back to waiting before clearing counter
+                $ctrStmt = $pdo->prepare("SELECT current_ticket_id FROM queue_counters WHERE id = ?");
+                $ctrStmt->execute([$counter_id]);
+                $currentId = $ctrStmt->fetchColumn();
+                
+                if ($currentId) {
+                    // Revert ticket to waiting and clear served timestamps
+                    $updTicket = $pdo->prepare("UPDATE queue_tickets SET status = 'waiting', served_at = NULL, called_at = NULL WHERE id = ?");
+                    $updTicket->execute([$currentId]);
+                }
                 
                 $stmt = $pdo->prepare("UPDATE queue_counters SET current_ticket_id = NULL WHERE id = ?");
                 if ($stmt->execute([$counter_id])) {
@@ -119,9 +186,31 @@ if ($_POST && isset($_POST['ajax']) && $_POST['ajax'] === 'true') {
                 break;
                 
             case 'generate_test_ticket':
-                $result = $queueManager->generateTicket(5, 'Test Customer ' . date('His'), '09123456789', null, 'Test General Service', 'normal');
+                // Pick an active service to avoid failures when hardcoded service is inactive
+                $activeServicesStmt = $pdo->query("SELECT id FROM queue_services WHERE is_active = 1");
+                $activeServiceIds = [];
+                foreach ($activeServicesStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                    $activeServiceIds[] = (int)$row['id'];
+                }
+                if (empty($activeServiceIds)) {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'No active services found. Please activate at least one service in queue_services.'
+                    ]);
+                    break;
+                }
+                // Weight General Services (5) and Business (6) if present
+                $weighted = [];
+                foreach ($activeServiceIds as $sid) {
+                    $weight = ($sid === 5) ? 3 : (($sid === 6) ? 2 : 1);
+                    for ($w = 0; $w < $weight; $w++) { $weighted[] = $sid; }
+                }
+                if (empty($weighted)) { $weighted = $activeServiceIds; }
+                $serviceId = $weighted[array_rand($weighted)];
+
+                $result = $queueManager->generateTicket($serviceId, 'Test Customer ' . date('His'), '09' . str_pad((string)rand(100000000, 999999999), 9, '0', STR_PAD_LEFT), null, 'Test Ticket', 'normal');
                 
-                if ($result['success']) {
+                if (!empty($result['success'])) {
                     echo json_encode([
                         'success' => true,
                         'message' => 'Test ticket generated: ' . $result['ticket_number'],
@@ -130,7 +219,7 @@ if ($_POST && isset($_POST['ajax']) && $_POST['ajax'] === 'true') {
                 } else {
                     echo json_encode([
                         'success' => false,
-                        'message' => 'Failed to generate test ticket'
+                        'message' => 'Failed to generate test ticket' . (!empty($result['message']) ? (': ' . $result['message']) : '')
                     ]);
                 }
                 break;
@@ -190,22 +279,45 @@ if ($_POST && isset($_POST['ajax']) && $_POST['ajax'] === 'true') {
                 try {
                     $success_count = 0;
                     $failed_count = 0;
+                    $errors = [];
                     
                     // Sample data for realistic dummy tickets
                     $firstNames = ['Maria', 'Juan', 'Jose', 'Ana', 'Pedro', 'Carmen', 'Miguel', 'Rosa', 'Carlos', 'Elena', 'Roberto', 'Isabel', 'Francisco', 'Patricia', 'Manuel', 'Luz', 'Antonio', 'Teresa', 'Daniel', 'Esperanza'];
                     $lastNames = ['Santos', 'Reyes', 'Cruz', 'Bautista', 'Ocampo', 'Garcia', 'Mendoza', 'Torres', 'Gonzales', 'Rodriguez', 'Perez', 'Flores', 'Rivera', 'Gomez', 'Fernandez', 'Lopez', 'Hernandez', 'Diaz', 'Morales', 'Jimenez'];
                     $purposes = ['Certificate Request', 'Document Verification', 'General Inquiry', 'Permit Application', 'Registration Update', 'Complaint Filing', 'Information Request', 'Form Submission'];
                     $priorityLevels = ['normal', 'normal', 'normal', 'normal', 'priority', 'senior', 'pwd'];
-                    $serviceIds = [1, 2, 3, 4, 5, 5, 5, 6]; // More general services
+                    
+                    // Get active service IDs from DB instead of hardcoding
+                    $activeServicesStmt = $pdo->query("SELECT id FROM queue_services WHERE is_active = 1");
+                    $activeServiceIds = [];
+                    foreach ($activeServicesStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                        $activeServiceIds[] = (int)$row['id'];
+                    }
+                    
+                    if (empty($activeServiceIds)) {
+                        echo json_encode([
+                            'success' => false,
+                            'message' => 'No active services found. Please configure services in `queue_services`.',
+                        ]);
+                        exit;
+                    }
+                    
+                    // Weight General Services (id=5) and Business (id=6) if present
+                    $serviceIdsWeighted = [];
+                    foreach ($activeServiceIds as $sid) {
+                        $weight = ($sid === 5) ? 3 : (($sid === 6) ? 2 : 1);
+                        for ($w = 0; $w < $weight; $w++) { $serviceIdsWeighted[] = $sid; }
+                    }
+                    if (empty($serviceIdsWeighted)) { $serviceIdsWeighted = $activeServiceIds; }
                     
                     for ($i = 0; $i < $count; $i++) {
                         $firstName = $firstNames[array_rand($firstNames)];
                         $lastName = $lastNames[array_rand($lastNames)];
                         $fullName = $firstName . ' ' . $lastName;
-                        $serviceId = $serviceIds[array_rand($serviceIds)];
+                        $serviceId = $serviceIdsWeighted[array_rand($serviceIdsWeighted)];
                         $purpose = $purposes[array_rand($purposes)];
                         $priority = $priorityLevels[array_rand($priorityLevels)];
-                        $mobile = '09' . str_pad(rand(100000000, 999999999), 9, '0', STR_PAD_LEFT);
+                        $mobile = '09' . str_pad((string)rand(100000000, 999999999), 9, '0', STR_PAD_LEFT);
                         
                         $result = $queueManager->generateTicket(
                             $serviceId,
@@ -216,10 +328,13 @@ if ($_POST && isset($_POST['ajax']) && $_POST['ajax'] === 'true') {
                             $priority
                         );
                         
-                        if ($result['success']) {
+                        if (!empty($result['success'])) {
                             $success_count++;
                         } else {
                             $failed_count++;
+                            if (!empty($result['message']) && count($errors) < 5) {
+                                $errors[] = "Service {$serviceId}: " . $result['message'];
+                            }
                         }
                         
                         // Small delay to avoid overwhelming the system
@@ -230,10 +345,12 @@ if ($_POST && isset($_POST['ajax']) && $_POST['ajax'] === 'true') {
                         'success' => true,
                         'message' => "Generated {$success_count} dummy tickets successfully" . ($failed_count > 0 ? ", {$failed_count} failed" : ''),
                         'generated' => $success_count,
-                        'failed' => $failed_count
+                        'failed' => $failed_count,
+                        'errors' => $errors
                     ]);
                     
                 } catch (Exception $e) {
+                    error_log('generate_dummy_tickets error: ' . $e->getMessage());
                     echo json_encode([
                         'success' => false,
                         'message' => 'Unable to generate test tickets. Please try again or contact support if the problem persists.'
@@ -277,7 +394,13 @@ if ($_POST) {
             $result = $queueManager->completeTicket($counter_id, '');
             
             if ($result['success']) {
-                $success_message = "Ticket completed successfully";
+                // Try to call next right away
+                $next = $queueManager->callNextTicket($counter_id);
+                if (!empty($next['success'])) {
+                    $success_message = "Ticket completed. Next called: " . $next['ticket']['ticket_number'];
+                } else {
+                    $success_message = "Ticket completed. No more tickets to call.";
+                }
             } else {
                 $error_message = $result['message'];
             }
@@ -287,6 +410,16 @@ if ($_POST) {
             $counter_id = (int)$_POST['counter_id'];
             
             try {
+                // Move current ticket (if any) back to waiting before clearing counter
+                $ctrStmt = $pdo->prepare("SELECT current_ticket_id FROM queue_counters WHERE id = ?");
+                $ctrStmt->execute([$counter_id]);
+                $currentId = $ctrStmt->fetchColumn();
+                
+                if ($currentId) {
+                    $updTicket = $pdo->prepare("UPDATE queue_tickets SET status = 'waiting', served_at = NULL, called_at = NULL WHERE id = ?");
+                    $updTicket->execute([$currentId]);
+                }
+                
                 $stmt = $pdo->prepare("UPDATE queue_counters SET current_ticket_id = NULL WHERE id = ?");
                 if ($stmt->execute([$counter_id])) {
                     $success_message = "Counter reset successfully";
@@ -350,20 +483,36 @@ if ($_POST) {
                 $lastNames = ['Santos', 'Reyes', 'Cruz', 'Bautista', 'Ocampo', 'Garcia', 'Mendoza', 'Torres', 'Gonzales', 'Rodriguez'];
                 $purposes = ['Certificate Request', 'Document Verification', 'General Inquiry', 'Permit Application'];
                 $priorityLevels = ['normal', 'normal', 'normal', 'priority', 'senior'];
-                $serviceIds = [1, 2, 3, 4, 5, 5, 6];
-                
+
+                // Fetch active services from DB and weight common ones if present
+                $activeServicesStmt = $pdo->query("SELECT id FROM queue_services WHERE is_active = 1");
+                $activeServiceIds = [];
+                foreach ($activeServicesStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                    $activeServiceIds[] = (int)$row['id'];
+                }
+                if (empty($activeServiceIds)) {
+                    $error_message = "No active services found. Configure services first.";
+                    break;
+                }
+                $serviceIdsWeighted = [];
+                foreach ($activeServiceIds as $sid) {
+                    $weight = ($sid === 5) ? 3 : (($sid === 6) ? 2 : 1);
+                    for ($w = 0; $w < $weight; $w++) { $serviceIdsWeighted[] = $sid; }
+                }
+                if (empty($serviceIdsWeighted)) { $serviceIdsWeighted = $activeServiceIds; }
+
                 for ($i = 0; $i < $count; $i++) {
                     $firstName = $firstNames[array_rand($firstNames)];
                     $lastName = $lastNames[array_rand($lastNames)];
                     $fullName = $firstName . ' ' . $lastName;
-                    $serviceId = $serviceIds[array_rand($serviceIds)];
+                    $serviceId = $serviceIdsWeighted[array_rand($serviceIdsWeighted)];
                     $purpose = $purposes[array_rand($purposes)];
                     $priority = $priorityLevels[array_rand($priorityLevels)];
-                    $mobile = '09' . str_pad(rand(100000000, 999999999), 9, '0', STR_PAD_LEFT);
-                    
+                    $mobile = '09' . str_pad((string)rand(100000000, 999999999), 9, '0', STR_PAD_LEFT);
+
                     $result = $queueManager->generateTicket($serviceId, $fullName, $mobile, null, $purpose, $priority);
-                    
-                    if ($result['success']) {
+
+                    if (!empty($result['success'])) {
                         $success_count++;
                     } else {
                         $failed_count++;
@@ -401,8 +550,21 @@ $counters = $pdo->query("
 ")->fetchAll();
 
 $page_title = 'Queue Management Dashboard';
-include '../includes/admin_header.php';
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo htmlspecialchars(isset($page_title) ? $page_title : 'Admin'); ?></title>
+    <link rel=\"stylesheet\" href=\"../css/styles.css\">
+    <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css\">
+    <style>
+        body { background: #ffffff; margin: 0; padding: 90px 20px 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    </style>
+</head>
+<body>
+<?php $base_path = '../'; include $base_path . 'includes/admin_mini_nav.php'; ?>
 
 <style>
 :root {
@@ -701,6 +863,11 @@ include '../includes/admin_header.php';
     color: white;
 }
 
+.btn-danger {
+    background: var(--error);
+    color: white;
+}
+
 .btn-info {
     background: var(--info);
     color: white;
@@ -765,6 +932,14 @@ include '../includes/admin_header.php';
     border-left-color: var(--primary);
 }
 
+.ticket-item.senior {
+    border-left-color: #8e24aa; /* purple */
+}
+
+.ticket-item.pwd {
+    border-left-color: #3949ab; /* indigo */
+}
+
 .ticket-header {
     display: flex;
     justify-content: space-between;
@@ -798,6 +973,16 @@ include '../includes/admin_header.php';
 .priority-badge.normal {
     background: var(--gray-200);
     color: var(--gray-700);
+}
+
+.priority-badge.senior {
+    background: #8e24aa;
+    color: #fff;
+}
+
+.priority-badge.pwd {
+    background: #3949ab;
+    color: #fff;
 }
 
 .customer-name-small {
@@ -1175,27 +1360,26 @@ include '../includes/admin_header.php';
 
 <div class="admin-main-content">
     <div class="dashboard-header">
-        <h1>🎫 Queue Management Dashboard</h1>
+        <h1><i class="fas fa-clipboard-list"></i> Queue Management Dashboard</h1>
         <p>Real-time control center for managing service counters and customer queue</p>
         <div class="header-actions">
             <a href="../pages/queue-ticket.php" class="header-action-btn" target="_blank">
-                🎫 Customer Portal
+                <i class="fas fa-user"></i> Customer Portal
             </a>
             <a href="../pages/queue-kiosk.php" class="header-action-btn" target="_blank">
-                📺 Display Kiosk
+                <i class="fas fa-tv"></i> Display Kiosk
             </a>
             <a href="queue-monitor.php" class="header-action-btn">
-                📊 Live Monitor
+                <i class="fas fa-chart-line"></i> Live Monitor
             </a>
             <button onclick="generateDummyTickets()" class="header-action-btn" style="border: none; cursor: pointer;">
-                👥 Quick Generate 20 Dummies
-            </button>
+                <i class="fas fa-wand-magic-sparkles"></i><i class="fas fa-wand-magic-sparkles"></i> Generate 20 Dummies</button>
         </div>
     </div>
 
     <?php if ($success_message): ?>
     <div class="alert alert-success">
-        <span>✅</span>
+        <span><i class="fas fa-check-circle"></i></span>
         <div>
             <strong>Success!</strong>
             <div><?php echo htmlspecialchars($success_message); ?></div>
@@ -1205,7 +1389,7 @@ include '../includes/admin_header.php';
 
     <?php if ($error_message): ?>
     <div class="alert alert-error">
-        <span>❌</span>
+        <span><i class="fas fa-times-circle"></i></span>
         <div>
             <strong>Error!</strong>
             <div><?php echo htmlspecialchars($error_message); ?></div>
@@ -1216,7 +1400,7 @@ include '../includes/admin_header.php';
     <div class="main-content">
         <div class="counter-section">
             <div class="section-title">
-                <span>🏢</span>
+                <span><i class="fas fa-store"></i></span>
                 Service Counter Management
             </div>
             
@@ -1234,30 +1418,24 @@ include '../includes/admin_header.php';
                     </div>
                     
                     <div class="service-tag">
-                        💼 <?php echo htmlspecialchars($counter['service_name']); ?>
+                        <i class="fas fa-briefcase"></i> <?php echo htmlspecialchars($counter['service_name']); ?>
                     </div>
                     
                     <?php if ($counter['current_ticket_id']): ?>
                     <div class="current-ticket">
-                        <div class="ticket-number">🎫 <?php echo htmlspecialchars($counter['ticket_number']); ?></div>
-                        <div class="customer-name">👤 <?php echo htmlspecialchars($counter['customer_name']); ?></div>
+                        <div class="ticket-number"><i class="fas fa-ticket-simple"></i> <?php echo htmlspecialchars($counter['ticket_number']); ?></div>
+                        <div class="customer-name"><i class="fas fa-user"></i> <?php echo htmlspecialchars($counter['customer_name']); ?></div>
                         
                         <div class="counter-actions">
-                            <button onclick="performCounterAction('complete_ticket', <?php echo $counter['id']; ?>)" class="btn btn-success">
-                                ✓ Complete
-                            </button>
-                            <button onclick="performCounterAction('reset_counter', <?php echo $counter['id']; ?>)" class="btn btn-warning">
-                                🔄 Reset
-                            </button>
+                            <button onclick="performCounterAction('complete_ticket', <?php echo $counter['id']; ?>)" class="btn btn-success"><i class="fas fa-check"></i> Complete</button>
+                            <button onclick="performCounterAction('reset_counter', <?php echo $counter['id']; ?>)" class="btn btn-warning"><i class="fas fa-rotate"></i> Reset</button>
                         </div>
                     </div>
                     <?php else: ?>
                     <div style="text-align: center; padding: 20px 0;">
                         <div style="color: var(--gray-500); margin-bottom: 16px;">Ready to serve next customer</div>
                         <div class="counter-actions">
-                            <button onclick="performCounterAction('call_next', <?php echo $counter['id']; ?>)" class="btn btn-primary">
-                                📢 Call Next
-                            </button>
+                            <button onclick="performCounterAction('call_next', <?php echo $counter['id']; ?>)" class="btn btn-primary"><i class="fas fa-bullhorn"></i> Call Next</button>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -1268,7 +1446,7 @@ include '../includes/admin_header.php';
 
         <div class="queue-sidebar">
             <div class="section-title">
-                <span>⏳</span>
+                <span><i class="fas fa-list"></i></span>
                 Queue Control
             </div>
             
@@ -1277,22 +1455,17 @@ include '../includes/admin_header.php';
             </div>
             
             <div class="action-buttons">
-                <button onclick="refreshData()" class="btn btn-info">
-                    🔄 Refresh
-                </button>
-                <button onclick="performCounterAction('generate_test_ticket', 0)" class="btn btn-warning">
-                    🧪 Test Ticket
-                </button>
-                <button onclick="generateDummyTickets()" class="btn btn-secondary">
-                    👥 Generate 20 Dummies
-                </button>
+                <button onclick="refreshData()" class="btn btn-info"><i class="fas fa-rotate"></i> Refresh</button>
+                <button onclick="performCounterAction('generate_test_ticket', 0)" class="btn btn-warning"><i class="fas fa-vial"></i> Test Ticket</button>
+                <button onclick="generateDummyTickets()" class="btn btn-secondary"><i class="fas fa-wand-magic-sparkles"></i> Generate 20 Dummies</button>
+                <button onclick="clearCurrentQueue()" class="btn btn-danger"><i class="fas fa-trash"></i> Clear Current Queue</button>
             </div>
             
             <div>
-                <h4>📋 Current Queue</h4>
+                <h4><i class="fas fa-list"></i> Current Queue</h4>
                 <div id="waitingTicketsContainer">
                     <div style="text-align: center; color: var(--gray-500); padding: 20px;">
-                        <div style="font-size: 2rem; margin-bottom: 12px; opacity: 0.5;">🎫</div>
+                        <div style="font-size: 2rem; margin-bottom: 12px; opacity: 0.5;"><i class="fas fa-spinner fa-spin"></i></div>
                         <div>Loading queue data...</div>
                     </div>
                 </div>
@@ -1304,7 +1477,7 @@ include '../includes/admin_header.php';
 <div class="admin-main-content" style="padding-top: 0; background: transparent; min-height: auto;">
     <div class="counter-section">
         <div class="section-title">
-            <span>📊</span>
+            <span><i class="fas fa-chart-bar"></i></span>
             Daily Queue Statistics
         </div>
         
@@ -1345,10 +1518,10 @@ function showToast(message, type = 'info', duration = 4000) {
     
     // Enhanced toast with icon and close button
     const icons = {
-        'success': '✅',
-        'error': '❌',
-        'warning': '⚠️',
-        'info': 'ℹ️'
+        'success': '&#x2705;',      // âœ…
+        'error': '&#x274C;',        // âŒ
+        'warning': '&#x26A0;&#xFE0F;', // âš ï¸
+        'info': '&#x2139;&#xFE0F;'   // â„¹ï¸
     };
     
     toast.innerHTML = `
@@ -1393,11 +1566,11 @@ function showModal(title, message, type = 'info', buttons = null) {
     modal.id = 'queue-modal';
     
     const icons = {
-        'success': '✅',
-        'error': '❌',
-        'warning': '⚠️',
-        'info': 'ℹ️',
-        'question': '❓'
+        'success': '&#x2705;',        // âœ…
+        'error': '&#x274C;',          // âŒ
+        'warning': '&#x26A0;&#xFE0F;', // âš ï¸
+        'info': '&#x2139;&#xFE0F;',   // â„¹ï¸
+        'question': '&#x2753;'        // â“
     };
     
     const defaultButtons = `
@@ -1448,7 +1621,7 @@ function confirmAction(title, message, onConfirm, onCancel = null) {
     modal.innerHTML = `
         <div class="modal-content modal-confirm">
             <div class="modal-header">
-                <div class="modal-icon">❓</div>
+                <div class="modal-icon">&#x2753;</div>
                 <h3>${title}</h3>
             </div>
             <div class="modal-body">
@@ -1514,7 +1687,7 @@ function performCounterAction(action, counterId) {
     const button = event.target;
     const originalText = button.innerHTML;
     button.disabled = true;
-    button.innerHTML = '<span style="animation: spin 1s linear infinite; display: inline-block;">⟳</span> Processing...';
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
     
     // Prepare form data
     const formData = new FormData();
@@ -1668,8 +1841,8 @@ function executeDummyGeneration(count) {
                     'Dummy Tickets Generated Successfully!',
                     `
                         <strong>Generation Complete:</strong><br>
-                        ✅ Successfully generated: ${data.generated} tickets<br>
-                        ${data.failed > 0 ? `❌ Failed to generate: ${data.failed} tickets<br>` : ''}
+                        <i class="fas fa-check-circle"></i> Successfully generated: ${data.generated} tickets<br>
+                        ${data.failed > 0 ? `<i class="fas fa-times-circle"></i> Failed to generate: ${data.failed} tickets<br>` : ''}
                         <br>
                         The queue has been populated with realistic dummy data for testing purposes.
                     `,
@@ -1753,7 +1926,7 @@ function updateTicketsDisplay(tickets) {
     if (!tickets || tickets.length === 0) {
         container.innerHTML = `
             <div style="text-align: center; color: var(--gray-500); padding: 20px;">
-                <div style="font-size: 2rem; margin-bottom: 12px; opacity: 0.5;">🎫</div>
+                <div style="font-size: 2rem; margin-bottom: 12px; opacity: 0.5;"><i class="fas fa-spinner fa-spin"></i></div>
                 <div>No tickets in queue</div>
             </div>
         `;
@@ -1770,17 +1943,16 @@ function updateTicketsDisplay(tickets) {
             <div style="font-size: 0.75rem; color: var(--gray-500); margin-bottom: 8px;">${ticket.service_name}</div>
             <div class="ticket-controls">
                 <button onclick="manageTicket('remove_ticket', ${ticket.id})" class="btn-ticket-action btn-remove" title="Remove Ticket">
-                    🗑️ Remove
+                    <i class="fas fa-trash"></i> Remove
                 </button>
                 <button onclick="manageTicket('archive_ticket', ${ticket.id})" class="btn-ticket-action btn-archive" title="Archive Ticket">
-                    📦 Archive
+                    <i class="fas fa-box-archive"></i> Archive
                 </button>
             </div>
         </div>
     `).join('');
 }
 
-// Add CSS for loading spinner
 const style = document.createElement('style');
 style.textContent = `
     @keyframes spin {
@@ -1803,6 +1975,42 @@ document.addEventListener('DOMContentLoaded', function() {
         showToast('Queue Management Dashboard loaded successfully', 'success');
     }, 500);
 });
-</script>
 
-<?php include '../includes/admin_footer.php'; ?>
+// Clear all current queue (today's waiting/serving) via AJAX with confirmation
+function clearCurrentQueue() {
+    confirmAction(
+        'Clear Current Queue',
+        'This will cancel all waiting/serving tickets created today and reset all counters. Are you sure you want to proceed?',
+        () => {
+            const formData = new FormData();
+            formData.append('action', 'clear_current_queue');
+            formData.append('ajax', 'true');
+
+            fetch('queue-admin.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(data.message || 'Current queue cleared.', 'success');
+                    setTimeout(() => {
+                        refreshData();
+                        window.location.reload();
+                    }, 800);
+                } else {
+                    showToast(data.message || 'Failed to clear the current queue.', 'error');
+                }
+            })
+            .catch(() => showToast('Unable to process request at the moment.', 'error'));
+        },
+        () => showToast('Action cancelled.', 'info')
+    );
+}</script>
+
+</body>
+</html>
+
+
+
+
