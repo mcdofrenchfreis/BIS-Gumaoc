@@ -17,6 +17,7 @@ urlpatterns = [
     path('api/queue/', include('apps.queue.urls')),
     path('api/notifications/', include('apps.notifications.urls')),
     path('api/rfid/', include('apps.rfid.urls')),
+    path('api/general/', include('apps.general.urls')),
 ]
 
 if settings.DEBUG:

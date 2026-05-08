@@ -1,7 +1,5 @@
 from django.db import models
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
+from apps.residents.models import Resident
 
 
 class BusinessApplication(models.Model):
@@ -12,7 +10,7 @@ class BusinessApplication(models.Model):
         ('rejected', 'Rejected'),
     ]
     
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.ForeignKey(Resident, on_delete=models.SET_NULL, null=True, blank=True)
     reference_no = models.CharField(max_length=50, blank=True, null=True)
     application_date = models.DateField(blank=True, null=True)
     first_name = models.CharField(max_length=100, blank=True, null=True)
@@ -32,7 +30,7 @@ class BusinessApplication(models.Model):
     contact_number = models.CharField(max_length=20)
     years_operation = models.IntegerField()
     investment_capital = models.DecimalField(max_digits=15, decimal_places=2)
-    proof_image = models.CharField(max_length=255, blank=True, null=True)
+    proof_image = models.CharField(max_length=255, blank=True, null=True, help_text='Optional proof image filename')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     submitted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

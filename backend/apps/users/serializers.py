@@ -41,3 +41,8 @@ class AdminUserSerializer(serializers.ModelSerializer):
         model = 'users.AdminUser'
         fields = ['id', 'username', 'full_name', 'email', 'role', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+
+class AdminLoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()

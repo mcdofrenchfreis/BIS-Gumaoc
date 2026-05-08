@@ -61,21 +61,12 @@ class AccessLog(models.Model):
 
 
 class AdminLog(models.Model):
-    ACTION_TYPES = [
-        ('admin_login', 'Admin Login'),
-        ('admin_logout', 'Admin Logout'),
-        ('page_view', 'Page View'),
-        ('form_view', 'Form View'),
-        ('status_update', 'Status Update'),
-        ('print_action', 'Print Action'),
-    ]
-    
-    admin_id = models.CharField(max_length=100, default='system')
-    action_type = models.CharField(max_length=50, choices=ACTION_TYPES)
+    admin = models.ForeignKey(AdminUser, on_delete=models.SET_NULL, null=True, related_name='logs')
+    action_type = models.CharField(max_length=50)
     target_type = models.CharField(max_length=50)
     target_id = models.IntegerField(blank=True, null=True)
     description = models.TextField()
-    details = models.JSONField(blank=True, null=True)
+    details = models.TextField(blank=True, null=True, help_text='JSON data')
     ip_address = models.CharField(max_length=45, blank=True, null=True)
     user_agent = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -85,4 +76,4 @@ class AdminLog(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.action_type} - {self.target_type}"
+        return f"{self.admin} - {self.action_type}"

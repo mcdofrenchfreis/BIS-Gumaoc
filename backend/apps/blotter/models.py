@@ -28,11 +28,11 @@ class BarangayBlotter(models.Model):
     
     blotter_number = models.CharField(max_length=50, unique=True)
     incident_type = models.CharField(max_length=20, choices=INCIDENT_TYPE_CHOICES)
-    complainant = models.ForeignKey(Resident, on_delete=models.SET_NULL, null=True, blank=True, related_name='complaints')
+    complainant_id = models.IntegerField(blank=True, null=True)
     complainant_name = models.CharField(max_length=255)
     complainant_address = models.CharField(max_length=500)
     complainant_contact = models.CharField(max_length=20, blank=True, null=True)
-    respondent = models.ForeignKey(Resident, on_delete=models.SET_NULL, null=True, blank=True, related_name='incidents')
+    respondent_id = models.IntegerField(blank=True, null=True)
     respondent_name = models.CharField(max_length=255)
     respondent_address = models.CharField(max_length=500)
     respondent_contact = models.CharField(max_length=20, blank=True, null=True)

@@ -4,12 +4,12 @@ from .models import QueueTicket, QueueService, QueueCounter, QueueWindow
 
 @admin.register(QueueService)
 class QueueServiceAdmin(admin.ModelAdmin):
-    list_display = ['name', 'prefix', 'is_active', 'display_order']
+    list_display = ['service_name', 'service_code', 'is_active', 'created_at']
     list_filter = ['is_active']
 
 
 @admin.register(QueueTicket)
 class QueueTicketAdmin(admin.ModelAdmin):
-    list_display = ['ticket_number', 'name', 'service', 'status', 'created_at']
-    list_filter = ['status', 'service', 'window']
-    search_fields = ['ticket_number', 'name']
+    list_display = ['ticket_number', 'customer_name', 'service', 'status', 'created_at']
+    list_filter = ['status', 'service']
+    search_fields = ['ticket_number', 'customer_name']

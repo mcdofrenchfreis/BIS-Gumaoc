@@ -1,84 +1,223 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import api from '../lib/axios'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import '../styles/user-login.css';
 
-export default function LoginPage() {
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const navigate = useNavigate()
+const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'email' | 'rfid'>('email');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rfidCode, setRfidCode] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      const response = await api.post('/auth/login/', { username, password })
-      localStorage.setItem('access_token', response.data.access)
-      localStorage.setItem('refresh_token', response.data.refresh)
-      localStorage.setItem('user', JSON.stringify(response.data.user))
-      navigate('/dashboard')
-    } catch (err: any) {
-      setError('Invalid credentials')
+  useEffect(() => {
+    // Check if already logged in
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      navigate('/dashboard');
     }
-  }
+  }, [navigate]);
+
+  const handleEmailLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('refresh_token', data.refresh);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        navigate('/dashboard');
+      } else {
+        setError('Invalid email or password');
+      }
+    } catch (err) {
+      setError('Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRfidLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/rfid-login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rfid_code: rfidCode }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('access_token', data.access);
+        localStorage.setItem('refresh_token', data.refresh);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.setItem('rfid_authenticated', 'true');
+        navigate('/dashboard');
+      } else {
+        setError('Invalid RFID or user not found');
+      }
+    } catch (err) {
+      setError('Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRfidChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toUpperCase();
+    setRfidCode(value);
+    // Auto-submit when RFID code reaches 10+ characters
+    if (value.length >= 10) {
+      setTimeout(() => {
+        const form = e.target.closest('form');
+        if (form) form.requestSubmit();
+      }, 500);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
-        <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-4xl">🏛️</span>
+    <div className="login-wrapper">
+      <a href="/" className="back-btn">
+        <i className="fas fa-arrow-left"></i>
+        Back to Home
+      </a>
+      
+      <div className="login-container">
+        <div className="login-card">
+          <div className="login-header">
+            <h2>Resident Login</h2>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">Barangay Gumaoc East</h1>
-          <p className="text-gray-600">Sign in to your account</p>
-        </div>
-
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+          
+          <div className="info-box">
+            <h4>🔐 Login Options</h4>
+            <p>Login using your email and password, or scan your RFID card.</p>
           </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Username
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
+          
+          {error && (
+            <div className="alert alert-error">
+              <i className="fas fa-exclamation-circle"></i>
+              {error}
+            </div>
+          )}
+          
+          {/* Login Method Tabs */}
+          <div className="login-tabs">
+            <div className="tab-buttons">
+              <button
+                type="button"
+                className={`tab-button ${activeTab === 'email' ? 'active' : ''}`}
+                onClick={() => setActiveTab('email')}
+              >
+                <i className="fas fa-envelope"></i> Email Login
+              </button>
+              <button
+                type="button"
+                className={`tab-button ${activeTab === 'rfid' ? 'active' : ''}`}
+                onClick={() => setActiveTab('rfid')}
+              >
+                <i className="fas fa-credit-card"></i> RFID Login
+              </button>
+            </div>
+            
+            {/* Email Login Tab */}
+            {activeTab === 'email' && (
+              <div className="tab-content active">
+                <form onSubmit={handleEmailLogin}>
+                  <div className="form-group">
+                    <label htmlFor="email">Email Address</label>
+                    <input
+                      type="email"
+                      id="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      autoFocus
+                      placeholder="your.email@example.com"
+                      disabled={loading}
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="password">Password</label>
+                    <input
+                      type="password"
+                      id="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+                  
+                  <button type="submit" className="btn-login" disabled={loading}>
+                    <i className="fas fa-sign-in-alt"></i>
+                    {loading ? 'Logging in...' : 'Login with Email'}
+                  </button>
+                </form>
+              </div>
+            )}
+            
+            {/* RFID Login Tab */}
+            {activeTab === 'rfid' && (
+              <div className="tab-content active">
+                <form onSubmit={handleRfidLogin}>
+                  <div className="form-group">
+                    <label htmlFor="rfid_code">RFID Card</label>
+                    <input
+                      type="text"
+                      id="rfid_code"
+                      value={rfidCode}
+                      onChange={handleRfidChange}
+                      placeholder="Scan or enter RFID code"
+                      className="rfid-input"
+                      disabled={loading}
+                    />
+                  </div>
+                  
+                  <button type="submit" className="btn-login btn-rfid" disabled={loading}>
+                    <i className="fas fa-credit-card"></i>
+                    {loading ? 'Verifying...' : 'Login with RFID'}
+                  </button>
+                  
+                  <div className="rfid-instructions">
+                    <small>
+                      <i className="fas fa-info-circle"></i>
+                      Place your RFID card near the reader or manually enter your RFID code
+                    </small>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-            />
+          
+          <div className="register-link">
+            <a href="/register">Complete Census Registration</a>
+            <a href="/forgot-password">Forgot Password?</a>
+            <a href="/rfid-login">Quick RFID Access</a>
           </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition"
-          >
-            Sign In
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <a href="/" className="text-blue-600 hover:text-blue-800">
-            Back to Home
-          </a>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default LoginPage;

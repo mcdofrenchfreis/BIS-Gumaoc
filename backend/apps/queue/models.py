@@ -3,9 +3,11 @@ from apps.residents.models import Resident
 
 
 class QueueService(models.Model):
-    name = models.CharField(max_length=200)
+    service_name = models.CharField(max_length=100)
+    service_code = models.CharField(max_length=10, unique=True)
     description = models.TextField(blank=True, null=True)
-    prefix = models.CharField(max_length=5)
+    estimated_time = models.IntegerField(default=15, help_text='Estimated time in minutes')
+    max_daily_capacity = models.IntegerField(default=50)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -14,13 +16,17 @@ class QueueService(models.Model):
         db_table = 'queue_services'
 
     def __str__(self):
-        return self.name
+        return self.service_name
 
 
 class QueueCounter(models.Model):
-    name = models.CharField(max_length=100)
-    description = models.TextField(blank=True, null=True)
+    counter_number = models.CharField(max_length=10, unique=True)
+    counter_name = models.CharField(max_length=50)
+    service = models.ForeignKey(QueueService, on_delete=models.SET_NULL, null=True, blank=True, related_name='counters')
+    operator_name = models.CharField(max_length=100, blank=True, null=True)
     is_active = models.BooleanField(default=True)
+    current_ticket = models.ForeignKey('QueueTicket', on_delete=models.SET_NULL, null=True, blank=True, related_name='current_counter')
+    last_called_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -28,14 +34,17 @@ class QueueCounter(models.Model):
         db_table = 'queue_counters'
 
     def __str__(self):
-        return self.name
+        return f"{self.counter_number} - {self.counter_name}"
 
 
 class QueueWindow(models.Model):
-    name = models.CharField(max_length=100)
-    counter = models.ForeignKey(QueueCounter, on_delete=models.CASCADE, related_name='windows')
-    services = models.ManyToManyField(QueueService, related_name='windows')
+    window_number = models.CharField(max_length=10, unique=True)
+    window_name = models.CharField(max_length=50)
+    service = models.ForeignKey(QueueService, on_delete=models.SET_NULL, null=True, blank=True, related_name='windows')
+    operator_name = models.CharField(max_length=100, blank=True, null=True)
     is_active = models.BooleanField(default=True)
+    current_ticket = models.ForeignKey('QueueTicket', on_delete=models.SET_NULL, null=True, blank=True, related_name='current_window')
+    last_called_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -43,26 +52,39 @@ class QueueWindow(models.Model):
         db_table = 'queue_windows'
 
     def __str__(self):
-        return f"{self.name} - {self.counter}"
+        return f"{self.window_number} - {self.window_name}"
 
 
 class QueueTicket(models.Model):
+    PRIORITY_CHOICES = [
+        ('normal', 'Normal'),
+        ('priority', 'Priority'),
+        ('urgent', 'Urgent'),
+    ]
+    
     STATUS_CHOICES = [
         ('waiting', 'Waiting'),
         ('serving', 'Serving'),
         ('completed', 'Completed'),
-        ('skipped', 'Skipped'),
         ('cancelled', 'Cancelled'),
+        ('no_show', 'No Show'),
     ]
     
+    ticket_number = models.CharField(max_length=20, unique=True)
     service = models.ForeignKey(QueueService, on_delete=models.CASCADE, related_name='tickets')
-    ticket_number = models.CharField(max_length=20)
-    resident = models.ForeignKey(Resident, on_delete=models.SET_NULL, null=True, blank=True, related_name='queue_tickets')
-    name = models.CharField(max_length=255)
+    customer_name = models.CharField(max_length=100)
+    mobile_number = models.CharField(max_length=20, blank=True, null=True)
+    user = models.ForeignKey(Resident, on_delete=models.SET_NULL, null=True, blank=True, related_name='queue_tickets')
+    purpose = models.TextField(blank=True, null=True)
+    priority_level = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='normal')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='waiting')
-    window = models.ForeignKey(QueueWindow, on_delete=models.SET_NULL, null=True, blank=True, related_name='tickets')
+    queue_position = models.IntegerField(blank=True, null=True)
+    estimated_time = models.DateTimeField(blank=True, null=True)
     called_at = models.DateTimeField(blank=True, null=True)
+    served_at = models.DateTimeField(blank=True, null=True)
     completed_at = models.DateTimeField(blank=True, null=True)
+    served_by = models.CharField(max_length=100, blank=True, null=True)
+    notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -71,4 +93,4 @@ class QueueTicket(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.ticket_number} - {self.name}"
+        return f"{self.ticket_number} - {self.customer_name}"

@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'apps.queue',
     'apps.notifications',
     'apps.rfid',
+    'apps.general',
 ]
 
 MIDDLEWARE = [
