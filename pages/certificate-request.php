@@ -61,6 +61,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_GET['readonly']) && empty($
             }
         }
 
+        // Force priority for PWD (disability_status = 'PWD')
+        try {
+            if (!empty($_SESSION['user_id'])) {
+                $dsStmt = $pdo->prepare("SELECT disability_status FROM residents WHERE id = ? LIMIT 1");
+                $dsStmt->execute([$_SESSION['user_id']]);
+                $ds = $dsStmt->fetchColumn();
+                if ($ds === 'PWD') {
+                    $queue_priority = 'priority';
+                }
+            }
+        } catch (Throwable $ignored) {
+            // Best-effort; do not block submission on lookup failure
+        }
+
         // Resolve service id from certificate type
         $service_id = null;
         try {
@@ -262,6 +276,8 @@ if ($request_data) {
 \n</style>
 <?php include '../includes/mini_nav.php'; ?>
 <script>
+// Server-provided flag for PWD
+const IS_PWD_USER = <?php echo ($current_user && ($current_user['disability_status'] ?? 'None') === 'PWD') ? 'true' : 'false'; ?>;
 // Add pulse animation
 const style = document.createElement('style');
 style.textContent = `
@@ -471,6 +487,33 @@ document.addEventListener('DOMContentLoaded', function() {
       <h1 class="kiosk-title">Select Certificate Type</h1>
       <p class="kiosk-subtitle">Choose the type of certificate you would like to request</p>
       
+      <style>
+        /* Lock the selection screen to 3 columns (2 rows with 6 items) */
+        #certificateSelectionScreen .certificate-types {
+          display: grid !important;
+          grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+          grid-auto-rows: auto;
+          gap: 20px;
+          max-width: 1000px;
+          margin: 0 auto;
+        }
+        
+        #certificateSelectionScreen .certificate-option { height: 100%; }
+        
+        @media (max-width: 768px) {
+          #certificateSelectionScreen .certificate-types {
+            grid-template-columns: repeat(2, 1fr) !important;
+            grid-auto-rows: auto;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          #certificateSelectionScreen .certificate-types {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      </style>
+      
       <div class="certificate-types">
         <div class="certificate-option" data-type="BRGY. CLEARANCE" <?php echo ($request_data && $request_data['certificate_type'] === 'BRGY. CLEARANCE') ? 'data-selected="true"' : ''; ?>>
           <div class="certificate-icon">
@@ -483,7 +526,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <small style="display: block; margin-top: 8px; opacity: 0.8;">Certificate of good moral character</small>
           </div>
         </div>
-        
+
         <div class="certificate-option" data-type="BRGY. INDIGENCY" <?php echo ($request_data && $request_data['certificate_type'] === 'BRGY. INDIGENCY') ? 'data-selected="true"' : ''; ?>>
           <div class="certificate-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
@@ -495,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <small style="display: block; margin-top: 8px; opacity: 0.8;">Certificate of financial status</small>
           </div>
         </div>
-        
+
         <div class="certificate-option" data-type="TRICYCLE PERMIT" <?php echo ($request_data && $request_data['certificate_type'] === 'TRICYCLE PERMIT') ? 'data-selected="true"' : ''; ?>>
           <div class="certificate-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
@@ -507,7 +550,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <small style="display: block; margin-top: 8px; opacity: 0.8;">Vehicle operation permit</small>
           </div>
         </div>
-        
+
         <div class="certificate-option" data-type="PROOF OF RESIDENCY" <?php echo ($request_data && $request_data['certificate_type'] === 'PROOF OF RESIDENCY') ? 'data-selected="true"' : ''; ?>>
           <div class="certificate-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
@@ -519,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <small style="display: block; margin-top: 8px; opacity: 0.8;">Certificate of residence</small>
           </div>
         </div>
-        
+
         <div class="certificate-option" data-type="CEDULA/CTC" <?php echo ($request_data && $request_data['certificate_type'] === 'CEDULA/CTC') ? 'data-selected="true"' : ''; ?>>
           <div class="certificate-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
@@ -531,7 +574,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <small style="display: block; margin-top: 8px; opacity: 0.8;">Community Tax Certificate</small>
           </div>
         </div>
-        
+
         <div class="certificate-option" data-type="BUSINESS APPLICATION" <?php echo ($request_data && $request_data['certificate_type'] === 'BUSINESS APPLICATION') ? 'data-selected="true"' : ''; ?>>
           <div class="certificate-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36" fill="currentColor">
@@ -1479,7 +1522,7 @@ document.addEventListener('DOMContentLoaded', function() {
         font-family: 'Courier New', monospace;
         color: #000;
     }
-    #ticket-print .tp-wrap { padding: 2mm; text-align: center; }
+    #ticket-print .tp-wrap { padding: 20mm 2mm 2mm 2mm; text-align: center; }
     #ticket-print .tp-ticket { font-size: 36px; font-weight: 700; margin: 0; letter-spacing: 0.5px; line-height: 1.05; }
     #ticket-print .tp-note { margin-top: 2mm; font-size: 20px; line-height: 1.2; color: #000; }
 }
@@ -1661,7 +1704,13 @@ window.addEventListener('load', function() {
   // Auto-print when a queue ticket exists after submission (delay to settle layout)
   var hasTicket = <?php echo isset($_SESSION['queue_ticket_number']) ? 'true' : 'false'; ?>;
   if (hasTicket) {
-    setTimeout(function(){ window.print(); }, 900);
+    setTimeout(function(){ 
+      window.print(); 
+      // Redirect back to RFID login after printing
+      setTimeout(function(){
+        window.location.href = '../kiosk/rfid-login.php';
+      }, 2000);
+    }, 900);
   }
 });
 </script>
@@ -1982,7 +2031,7 @@ legend {
 
 .certificate-types {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 25px;
   margin-top: 40px;
   max-width: 1200px;
@@ -2786,7 +2835,7 @@ legend {
 /* Enhanced Certificate Types Grid */
 .certificate-types {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 15px;
   margin-top: 20px;
 }
@@ -3160,6 +3209,7 @@ function prefillFromCurrentUser() {
     'birthdate' => $current_user['birthdate'] ?? null,
     'birth_place' => $current_user['birth_place'] ?? null,
     'citizenship' => $current_user['citizenship'] ?? 'Filipino',
+    'disability_status' => $current_user['disability_status'] ?? 'None',
     'occupation' => $current_user['occupation'] ?? null,
   ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
 
@@ -3569,6 +3619,39 @@ function calculateTotalTax() {
   
   if (totalTaxField) totalTaxField.value = totalTax.toFixed(2);
   if (totalAmountField) totalAmountField.value = totalAmountPaid.toFixed(2);
+}
+
+// Show a small note when priority is enforced for PWD or seniors and lock the selector
+function ensurePriorityNote(isPwd, isSenior) {
+  const qp = document.getElementById('queue_priority');
+  if (!qp) return;
+  const container = qp.closest('.form-group');
+  if (!container) return;
+  let note = container.querySelector('.priority-lock-note');
+  const reasons = [];
+  if (isPwd) reasons.push('PWD');
+  if (isSenior) reasons.push('Senior (60+)');
+  const msg = reasons.length ? `Priority enforced due to ${reasons.join(' and ')}.` : 'Priority enforced.';
+  if (!note) {
+    note = document.createElement('small');
+    note.className = 'input-help priority-lock-note';
+    container.appendChild(note);
+  }
+  note.textContent = msg;
+}
+
+// Lock queue priority to priority when user is PWD or senior
+function lockPriorityIfNeeded() {
+  const qp = document.getElementById('queue_priority');
+  if (!qp) return;
+  const ageVal = parseInt(document.getElementById('age')?.value || '0', 10);
+  const isSenior = !isNaN(ageVal) && ageVal >= 60;
+  const isPwd = typeof IS_PWD_USER !== 'undefined' && !!IS_PWD_USER;
+  if (isPwd || isSenior) {
+    qp.value = 'priority';
+    qp.disabled = true;
+    ensurePriorityNote(isPwd, isSenior);
+  }
 }
 
 // Setup mobile number validation
@@ -4234,6 +4317,8 @@ document.addEventListener('DOMContentLoaded', function() {
   setupCedulaValidation();
   // Prefill from logged-in user where fields are still empty
   prefillFromCurrentUser();
+  // Enforce locked priority for PWD or seniors
+  try { lockPriorityIfNeeded(); } catch (e) { console.warn('lockPriorityIfNeeded error', e); }
   // Lock only auto-filled fields (keep Address 1 editable)
   lockAutofilledFields();
   // Combine addresses on submit

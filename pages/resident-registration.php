@@ -1,6 +1,13 @@
 <?php
 session_start();
 $base_path = '../';
+// Require privacy consent before accessing the form
+if (empty($_SESSION['privacy_consent'])) {
+	$here = $_SERVER['REQUEST_URI'] ?? ($base_path . 'pages/resident-registration.php');
+	$dest = $base_path . 'pages/privacy-consent.php?return=' . urlencode($here);
+	header('Location: ' . $dest);
+	exit;
+}
 $page_title = 'Census Registration - Barangay Gumaoc East';
 $header_title = 'Census Registration Form';
 $header_subtitle = 'Barangay Population Census Data Collection';
@@ -39,8 +46,8 @@ if ($admin_view) {
         $organizations_stmt->execute([$admin_view]);
         $family_organizations = $organizations_stmt->fetchAll();
         
-        $header_title = 'Census Registration Details - ID #' . str_pad($admin_view, 5, '0', STR_PAD_LEFT);
-        $header_subtitle = 'Submitted on ' . date('F j, Y \\a\\t g:i A', strtotime($registration_data['submitted_at']));
+        $header_title = 'Census Submission';
+        $header_subtitle = 'Email notification will be sent once reviewed.';
     }
 }
 
@@ -115,7 +122,7 @@ if (!$admin_view) {
   </style>
 </head>
 <body>
-<?php include '../includes/mini_nav.php'; ?>
+<?php include '../includes/mini_nav_census.php'; ?>
 <style> body { padding-top: 64px; } </style>
 
 <?php if (!$admin_view): ?>
@@ -167,6 +174,13 @@ if (!$admin_view) {
         }
         return true;
       }
+
+      // Auto-calc family ages on load for existing DOBs
+      try {
+        document.querySelectorAll('.family-dob').forEach(function(el){
+          if (el.value) calculateFamilyAgeFromCard(el);
+        });
+      } catch (e) {}
 
       function scrollToFirstInvalidInTabs() {
         var containers = [tab1, tab3].filter(Boolean);
@@ -257,6 +271,8 @@ if (!$admin_view) {
           try {
             if (typeof form.requestSubmit === 'function') { form.requestSubmit(); }
             else { form.submit(); }
+            alert('Submission received. You will receive an email notification. Next: open the user portal to request your Barangay ID, then you can use the kiosk.');
+            try { window.localStorage.setItem('nextSteps', 'Request ID in user portal, then use kiosk'); } catch (e) {}
           } finally {
             if (!restoreNoValidate) {
               form.removeAttribute('novalidate');
@@ -693,6 +709,49 @@ document.addEventListener('DOMContentLoaded', function() {
   // Force readonly mode styling
   var form = document.querySelector('.registration-form');
   if (form) {
+    // Bi-directional sync between Land Occupied and House Residence
+    try {
+      const landRadios = Array.prototype.slice.call(document.querySelectorAll('input[name="landOwnership"]'));
+      const houseRadios = Array.prototype.slice.call(document.querySelectorAll('input[name="houseOwnership"]'));
+
+      function setHouseFromLand(val) {
+        if (val === 'Pag-aari') {
+          houseRadios.forEach(r => r.checked = (r.value === 'Pag-aari'));
+        } else if (val === 'Inuupahan') {
+          houseRadios.forEach(r => r.checked = (r.value === 'Umuupa'));
+        }
+      }
+      function setLandFromHouse(val) {
+        if (val === 'Pag-aari') {
+          landRadios.forEach(r => r.checked = (r.value === 'Pag-aari'));
+        } else if (val === 'Umuupa') {
+          landRadios.forEach(r => r.checked = (r.value === 'Inuupahan'));
+        }
+      }
+
+      function onLandChange() {
+        const sel = landRadios.find(r => r.checked);
+        if (!sel) return;
+        if (sel.value === 'Pag-aari' || sel.value === 'Inuupahan') setHouseFromLand(sel.value);
+      }
+      function onHouseChange() {
+        const sel = houseRadios.find(r => r.checked);
+        if (!sel) return;
+        if (sel.value === 'Pag-aari' || sel.value === 'Umuupa') setLandFromHouse(sel.value);
+      }
+
+      landRadios.forEach(r => r.addEventListener('change', onLandChange));
+      houseRadios.forEach(r => r.addEventListener('change', onHouseChange));
+
+      // Initial sync on load (prefer whichever is selected first)
+      const initLand = landRadios.find(r => r.checked);
+      const initHouse = houseRadios.find(r => r.checked);
+      if (initLand && (initLand.value === 'Pag-aari' || initLand.value === 'Inuupahan')) {
+        setHouseFromLand(initLand.value);
+      } else if (initHouse && (initHouse.value === 'Pag-aari' || initHouse.value === 'Umuupa')) {
+        setLandFromHouse(initHouse.value);
+      }
+    } catch (e) {}
     form.classList.add('admin-readonly-enhanced');
   }
   
@@ -1041,117 +1100,7 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 <?php endif; ?>
 
-<!-- TEMPORARY DEBUG BUTTON FOR TESTING PRIVACY MODAL -->
-<div style="position: fixed; top: 10px; right: 10px; z-index: 99999; background: red; color: white; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold;" onclick="debugShowPrivacyNotice()" id="debugButton">
-  🐛 DEBUG: Show Privacy Modal
-</div>
 
-<script>
-// TEMPORARY DEBUG FUNCTION
-function debugShowPrivacyNotice() {
-  console.log('🐛 DEBUG: Manually triggering privacy notice');
-  sessionStorage.removeItem('privacyNoticeShown');
-  initializePrivacyNotice();
-}
-</script>
-
-<!-- Enhanced Data Privacy Act Notice -->
-<div id="dataPrivacyOverlay" class="privacy-overlay">
-  <div id="dataPrivacyModal" class="privacy-modal">
-    <div class="privacy-header">
-      <div class="privacy-icon">🛡️</div>
-      <h3>Data Privacy Notice</h3>
-      <button class="privacy-close" onclick="closePrivacyNotice()" aria-label="Close notice" title="Close Notice">&times;</button>
-    </div>
-    
-    <div class="privacy-content">
-      <div class="privacy-section">
-        <h4>🇵🇭 Republic Act No. 10173 - Data Privacy Act of 2012</h4>
-        <p><strong>Your Personal Information is Protected Under Philippine Law</strong></p>
-      </div>
-      
-      <div class="privacy-section">
-        <h5>📋 Census Data Collection Notice</h5>
-        <p>This census form collects personal information for legitimate government purposes under the authority of the Local Government Unit of <strong>Barangay Gumaoc East, San Jose Del Monte City, Bulacan</strong>.</p>
-      </div>
-      
-      <div class="privacy-section">
-        <h5>🎯 Purpose of Data Collection</h5>
-        <ul>
-          <li><strong>Population and demographic planning</strong> for better resource allocation</li>
-          <li><strong>Public service delivery improvement</strong> and program development</li>
-          <li><strong>Emergency response and disaster preparedness</strong> planning</li>
-          <li><strong>Statistical analysis for policy making</strong> and governance</li>
-          <li><strong>Community development programs</strong> and social services</li>
-        </ul>
-      </div>
-      
-      <div class="privacy-section">
-        <h5>🔒 Your Rights Under the Data Privacy Act</h5>
-        <ul>
-          <li><strong>Right to Information</strong> - You have the right to know how your data is collected, used, and processed</li>
-          <li><strong>Right to Access</strong> - You can request access to your personal data we have collected</li>
-          <li><strong>Right to Correction</strong> - You can request correction of inaccurate or incomplete data</li>
-          <li><strong>Right to Erasure</strong> - You can request deletion of your data under certain legal conditions</li>
-          <li><strong>Right to Data Portability</strong> - You can request a copy of your data in a commonly used format</li>
-          <li><strong>Right to Object</strong> - You can object to certain types of data processing</li>
-        </ul>
-      </div>
-      
-      <div class="privacy-section">
-        <h5>🛡️ Data Protection Measures</h5>
-        <ul>
-          <li>Information is stored securely with restricted access to authorized personnel only</li>
-          <li>Data will not be shared with third parties without your explicit consent or legal requirement</li>
-          <li>Personal information will be retained only as long as necessary for the stated purposes</li>
-          <li>Appropriate technical and organizational security measures are implemented</li>
-          <li>Regular security audits and data protection assessments are conducted</li>
-        </ul>
-      </div>
-      
-      <div class="privacy-section">
-        <h5>⚖️ Legal Basis for Processing</h5>
-        <p>The collection and processing of your personal data is based on:</p>
-        <ul>
-          <li><strong>Legal Obligation</strong> - LGU mandate for population census and planning</li>
-          <li><strong>Public Interest</strong> - Delivery of public services and governance</li>
-          <li><strong>Legitimate Interest</strong> - Community development and public welfare</li>
-        </ul>
-      </div>
-      
-      <div class="privacy-section">
-        <h5>📞 Contact Information & Complaints</h5>
-        <p><strong>Data Protection Officer:</strong><br>
-        Barangay Gumaoc East<br>
-        San Jose Del Monte City, Bulacan<br>
-        📧 Email: gumaoceast@sjdm.gov.ph<br>
-        📱 Phone: (044) 123-4567<br>
-        🏢 Office Hours: Monday-Friday, 8:00 AM - 5:00 PM</p>
-        
-        <p><strong>For DPA Complaints:</strong><br>
-        National Privacy Commission<br>
-        📧 Email: info@privacy.gov.ph<br>
-        📱 Hotline: (02) 8234-2228</p>
-      </div>
-      
-      <div class="privacy-consent">
-        <p><strong>⚠️ IMPORTANT CONSENT NOTICE</strong></p>
-        <p>By proceeding with this census form, you acknowledge that you have <strong>read and understood</strong> this Data Privacy Notice and <strong>voluntarily consent</strong> to the collection and processing of your personal information for the stated legitimate purposes.</p>
-      </div>
-    </div>
-    
-    <div class="privacy-footer">
-      <div class="privacy-timer">
-        <span id="privacyTimer">⏱️ This notice will auto-close in <strong>120</strong> seconds</span>
-      </div>
-      <div class="privacy-actions">
-        <button class="btn-privacy-accept" onclick="closePrivacyNotice()">
-          ✅ I Understand and Agree to Proceed
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- Success and Error Modals - Positioned at Top -->
 <?php if (isset($_SESSION['error'])): ?>
@@ -1180,7 +1129,12 @@ function debugShowPrivacyNotice() {
       </div>
       <div class="modal-body success-modal-body">
         <div class="success-message-container">
-          <?php echo $_SESSION['success']; ?>
+          <p>Thank you! Your census registration has been submitted.</p>
+          <ul style="margin-left: 1rem;">
+            <li>Check your email for confirmation and any updates.</li>
+            <li>Log in to the user website to request your Barangay ID.</li>
+            <li>After requesting your ID, you can use the kiosk to request certifications.</li>
+          </ul>
         </div>
       </div>
       <div class="modal-footer">
@@ -1235,18 +1189,6 @@ function debugShowPrivacyNotice() {
         <div class="tab-content active" id="tab-content-1">
           <fieldset>
             <legend>Basic Information<br><small>Pangunahing Impormasyon</small></legend>
-        
-        <div class="form-grid">
-          <div class="form-group">
-            <label for="barangay">BARANGAY</label>
-            <input type="text" id="barangay" name="barangay" value="Gumaoc East" readonly>
-          </div>
-
-          <div class="form-group">
-            <label for="sitio">SITIO/POOK</label>
-            <input type="text" id="sitio" name="sitio" value="BLOCK" readonly>
-          </div>
-        </div>
 
         <div class="form-group">
           <label>Head of Family Name *<br><small>Pangalan ng Puno ng Pamilya *</small></label>
@@ -1269,20 +1211,33 @@ function debugShowPrivacyNotice() {
                      <?php echo $readonly ? 'readonly' : ''; ?>>
               <small>Last Name</small>
             </div>
+          <div class="name-field">
+            <select id="suffix" name="suffix" class="suffix-input" style="width: 100%; flex: 1 1 0; max-width: none;" <?php echo $readonly ? 'disabled' : ''; ?>>
+              <?php $suffixVal = $registration_data['suffix'] ?? ''; ?>
+              <option value="" <?php echo $suffixVal === '' ? 'selected' : ''; ?>>No Suffix</option>
+              <option value="JR" <?php echo $suffixVal === 'JR' ? 'selected' : ''; ?>>JR</option>
+              <option value="SR" <?php echo $suffixVal === 'SR' ? 'selected' : ''; ?>>SR</option>
+              <option value="II" <?php echo $suffixVal === 'II' ? 'selected' : ''; ?>>II</option>
+              <option value="III" <?php echo $suffixVal === 'III' ? 'selected' : ''; ?>>III</option>
+              <option value="IV" <?php echo $suffixVal === 'IV' ? 'selected' : ''; ?>>IV</option>
+              <option value="V" <?php echo $suffixVal === 'V' ? 'selected' : ''; ?>>V</option>
+            </select>
+            <small>Suffix (Optional)</small>
+          </div>
           </div>
           <div id="nameValidation" class="validation-message"></div>
         </div>
 
         <div class="form-grid">
           <div class="form-group">
-            <label for="cellphone">Mobile Number<br><small>Numero ng Cellphone</small></label>
+            <label for="cellphone">Mobile Number *<br><small>Numero ng Cellphone *</small></label>
             <input type="tel" id="cellphone" name="cellphone" placeholder="09XXXXXXXXX" pattern="[0-9]{11}" maxlength="11" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['contact_number']) : ''; ?>"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
 
           <div class="form-group">
-            <label for="email">Email Address<br><small>Email Address</small></label>
+            <label for="email">Email Address *<br><small>Email Address *</small></label>
             <input type="email" id="email" name="email" placeholder="example@email.com"
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['email']) : ''; ?>"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
@@ -1295,11 +1250,14 @@ function debugShowPrivacyNotice() {
             <label for="birthday">Date of Birth *<br><small>Petsa ng Kapanganakan *</small></label>
             <input type="date" id="birthday" name="birthday" required
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['birth_date']) : ''; ?>"
-                   <?php echo $readonly ? 'readonly' : ''; ?> onchange="calculateAgeFromCard(this)">
+                   max="<?php echo date('Y-m-d', strtotime('-18 years')); ?>"
+                   min="1900-01-01"
+                   <?php echo $readonly ? 'readonly' : ''; ?> onchange="calculateFamilyAgeFromCard(this)">
+            <div class="validation-message" id="dobValidation">Applicants must be at least 18 years old.</div>
           </div>
 
           <div class="form-group">
-            <label for="age">Age<br><small>Edad</small></label>
+            <label for="age">Age *<br><small>Edad *</small></label>
             <input type="number" id="age" name="age" class="age-display" placeholder="Edad" min="0" max="120" readonly
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['age'] ?? '') : ''; ?>"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
@@ -1338,6 +1296,11 @@ function debugShowPrivacyNotice() {
 
         <div class="form-grid">
           <div class="form-group">
+            <label for="barangay">Barangay *<small>Barangay *</small></label>
+            <input type="text" id="barangay" name="barangay" value="Gumaoc East" readonly>
+          </div>
+
+          <div class="form-group">
             <label for="houseNumber">House Number *<br><small>Numero ng Bahay *</small></label>
             <input type="text" id="houseNumber" name="houseNumber" required placeholder="Numero ng bahay" oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['house_number']) : ''; ?>"
@@ -1350,23 +1313,235 @@ function debugShowPrivacyNotice() {
                    value="<?php echo $registration_data ? htmlspecialchars($registration_data['address'] ?? '') : ''; ?>"
                    <?php echo $readonly ? 'readonly' : ''; ?>>
           </div>
+
+            <div class="row-grid cols-2 job-row">
+              <div class="form-group">
+                <label for="yearsOfResidence">Years of Residence<br><small>Ilang Taon na Naninirahan</small></label>
+                <input type="number" id="yearsOfResidence" name="yearsOfResidence" min="0" placeholder="Bilang ng taon"
+                       value="<?php echo $registration_data ? htmlspecialchars($registration_data['years_of_residence'] ?? '') : ''; ?>"
+                       <?php echo $readonly ? 'readonly' : ''; ?>></div>
+
+              <div class="form-group">
+                <label for="headOccupation">Occupation<br><small>Hanapbuhay</small></label>
+                <div class="inline-field-pair">
+                  <input type="text" id="headOccupation" name="headOccupation" class="form-control" placeholder="e.g. Construction Worker, Vendor" value="<?php echo $registration_data ? htmlspecialchars($registration_data['pangkabuhayan'] ?? '') : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?> style="flex: 1 1 auto;">
+                  <?php if (!$readonly): ?>
+                  <label style="display:inline-flex; align-items:center; gap:6px; white-space:nowrap; margin-bottom: 0;">
+                    <input type="checkbox" id="noWorkCheck">
+                    <span>No work</span>
+                  </label>
+                  <?php endif; ?>
+                </div>
+              </div>
+            </div>
         </div>
+
+        <input type="hidden" id="combinedAddress" name="address" value="<?php echo $registration_data ? htmlspecialchars($registration_data['address'] ?? '') : ''; ?>">
+
+        <script>
+        (function(){
+          var form = document.querySelector('form');
+          var house = document.getElementById('houseNumber');
+          var street = document.getElementById('streetAddress');
+          var barangay = document.getElementById('barangay');
+          var hidden = document.getElementById('combinedAddress');
+          if (!form || !street || !hidden) return;
+
+          function toTitleCase(str){
+            if (!str) return '';
+            return str
+              .toLowerCase()
+              .replace(/(^|[\s\-\/\.'])([\p{L}])/gu, function(m, p1, p2){ return p1 + p2.toUpperCase(); });
+          }
+
+          function buildAddress(){
+            var parts = [];
+            var h = (house && house.value ? house.value.trim() : '');
+            var s = (street && street.value ? street.value.trim() : '');
+            var b = (barangay && barangay.value ? barangay.value.trim() : 'Gumaoc East');
+            if (h) parts.push(h);
+            if (s) parts.push(s);
+            var suffix = 'Barangay ' + b + ', San Jose Del Monte, Bulacan';
+            var head = parts.join(' ');
+            var finalAddr = head ? (head + ', ' + suffix) : suffix;
+            hidden.value = toTitleCase(finalAddr);
+          }
+
+          buildAddress();
+          if (house) house.addEventListener('input', buildAddress);
+          street.addEventListener('input', buildAddress);
+          if (barangay) barangay.addEventListener('input', buildAddress);
+          form.addEventListener('submit', buildAddress);
+        })();
+        </script>
+
+        <script>
+        // Head occupation: checkbox to set "No work" and lock field
+        (function(){
+          var occ = document.getElementById('headOccupation');
+          var chk = document.getElementById('noWorkCheck');
+          if (!occ || !chk) return;
+          function applyState() {
+            if (chk.checked) {
+              occ.value = 'None';
+              occ.readOnly = true;
+            } else {
+              occ.readOnly = false;
+              if (occ.value === 'None') occ.value = '';
+            }
+          }
+          chk.addEventListener('change', applyState);
+          applyState();
+        })();
+        (function(){
+          // Auto-title-case for text inputs and textareas, excluding email fields
+          var selectors = 'input[type="text"]:not([readonly]), textarea:not([readonly])';
+          var nodes = document.querySelectorAll(selectors);
+          function toTitle(e){
+            if (!e || !e.target) return;
+            var el = e.target;
+            // skip email-like fields by id/name
+            var n = (el.name || '').toLowerCase();
+            var i = (el.id || '').toLowerCase();
+            if (el.type === 'email' || n === 'email' || i === 'email') return;
+            var start = el.selectionStart;
+            var end = el.selectionEnd;
+            var val = el.value || '';
+            val = val.toLowerCase().replace(/(^|[\s\-\/\.'])([\p{L}])/gu, function(m, p1, p2){ return p1 + p2.toUpperCase(); });
+            el.value = val;
+            if (typeof start === 'number' && typeof end === 'number') {
+              try { el.setSelectionRange(start, end); } catch (e) {}
+            }
+          }
+          nodes.forEach(function(el){
+            el.addEventListener('input', toTitle);
+            el.addEventListener('blur', toTitle);
+            // initialize on load
+            toTitle({ target: el });
+          });
+
+          // Apply also to dynamically created family member inputs
+          document.addEventListener('input', function(e){
+            if (e.target && e.target.matches('input[type="text"]:not([readonly]), textarea:not([readonly])')) {
+              toTitle(e);
+            }
+          }, true);
+        })();
+        </script>
 
         <div class="form-grid">
           <div class="form-group">
-            <label for="interviewer">Interviewer Name<br><small>Pangalan ng Nakapanayam</small></label>
-            <input type="text" id="interviewer" name="interviewer" placeholder="Buong pangalan ng nakapanayam"
-                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['interviewer']) : ''; ?>"
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
+            <label for="interviewerRole">Interviewer Role<br><small>Tungkulin ng Taga-panayam</small></label>
+            <select id="interviewerRole" name="interviewerRole" <?php echo $readonly ? 'disabled' : ''; ?>>
+              <?php
+                $existingRole = $registration_data['interviewer_title'] ?? '';
+                $roleOptions = ['Secretary','Sangguniang Barangay Member'];
+              ?>
+              <option value="">Piliin ang Tungkulin</option>
+              <?php foreach ($roleOptions as $opt): ?>
+                <option value="<?php echo htmlspecialchars($opt); ?>" <?php echo ($existingRole === $opt) ? 'selected' : ''; ?>><?php echo htmlspecialchars($opt); ?></option>
+              <?php endforeach; ?>
+            </select>
           </div>
 
           <div class="form-group">
-            <label for="interviewerTitle">Interviewer Position<br><small>Taga-panayam</small></label>
-            <input type="text" id="interviewerTitle" name="interviewerTitle" placeholder="Posisyon/Tungkulin"
-                   value="<?php echo $registration_data ? htmlspecialchars($registration_data['interviewer_title']) : ''; ?>"
-                   <?php echo $readonly ? 'readonly' : ''; ?>>
+            <label for="interviewerName">Officer Name<br><small>Pangalan ng Opisyal</small></label>
+            <select id="interviewerName" name="interviewerName" <?php echo $readonly ? 'disabled' : ''; ?>>
+              <?php
+                $existingName = $registration_data['interviewer'] ?? '';
+                $sbMembers = [
+                  'Gloria P. Hermoso',
+                  'Erlinda P. Dela Cruz',
+                  'Manuel S. Herrera',
+                  'Roselyn A. Benolerao',
+                  'Richard D. Melgar',
+                  'Marites O. Sy'
+                ];
+              ?>
+              <option value="">Piliin ang Opisyal</option>
+              <?php foreach ($sbMembers as $nm): ?>
+                <option value="<?php echo htmlspecialchars($nm); ?>" <?php echo ($existingName === $nm) ? 'selected' : ''; ?>><?php echo htmlspecialchars($nm); ?></option>
+              <?php endforeach; ?>
+            </select>
           </div>
         </div>
+        <input type="hidden" id="interviewer" name="interviewer" value="<?php echo $registration_data ? htmlspecialchars($registration_data['interviewer'] ?? '') : ''; ?>">
+        <input type="hidden" id="interviewerTitle" name="interviewerTitle" value="<?php echo $registration_data ? htmlspecialchars($registration_data['interviewer_title'] ?? '') : ''; ?>">
+
+        <script>
+        (function(){
+          var roleSelect = document.getElementById('interviewerRole');
+          var nameSelect = document.getElementById('interviewerName');
+          var hiddenName = document.getElementById('interviewer');
+          var hiddenTitle = document.getElementById('interviewerTitle');
+          if (!roleSelect || !nameSelect || !hiddenName || !hiddenTitle) return;
+
+          var sbMembers = [
+            'Gloria P. Hermoso',
+            'Erlinda P. Dela Cruz',
+            'Manuel S. Herrera',
+            'Roselyn A. Benolerao',
+            'Richard D. Melgar',
+            'Marites O. Sy'
+          ];
+
+          // Mapping of roles to officer name lists
+          var roleToOfficerList = {
+            'Secretary': ['Jennilyn B. Dela Cruz'],
+            'Sangguniang Barangay Member': sbMembers
+          };
+
+          function repopulateNames(role) {
+            var list = roleToOfficerList[role] || [];
+            var current = nameSelect.value;
+            // Clear options
+            while (nameSelect.firstChild) nameSelect.removeChild(nameSelect.firstChild);
+            // Placeholder
+            var opt0 = document.createElement('option');
+            opt0.value = '';
+            opt0.textContent = 'Piliin ang Opisyal';
+            nameSelect.appendChild(opt0);
+            // Add names
+            list.forEach(function(n){
+              var o = document.createElement('option');
+              o.value = n;
+              o.textContent = n;
+              if (n === current) o.selected = true;
+              nameSelect.appendChild(o);
+            });
+            // If nothing selected and list has entries, select first by default
+            if (!nameSelect.value && list.length) {
+              nameSelect.value = list[0];
+            }
+          }
+
+          function syncHidden() {
+            hiddenTitle.value = roleSelect.value || '';
+            hiddenName.value = nameSelect.value || '';
+          }
+
+          roleSelect.addEventListener('change', function(){
+            repopulateNames(roleSelect.value || '');
+            // If selected name belongs to SB members, ensure title is SB Member
+            if (roleSelect.value === 'Sangguniang Barangay Member') {
+              // already correct
+            }
+            syncHidden();
+          });
+
+          nameSelect.addEventListener('change', function(){
+            // If name is one of the SB members, force role to SB Member
+            if (sbMembers.indexOf(nameSelect.value) !== -1) {
+              roleSelect.value = 'Sangguniang Barangay Member';
+            }
+            syncHidden();
+          });
+
+          // Initialize on load
+          repopulateNames(roleSelect.value || '');
+          syncHidden();
+        })();
+        </script>
         
         <!-- Disability Information for Main Resident -->
         <div class="form-group">
@@ -1392,7 +1567,7 @@ function debugShowPrivacyNotice() {
              <legend>Family Members<br><small>Mga Kasapi ng Pamilya</small></legend>
 
         <div class="subsection">
-           <div class="family-members-container" id="familyMembersContainer">
+          <div class="family-members-container" id="familyMembersContainer">
             <?php if (!empty($family_members)): ?>
               <?php foreach ($family_members as $index => $member): ?>
                 <div class="family-member-card">
@@ -1402,106 +1577,134 @@ function debugShowPrivacyNotice() {
                   </div>
                   <div class="family-member-content">
                     <div class="form-grid">
-                      <div class="form-group">
-                        <label for="familyName<?php echo $index; ?>">Name<br><small>Pangalan</small></label>
-                        <input type="text" id="familyName<?php echo $index; ?>" name="familyName[]" class="form-control" placeholder="Full Name" value="<?php echo htmlspecialchars($member['full_name'] ?? ''); ?>" <?php echo $readonly ? 'readonly' : ''; ?> onchange="updateCardHeader(this)">
+                      <!-- Name Row -->
+                      <div class="form-group full-row">
+                        <label>Name<br><small>Pangalan</small></label>
+                        <div class="name-fields-group">
+                          <input type="text" name="familyFirstName[]" class="form-control" placeholder="First Name" value="<?php echo htmlspecialchars($member['first_name'] ?? ''); ?>" <?php echo $readonly ? 'readonly' : ''; ?> oninput="updateCardHeaderFromParts(this)" aria-label="First Name">
+                          <input type="text" name="familyMiddleName[]" class="form-control" placeholder="Middle Name" value="<?php echo htmlspecialchars($member['middle_name'] ?? ''); ?>" <?php echo $readonly ? 'readonly' : ''; ?> oninput="updateCardHeaderFromParts(this)" aria-label="Middle Name">
+                          <input type="text" name="familyLastName[]" class="form-control" placeholder="Last Name" value="<?php echo htmlspecialchars($member['last_name'] ?? ''); ?>" <?php echo $readonly ? 'readonly' : ''; ?> oninput="updateCardHeaderFromParts(this)" aria-label="Last Name">
+                          <select name="familySuffix[]" class="form-control suffix-input" onchange="updateCardHeaderFromParts(this)">
+                            <option value="">No Suffix</option>
+                            <option value="JR" <?php echo (isset($member['suffix']) && $member['suffix'] === 'JR') ? 'selected' : ''; ?>>JR</option>
+                            <option value="SR" <?php echo (isset($member['suffix']) && $member['suffix'] === 'SR') ? 'selected' : ''; ?>>SR</option>
+                            <option value="II" <?php echo (isset($member['suffix']) && $member['suffix'] === 'II') ? 'selected' : ''; ?>>II</option>
+                            <option value="III" <?php echo (isset($member['suffix']) && $member['suffix'] === 'III') ? 'selected' : ''; ?>>III</option>
+                            <option value="IV" <?php echo (isset($member['suffix']) && $member['suffix'] === 'IV') ? 'selected' : ''; ?>>IV</option>
+                            <option value="V" <?php echo (isset($member['suffix']) && $member['suffix'] === 'V') ? 'selected' : ''; ?>>V</option>
+                          </select>
+                          <input type="hidden" name="familyName[]" value="<?php echo htmlspecialchars($member['full_name'] ?? ''); ?>">
+                        </div>
                       </div>
-                      
-                      <div class="form-group">
-                        <label for="familyRelation<?php echo $index; ?>">Relationship to Head<br><small>Relasyon sa Puno</small></label>
-                        <select id="familyRelation<?php echo $index; ?>" name="familyRelation[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
-                          <option value="">Piliin ang Relasyon</option>
-                          <option value="Asawa" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Asawa') ? 'selected' : ''; ?>>Asawa (Spouse)</option>
-                          <option value="Anak" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Anak') ? 'selected' : ''; ?>>Anak (Child)</option>
-                          <option value="Ama" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Ama') ? 'selected' : ''; ?>>Ama (Father)</option>
-                          <option value="Ina" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Ina') ? 'selected' : ''; ?>>Ina (Mother)</option>
-                          <option value="Kapatid" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Kapatid') ? 'selected' : ''; ?>>Kapatid (Sibling)</option>
-                          <option value="Lolo" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Lolo') ? 'selected' : ''; ?>>Lolo (Grandfather)</option>
-                          <option value="Lola" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Lola') ? 'selected' : ''; ?>>Lola (Grandmother)</option>
-                          <option value="Apo" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Apo') ? 'selected' : ''; ?>>Apo (Grandchild)</option>
-                          <option value="Tiyahin" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Tiyahin') ? 'selected' : ''; ?>>Tiyahin (Aunt)</option>
-                          <option value="Tiyuhin" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Tiyuhin') ? 'selected' : ''; ?>>Tiyuhin (Uncle)</option>
-                          <option value="Pamangkin" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Pamangkin') ? 'selected' : ''; ?>>Pamangkin (Nephew/Niece)</option>
-                          <option value="Pinsan" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Pinsan') ? 'selected' : ''; ?>>Pinsan (Cousin)</option>
-                          <option value="Manugang" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Manugang') ? 'selected' : ''; ?>>Manugang (Son/Daughter-in-law)</option>
-                          <option value="Biyenan" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Biyenan') ? 'selected' : ''; ?>>Biyenan (Parent-in-law)</option>
-                          <option value="Ninong" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Ninong') ? 'selected' : ''; ?>>Ninong (Godfather)</option>
-                          <option value="Ninang" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Ninang') ? 'selected' : ''; ?>>Ninang (Godmother)</option>
-                          <option value="Inaanak" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Inaanak') ? 'selected' : ''; ?>>Inaanak (Godchild)</option>
-                          <option value="Kasambahay" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Kasambahay') ? 'selected' : ''; ?>>Kasambahay (Helper)</option>
-                          <option value="Boarder" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Boarder') ? 'selected' : ''; ?>>Boarder</option>
-                          <option value="Iba pa" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Iba pa') ? 'selected' : ''; ?>>Iba pa (Others)</option>
-                        </select>
+
+                      <!-- Personal Info Row -->
+                      <div class="row-grid cols-5">
+                        <div class="form-group">
+                          <label for="familyBirthDate<?php echo $index; ?>">Birth Date<br><small>Petsa ng Kapanganakan</small></label>
+                          <input type="date" id="familyBirthDate<?php echo $index; ?>" name="familyBirthDate[]" class="form-control family-dob" onchange="calculateFamilyAgeFromCard(this)" value="<?php echo isset($member['birth_date']) ? htmlspecialchars($member['birth_date']) : ''; ?>" max="<?php echo date('Y-m-d'); ?>" min="1900-01-01" <?php echo $readonly ? 'readonly' : ''; ?>>
+                        </div>
+                        <div class="form-group">
+                          <label for="familyAge<?php echo $index; ?>">Age<br><small>Edad</small></label>
+                          <input type="number" id="familyAge<?php echo $index; ?>" name="familyAge[]" class="form-control age-display family-age" placeholder="Edad" min="0" max="120" value="<?php echo $member['age'] ?? ''; ?>" readonly>
+                        </div>
+                        <div class="form-group">
+                          <label for="familyGender<?php echo $index; ?>">Gender<br><small>Kasarian</small></label>
+                          <select id="familyGender<?php echo $index; ?>" name="familyGender[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
+                            <option value="">Piliin</option>
+                            <option value="Lalaki" <?php echo (isset($member['gender']) && $member['gender'] === 'Lalaki') ? 'selected' : ''; ?>>Lalaki</option>
+                            <option value="Babae" <?php echo (isset($member['gender']) && $member['gender'] === 'Babae') ? 'selected' : ''; ?>>Babae</option>
+                          </select>
+                        </div>
+                        <div class="form-group">
+                          <label>Years of Residence</label>
+                          <input type="number" name="familyYearsOfResidence[]" class="form-control" min="0" placeholder="Years" value="<?php echo isset($member['years_of_residence']) ? (int)$member['years_of_residence'] : ''; ?>">
+                        </div>
+                        <div class="form-group">
+                          <label for="familyRelation<?php echo $index; ?>">Relationship<br><small>Relasyon</small></label>
+                          <select id="familyRelation<?php echo $index; ?>" name="familyRelation[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
+                            <option value="">Piliin</option>
+                            <option value="Asawa" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Asawa') ? 'selected' : ''; ?>>Asawa (Spouse)</option>
+                            <option value="Anak" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Anak') ? 'selected' : ''; ?>>Anak (Child)</option>
+                            <option value="Ama" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Ama') ? 'selected' : ''; ?>>Ama (Father)</option>
+                            <option value="Ina" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Ina') ? 'selected' : ''; ?>>Ina (Mother)</option>
+                            <option value="Kapatid" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Kapatid') ? 'selected' : ''; ?>>Kapatid (Sibling)</option>
+                            <option value="Lolo" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Lolo') ? 'selected' : ''; ?>>Lolo (Grandfather)</option>
+                            <option value="Lola" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Lola') ? 'selected' : ''; ?>>Lola (Grandmother)</option>
+                            <option value="Apo" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Apo') ? 'selected' : ''; ?>>Apo (Grandchild)</option>
+                            <option value="Tiyahin" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Tiyahin') ? 'selected' : ''; ?>>Tiyahin (Aunt)</option>
+                            <option value="Tiyuhin" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Tiyuhin') ? 'selected' : ''; ?>>Tiyuhin (Uncle)</option>
+                            <option value="Pamangkin" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Pamangkin') ? 'selected' : ''; ?>>Pamangkin (Nephew/Niece)</option>
+                            <option value="Pinsan" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Pinsan') ? 'selected' : ''; ?>>Pinsan (Cousin)</option>
+                            <option value="Manugang" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Manugang') ? 'selected' : ''; ?>>Manugang (Son/Daughter-in-law)</option>
+                            <option value="Biyenan" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Biyenan') ? 'selected' : ''; ?>>Biyenan (Parent-in-law)</option>
+                            <option value="Ninong" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Ninong') ? 'selected' : ''; ?>>Ninong (Godfather)</option>
+                            <option value="Ninang" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Ninang') ? 'selected' : ''; ?>>Ninang (Godmother)</option>
+                            <option value="Inaanak" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Inaanak') ? 'selected' : ''; ?>>Inaanak (Godchild)</option>
+                            <option value="Kasambahay" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Kasambahay') ? 'selected' : ''; ?>>Kasambahay (Helper)</option>
+                            <option value="Boarder" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Boarder') ? 'selected' : ''; ?>>Boarder</option>
+                            <option value="Iba pa" <?php echo (isset($member['relationship']) && $member['relationship'] === 'Iba pa') ? 'selected' : ''; ?>>Iba pa (Others)</option>
+                          </select>
+                        </div>
                       </div>
-                      
-                      <div class="form-group">
-                        <label for="familyBirthDate<?php echo $index; ?>">Birth Date<br><small>Petsa ng Kapanganakan</small></label>
-                        <input type="date" id="familyBirthDate<?php echo $index; ?>" name="familyBirthDate[]" class="form-control" onchange="calculateAgeFromCard(this)" value="<?php echo isset($member['birth_date']) ? htmlspecialchars($member['birth_date']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
+
+                      <!-- Contact and Status Row -->
+                      <div class="row-grid cols-3">
+                        <div class="form-group">
+                          <label for="familyCivilStatus<?php echo $index; ?>">Civil Status<br><small>Katayuang Sibil</small></label>
+                          <select id="familyCivilStatus<?php echo $index; ?>" name="familyCivilStatus[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
+                            <option value="">Piliin</option>
+                            <option value="Single" <?php echo (isset($member['civil_status']) && $member['civil_status'] === 'Single') ? 'selected' : ''; ?>>Single</option>
+                            <option value="Married" <?php echo (isset($member['civil_status']) && $member['civil_status'] === 'Married') ? 'selected' : ''; ?>>Married</option>
+                            <option value="Widowed" <?php echo (isset($member['civil_status']) && ($member['civil_status'] === 'Widowed' || $member['civil_status'] === 'Widow')) ? 'selected' : ''; ?>>Widowed</option>
+                            <option value="Separated" <?php echo (isset($member['civil_status']) && $member['civil_status'] === 'Separated') ? 'selected' : ''; ?>>Separated</option>
+                          </select>
+                        </div>
+                        <div class="form-group">
+                          <label for="familyEmail<?php echo $index; ?>">Email Address<br><small>Email Address</small></label>
+                          <input type="email" id="familyEmail<?php echo $index; ?>" name="familyEmail[]" class="form-control" placeholder="email@example.com" value="<?php echo isset($member['email']) ? htmlspecialchars($member['email']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
+                        </div>
+                        <div class="form-group">
+                          <label for="familyOccupation<?php echo $index; ?>">Occupation<br><small>Hanapbuhay</small></label>
+                          <div style="display:flex; gap:8px; align-items:center;">
+                            <input type="text" id="familyOccupation<?php echo $index; ?>" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay" value="<?php echo isset($member['occupation']) ? htmlspecialchars($member['occupation']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?> style="flex:1 1 auto;">
+                            <label style="display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
+                              <input type="checkbox" class="family-no-work-check" onchange="toggleFamilyNoWork(this)" <?php echo (isset($member['no_work']) && $member['no_work']) ? 'checked' : ''; ?>>
+                              <span>No work</span>
+                            </label>
+                          </div>
+                        </div>
                       </div>
-                      
-                      <div class="form-group">
-                        <label for="familyAge<?php echo $index; ?>">Age<br><small>Edad</small></label>
-                        <input type="number" id="familyAge<?php echo $index; ?>" name="familyAge[]" class="form-control age-display" placeholder="Edad" min="0" max="120" value="<?php echo $member['age'] ?? ''; ?>" readonly>
+
+                      <!-- Birth Place Row -->
+                      <div class="form-group full-row">
+                        <label for="familyBirthPlace<?php echo $index; ?>">Place of Birth<br><small>Lugar ng Kapanganakan</small></label>
+                        <input type="text" id="familyBirthPlace<?php echo $index; ?>" name="familyBirthPlace[]" class="form-control" placeholder="City, Province, Country" value="<?php echo isset($member['birth_place']) ? htmlspecialchars($member['birth_place']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
                       </div>
-                      
-                      <div class="form-group">
-                        <label for="familyGender<?php echo $index; ?>">Gender<br><small>Kasarian</small></label>
-                        <select id="familyGender<?php echo $index; ?>" name="familyGender[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
-                          <option value="">Piliin</option>
-                          <option value="Lalaki" <?php echo (isset($member['gender']) && $member['gender'] === 'Lalaki') ? 'selected' : ''; ?>>Lalaki</option>
-                          <option value="Babae" <?php echo (isset($member['gender']) && $member['gender'] === 'Babae') ? 'selected' : ''; ?>>Babae</option>
-                        </select>
+
+                      <!-- Additional Info Row -->
+                      <div class="row-grid cols-2">
+                        <div class="form-group">
+                          <label>Disability (if applicable)<br><small>Kapansanan (kung mayroon)</small></label>
+                          <input type="text" name="disabilityType[]" class="form-control" placeholder="Type of disability" value="<?php echo isset($family_disabilities[$index]) ? htmlspecialchars($family_disabilities[$index]['disability_type']) : ''; ?>">
+                        </div>
+                        <div class="form-group">
+                          <label>Organization Membership (if applicable)<br><small>Samahang Kinaaniban (kung mayroon)</small></label>
+                          <input type="text" name="organizationType[]" class="form-control" placeholder="Organization name" value="<?php echo isset($family_organizations[$index]) ? htmlspecialchars($family_organizations[$index]['organization_name']) : ''; ?>">
+                        </div>
                       </div>
-                      
-                      <div class="form-group">
-                        <label for="familyCivilStatus<?php echo $index; ?>">Civil Status<br><small>Katayuang Sibil</small></label>
-                        <select id="familyCivilStatus<?php echo $index; ?>" name="familyCivilStatus[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
-                          <option value="">Piliin</option>
-                          <option value="Single" <?php echo (isset($member['civil_status']) && $member['civil_status'] === 'Single') ? 'selected' : ''; ?>>Single</option>
-                          <option value="Married" <?php echo (isset($member['civil_status']) && $member['civil_status'] === 'Married') ? 'selected' : ''; ?>>Married</option>
-                          <option value="Widowed" <?php echo (isset($member['civil_status']) && ($member['civil_status'] === 'Widowed' || $member['civil_status'] === 'Widow')) ? 'selected' : ''; ?>>Widowed</option>
-                          <option value="Separated" <?php echo (isset($member['civil_status']) && $member['civil_status'] === 'Separated') ? 'selected' : ''; ?>>Separated</option>
-                        </select>
-                      </div>
-                      
-                      <div class="form-group">
-                        <label for="familyEmail<?php echo $index; ?>">Email Address<br><small>Email Address</small></label>
-                        <input type="email" id="familyEmail<?php echo $index; ?>" name="familyEmail[]" class="form-control" placeholder="email@example.com" value="<?php echo isset($member['email']) ? htmlspecialchars($member['email']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
-                      </div>
-                      
-                      <div class="form-group">
-                        <label for="familyOccupation<?php echo $index; ?>">Occupation<br><small>Hanapbuhay</small></label>
-                        <input type="text" id="familyOccupation<?php echo $index; ?>" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay" value="<?php echo isset($member['occupation']) ? htmlspecialchars($member['occupation']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
-                      </div>
-                      
-                    <!-- Disability, Organization, Deceased, and Has Account Information in a grid -->
-                    <div class="form-grid disability-org-grid">
-                      <!-- First row: Disability and Organization side by side -->
-                      <div class="form-group disability-field">
-                        <label>Disability (if applicable)<br><small>Kapansanan (kung mayroon)</small></label>
-                        <input type="text" name="disabilityType[]" class="form-control" placeholder="Type of disability" value="<?php echo isset($family_disabilities[$index]) ? htmlspecialchars($family_disabilities[$index]['disability_type']) : ''; ?>">
-                      </div>
-                      
-                      <div class="form-group organization-field">
-                        <label>Organization Membership (if applicable)<br><small>Samahang Kinaaniban (kung mayroon)</small></label>
-                        <input type="text" name="organizationType[]" class="form-control" placeholder="Organization name" value="<?php echo isset($family_organizations[$index]) ? htmlspecialchars($family_organizations[$index]['organization_name']) : ''; ?>">
-                      </div>
-                      
-                      <!-- Second row: Deceased and Has Account checkboxes side by side -->
-                      <div class="form-group checkbox-container deceased-field">
-                        <!-- Deceased Status Checkbox -->
-                        <label class="checkbox-label">
-                          <input type="checkbox" name="isDeceased[]" class="deceased-checkbox" <?php echo (isset($member['is_deceased']) && $member['is_deceased']) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>>
-                          <span>Deceased<br><small>Namatay</small></span>
-                        </label>
-                      </div>
-                      
-                      <div class="form-group checkbox-container account-field">
-                        <!-- Has Account Checkbox -->
-                        <label class="checkbox-label">
-                          <input type="checkbox" name="hasAccount[]" class="has-account-checkbox" <?php echo (isset($member['has_account']) && $member['has_account']) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>>
-                          <span>Already has an account<br><small>May account na</small></span>
-                        </label>
+
+                      <!-- Checkboxes Row -->
+                      <div class="form-group checkbox-row">
+                        <div class="checkbox-container">
+                          <label class="checkbox-label">
+                            <input type="checkbox" name="isDeceased[]" class="deceased-checkbox" <?php echo (isset($member['is_deceased']) && $member['is_deceased']) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>>
+                            <span>Deceased<br><small>Namatay</small></span>
+                          </label>
+                          <label class="checkbox-label">
+                            <input type="checkbox" name="hasAccount[]" class="has-account-checkbox" <?php echo (isset($member['has_account']) && $member['has_account']) ? 'checked' : ''; ?> <?php echo $readonly ? 'disabled' : ''; ?>>
+                            <span>Already has an account<br><small>May account na</small></span>
+                          </label>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1515,104 +1718,132 @@ function debugShowPrivacyNotice() {
                 </div>
                 <div class="family-member-content">
                   <div class="form-grid">
-                    <div class="form-group">
-                      <label for="familyName0">Name<br><small>Pangalan</small></label>
-                      <input type="text" id="familyName0" name="familyName[]" class="form-control" placeholder="Full Name" onchange="updateCardHeader(this)">
+                    <!-- Name Row -->
+                    <div class="form-group full-row">
+                      <label>Name<br><small>Pangalan</small></label>
+                      <div class="name-fields-group">
+                        <input type="text" name="familyFirstName[]" class="form-control" placeholder="First Name" oninput="updateCardHeaderFromParts(this)">
+                        <input type="text" name="familyMiddleName[]" class="form-control" placeholder="Middle Name" oninput="updateCardHeaderFromParts(this)">
+                        <input type="text" name="familyLastName[]" class="form-control" placeholder="Last Name" oninput="updateCardHeaderFromParts(this)">
+                        <select name="familySuffix[]" class="form-control suffix-input" onchange="updateCardHeaderFromParts(this)">
+                          <option value="">No Suffix</option>
+                          <option value="JR">JR</option>
+                          <option value="SR">SR</option>
+                          <option value="II">II</option>
+                          <option value="III">III</option>
+                          <option value="IV">IV</option>
+                          <option value="V">V</option>
+                        </select>
+                        <input type="hidden" name="familyName[]" value="">
+                      </div>
                     </div>
-                    
-                    <div class="form-group">
-                      <label for="familyRelation0">Relationship to Head<br><small>Relasyon sa Puno</small></label>
-                      <select id="familyRelation0" name="familyRelation[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
-                        <option value="">Piliin ang Relasyon</option>
-                        <option value="Asawa">Asawa (Spouse)</option>
-                        <option value="Anak">Anak (Child)</option>
-                        <option value="Ama">Ama (Father)</option>
-                        <option value="Ina">Ina (Mother)</option>
-                        <option value="Kapatid">Kapatid (Sibling)</option>
-                        <option value="Lolo">Lolo (Grandfather)</option>
-                        <option value="Lola">Lola (Grandmother)</option>
-                        <option value="Apo">Apo (Grandchild)</option>
-                        <option value="Tiyahin">Tiyahin (Aunt)</option>
-                        <option value="Tiyuhin">Tiyuhin (Uncle)</option>
-                        <option value="Pamangkin">Pamangkin (Nephew/Niece)</option>
-                        <option value="Pinsan">Pinsan (Cousin)</option>
-                        <option value="Manugang">Manugang (Son/Daughter-in-law)</option>
-                        <option value="Biyenan">Biyenan (Parent-in-law)</option>
-                        <option value="Ninong">Ninong (Godfather)</option>
-                        <option value="Ninang">Ninang (Godmother)</option>
-                        <option value="Inaanak">Inaanak (Godchild)</option>
-                        <option value="Kasambahay">Kasambahay (Helper)</option>
-                        <option value="Boarder">Boarder</option>
-                        <option value="Iba pa">Iba pa (Others)</option>
-                      </select>
+
+                    <!-- Personal Info Row -->
+                    <div class="row-grid cols-5">
+                      <div class="form-group">
+                        <label for="familyBirthDate0">Birth Date<br><small>Petsa ng Kapanganakan</small></label>
+                        <input type="date" id="familyBirthDate0" name="familyBirthDate[]" class="form-control family-dob" onchange="calculateFamilyAgeFromCard(this)" max="<?php echo date('Y-m-d'); ?>" min="1900-01-01">
+                      </div>
+                      <div class="form-group">
+                        <label for="familyAge0">Age<br><small>Edad</small></label>
+                        <input type="number" id="familyAge0" name="familyAge[]" class="form-control age-display family-age" placeholder="Edad" min="0" max="120" readonly>
+                      </div>
+                      <div class="form-group">
+                        <label for="familyGender0">Gender<br><small>Kasarian</small></label>
+                        <select id="familyGender0" name="familyGender[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
+                          <option value="">Piliin</option>
+                          <option value="Lalaki">Lalaki</option>
+                          <option value="Babae">Babae</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label>Years of Residence</label>
+                        <input type="number" name="familyYearsOfResidence[]" class="form-control" min="0" placeholder="Years">
+                      </div>
+                      <div class="form-group">
+                        <label for="familyRelation0">Relationship<br><small>Relasyon</small></label>
+                        <select id="familyRelation0" name="familyRelation[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
+                          <option value="">Piliin</option>
+                          <option value="Asawa">Asawa (Spouse)</option>
+                          <option value="Anak">Anak (Child)</option>
+                          <option value="Ama">Ama (Father)</option>
+                          <option value="Ina">Ina (Mother)</option>
+                          <option value="Kapatid">Kapatid (Sibling)</option>
+                          <option value="Lolo">Lolo (Grandfather)</option>
+                          <option value="Lola">Lola (Grandmother)</option>
+                          <option value="Apo">Apo (Grandchild)</option>
+                          <option value="Tiyahin">Tiyahin (Aunt)</option>
+                          <option value="Tiyuhin">Tiyuhin (Uncle)</option>
+                          <option value="Pamangkin">Pamangkin (Nephew/Niece)</option>
+                          <option value="Pinsan">Pinsan (Cousin)</option>
+                          <option value="Manugang">Manugang (Son/Daughter-in-law)</option>
+                          <option value="Biyenan">Biyenan (Parent-in-law)</option>
+                          <option value="Ninong">Ninong (Godfather)</option>
+                          <option value="Ninang">Ninang (Godmother)</option>
+                          <option value="Inaanak">Inaanak (Godchild)</option>
+                          <option value="Kasambahay">Kasambahay (Helper)</option>
+                          <option value="Boarder">Boarder</option>
+                          <option value="Iba pa">Iba pa (Others)</option>
+                        </select>
+                      </div>
                     </div>
-                    
-                    <div class="form-group">
-                      <label for="familyBirthDate0">Birth Date<br><small>Petsa ng Kapanganakan</small></label>
-                      <input type="date" id="familyBirthDate0" name="familyBirthDate[]" class="form-control" onchange="calculateAgeFromCard(this)">
+
+                    <!-- Contact and Status Row -->
+                    <div class="row-grid cols-3">
+                      <div class="form-group">
+                        <label for="familyCivilStatus0">Civil Status<br><small>Katayuang Sibil</small></label>
+                        <select id="familyCivilStatus0" name="familyCivilStatus[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
+                          <option value="">Piliin</option>
+                          <option value="Single">Single</option>
+                          <option value="Married">Married</option>
+                          <option value="Widowed">Widowed</option>
+                          <option value="Separated">Separated</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label for="familyEmail0">Email Address<br><small>Email Address</small></label>
+                        <input type="email" id="familyEmail0" name="familyEmail[]" class="form-control" placeholder="email@example.com">
+                      </div>
+                      <div class="form-group">
+                        <label for="familyOccupation0">Occupation<br><small>Hanapbuhay</small></label>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                          <input type="text" id="familyOccupation0" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay" style="flex:1 1 auto;">
+                          <label style="display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
+                            <input type="checkbox" class="family-no-work-check" onchange="toggleFamilyNoWork(this)">
+                            <span>No work</span>
+                          </label>
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div class="form-group">
-                      <label for="familyAge0">Age<br><small>Edad</small></label>
-                      <input type="number" id="familyAge0" name="familyAge[]" class="form-control age-display" placeholder="Edad" min="0" max="120" readonly>
+
+                    <!-- Birth Place Row -->
+                    <div class="form-group full-row">
+                      <label for="familyBirthPlace0">Place of Birth<br><small>Lugar ng Kapanganakan</small></label>
+                      <input type="text" id="familyBirthPlace0" name="familyBirthPlace[]" class="form-control" placeholder="City, Province, Country">
                     </div>
-                    
-                    <div class="form-group">
-                      <label for="familyGender0">Gender<br><small>Kasarian</small></label>
-                      <select id="familyGender0" name="familyGender[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
-                        <option value="">Piliin</option>
-                        <option value="Lalaki">Lalaki</option>
-                        <option value="Babae">Babae</option>
-                      </select>
-                    </div>
-                    
-                    <div class="form-group">
-                      <label for="familyCivilStatus0">Civil Status<br><small>Katayuang Sibil</small></label>
-                      <select id="familyCivilStatus0" name="familyCivilStatus[]" class="form-control" <?php echo $readonly ? 'disabled' : ''; ?>>
-                        <option value="">Piliin</option>
-                        <option value="Single">Single</option>
-                        <option value="Married">Married</option>
-                        <option value="Widowed">Widowed</option>
-                        <option value="Separated">Separated</option>
-                      </select>
-                    </div>
-                    
-                    <div class="form-group">
-                      <label for="familyEmail0">Email Address<br><small>Email Address</small></label>
-                      <input type="email" id="familyEmail0" name="familyEmail[]" class="form-control" placeholder="email@example.com">
-                    </div>
-                    
-                    <div class="form-group">
-                      <label for="familyOccupation0">Occupation<br><small>Hanapbuhay</small></label>
-                      <input type="text" id="familyOccupation0" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay">
-                    </div>
-                    
-                    <!-- Disability, Organization, and Deceased Information in a wider grid -->
-                    <div class="form-grid disability-org-grid">
-                      <!-- Disability Information - Full width -->
-                      <div class="form-group" style="grid-column: span 2;">
+
+                    <!-- Additional Info Row -->
+                    <div class="row-grid cols-2">
+                      <div class="form-group">
                         <label>Disability (if applicable)<br><small>Kapansanan (kung mayroon)</small></label>
                         <input type="text" name="disabilityType[]" class="form-control" placeholder="Type of disability">
                       </div>
-                      
-                      <!-- Organization Membership - Full width -->
-                      <div class="form-group" style="grid-column: span 2;">
+                      <div class="form-group">
                         <label>Organization Membership (if applicable)<br><small>Samahang Kinaaniban (kung mayroon)</small></label>
                         <input type="text" name="organizationType[]" class="form-control" placeholder="Organization name">
                       </div>
-                      
-                      <!-- Checkboxes in a single row -->
-                      <div class="form-group checkbox-container" style="display: flex; justify-content: space-between; grid-column: span 2;">
-                        <!-- Deceased Status Checkbox -->
-                        <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer; margin-right: 20px;">
-                          <input type="checkbox" name="isDeceased[]" class="deceased-checkbox" style="margin-right: 8px; width: 18px; height: 18px;">
-                          <span style="font-weight: normal;">Deceased<br><small>Namatay</small></span>
+                    </div>
+
+                    <!-- Checkboxes Row -->
+                    <div class="form-group checkbox-row">
+                      <div class="checkbox-container">
+                        <label class="checkbox-label">
+                          <input type="checkbox" name="isDeceased[]" class="deceased-checkbox">
+                          <span>Deceased<br><small>Namatay</small></span>
                         </label>
-                        
-                        <!-- Has Account Checkbox -->
-                        <label class="checkbox-label" style="display: flex; align-items: center; cursor: pointer;">
-                          <input type="checkbox" name="hasAccount[]" class="has-account-checkbox" style="margin-right: 8px; width: 18px; height: 18px;">
-                          <span style="font-weight: normal;">Already has an account<br><small>May account na</small></span>
+                        <label class="checkbox-label">
+                          <input type="checkbox" name="hasAccount[]" class="has-account-checkbox">
+                          <span>Already has an account<br><small>May account na</small></span>
                         </label>
                       </div>
                     </div>
@@ -2462,15 +2693,18 @@ function debugShowPrivacyNotice() {
 }
 
 .family-member-content .form-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.2rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.75rem 1rem;
 }
+
+/* Allow grid items to shrink properly without overflow */
+.family-member-content .form-grid > .form-group { min-width: 0; }
 
 /* Custom grid for disability, organization, and deceased fields to maximize space */
 .family-member-content .form-grid.disability-org-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.75rem 1rem;
     width: 100%;
     grid-column: 1 / -1; /* Make it span all columns of the parent grid */
 }
@@ -3494,6 +3728,36 @@ legend * {
   margin-bottom: 1.5rem;
 }
 
+/* Two-column compact row for tight horizontal alignment */
+.two-col-compact {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* exact split to occupy space evenly */
+  column-gap: 1.2rem;
+  row-gap: 0.6rem;
+  margin-bottom: 1rem;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .two-col-compact { grid-template-columns: 1fr; }
+}
+
+.form-group.full-row {
+  grid-column: 1 / -1;
+}
+
+/* Force name row to seize full width and push following controls below */
+.family-member-content .form-group.full-row .name-fields-group {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .family-member-content .form-group.full-row .name-fields-group {
+    grid-template-columns: 1fr;
+  }
+}
+
 .form-group {
   margin-bottom: 1.5rem;
   position: relative;
@@ -3607,8 +3871,10 @@ h4 small {
 /* Name Fields Group Styles */
 .name-fields-group {
   display: flex;
-  gap: 1rem;
+  gap: 0.6rem;
   width: 100%;
+  flex-wrap: wrap;
+  align-items: stretch; /* make all controls the same height for perfect alignment */
 }
 
 .name-field {
@@ -3618,12 +3884,124 @@ h4 small {
   flex-direction: column;
 }
 
+/* Make bare inputs/selects inside name group flex nicely too (used in family member cards) */
+.name-fields-group > input[type="text"],
+.name-fields-group > select {
+  flex: 1 1 180px;
+  min-width: 140px;
+}
+
+/* Title-case inside family-members container */
+.family-members-container input[type="text"],
+.family-members-container textarea {
+  text-transform: none; /* visual stays normal; handled via JS */
+}
+
+/* Compact width for suffix controls */
+.name-fields-group .suffix-input {
+  flex: 0 0 140px;
+  max-width: 180px;
+}
+
+/* Pair Suffix and Years side-by-side to maximize space */
+.inline-field-pair {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.inline-field-pair .form-group { margin-bottom: 0; }
+
+/* Compact family members section */
+.family-members-container .form-grid { gap: 0.9rem; }
+.family-members-container .form-group { margin-bottom: 0.6rem; }
+.family-members-container .form-group label { margin-bottom: 0.4rem; }
+.family-members-container .form-group { min-width: 0; }
+.family-members-container .form-group input,
+.family-members-container .form-group select { width: 100%; box-sizing: border-box; }
+/* Give each logical row a little breathing room */
+.family-member-content .row-grid + .row-grid { margin-top: 0.25rem; }
+.family-members-container .family-member-card { padding: 0.8rem 1rem; }
+.family-members-container .family-member-header { padding: 0.6rem 0.4rem; }
+.family-members-container .name-fields-group > input[type="text"],
+.family-members-container .name-fields-group > select { flex: 1 1 160px; min-width: 120px; }
+
+/* Make family member controls more compact and fit more per row */
+.family-members-container .family-member-content .form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem 1rem;
+}
+@media (max-width: 768px) {
+  .family-members-container .family-member-content .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.family-members-container .form-group input,
+.family-members-container .form-group select,
+.family-members-container .form-group textarea {
+  padding: 0.7rem 1rem;
+  font-size: 0.98rem;
+  border-radius: 10px;
+}
+.family-members-container .form-group label {
+  font-size: 1rem;
+}
+.family-members-container .name-fields-group {
+  gap: 0.8rem;
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr);
+}
+.family-members-container .name-fields-group > input[type="text"],
+.family-members-container .name-fields-group > select {
+  flex: initial !important;
+  width: 100%;
+  min-width: 0;
+}
+.family-members-container .suffix-input { flex: 1 1 0; max-width: none; }
+.family-members-container .inline-field-pair { gap: 0.8rem; }
+.family-members-container .family-member-card { margin-bottom: 0.8rem; }
+
+/* Compact row helpers */
+.row-grid { display: grid; gap: 0.8rem 1.1rem; width: 100%; }
+.row-grid.cols-2 { grid-template-columns: repeat(2, minmax(240px, 1fr)); }
+.row-grid.cols-3 { grid-template-columns: repeat(3, minmax(240px, 1fr)); }
+/* Ensure Suffix, Years, Relationship align on one row and fill space */
+.rel-row { grid-template-columns: minmax(170px,1fr) minmax(150px,1fr) minmax(240px,1.5fr) !important; align-items: end; column-gap: 1.1rem; }
+.job-row { grid-template-columns: minmax(150px,1fr) minmax(320px,2fr) !important; align-items: end; column-gap: 1.1rem; }
+.birth-civil-row { grid-template-columns: 2fr 1fr; }
+.civil-email-row { grid-template-columns: 1fr 1fr; column-gap: 2rem; }
+.civil-email-row .form-group:first-child { margin-right: 0.8rem; }
+.civil-email-row .form-group:last-child { margin-left: 0.8rem; }
+
+/* Make Relationship select a bit shorter to create space for Birth Date on same line visually */
+.family-members-container select[name="familyRelation[]"] { max-width: 520px; }
+.row-grid.cols-3 > .form-group, .row-grid.cols-2 > .form-group { min-width: 0; }
+@media (min-width: 1400px) {
+  .row-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 768px) {
+  .row-grid.cols-2, .row-grid.cols-3 { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .row-grid.cols-2, .row-grid.cols-3 { grid-template-columns: 1fr; }
+}
+
 .name-field:nth-child(2) {
-  flex: 0.8; /* Make middle name field slightly smaller */
+  flex: 1; /* Make middle name equal width to others */
 }
 
 .name-field input {
   margin-bottom: 0.5rem;
+}
+
+/* Match select spacing with text inputs to keep labels aligned */
+.name-field select {
+  margin-bottom: 0.5rem;
+  padding: 0.7rem 1rem;        /* match input padding */
+  font-size: 0.98rem;           /* match input font size */
+  border-radius: 10px;          /* match input radius */
+  box-sizing: border-box;       /* consistent sizing */
 }
 
 .name-field small {
@@ -3692,7 +4070,7 @@ h4 small {
 @media (max-width: 768px) {
   .name-fields-group {
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.9rem;
   }
   
   .name-field:nth-child(2) {
@@ -3702,7 +4080,7 @@ h4 small {
 
 @media (max-width: 480px) {
   .name-fields-group {
-    gap: 0.8rem;
+    gap: 0.6rem;
   }
 }
 
@@ -5667,11 +6045,13 @@ body:has(.modal-overlay:not([style*="display: none"])) #dataPrivacyOverlay {
 // Add readonly mode class and disable form submission
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('censusForm');
+    let formSubmitting = false;
     if (form) {
         form.classList.add('readonly-mode');
         
         // Prevent form submission in readonly mode
         form.addEventListener('submit', function(e) {
+            formSubmitting = true;
             e.preventDefault();
             return false;
         });
@@ -5695,37 +6075,16 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 // Enhanced Data Privacy Notice Functionality
 let privacyTimer;
-let timeRemaining = 120; // 2 minutes in seconds
+let timeRemaining = 0; // disabled auto-close
+let privacyOpenedAt = 0; // timestamp to avoid instant-close on initial render
 
 function startPrivacyTimer() {
+  // Timer disabled – no auto close
   const timerElement = document.getElementById('privacyTimer');
-  
-  if (!timerElement) {
-    console.log('Timer element not found');
-    return;
+  if (timerElement) {
+    timerElement.style.color = '';
+    timerElement.style.fontWeight = '';
   }
-  
-  console.log('Starting privacy timer...');
-  
-  privacyTimer = setInterval(() => {
-    timeRemaining--;
-    
-    if (timeRemaining > 0) {
-      timerElement.innerHTML = `⏱️ This notice will auto-close in <strong>${timeRemaining}</strong> seconds`;
-      
-      // Change color when time is running out
-      if (timeRemaining <= 30) {
-        timerElement.style.color = '#dc3545';
-        timerElement.style.fontWeight = 'bold';
-      } else if (timeRemaining <= 60) {
-        timerElement.style.color = '#fd7e14';
-      }
-    } else {
-      console.log('Timer reached zero, closing privacy notice');
-      clearInterval(privacyTimer);
-      closePrivacyNotice();
-    }
-  }, 1000);
 }
 
 function closePrivacyNotice() {
@@ -5752,6 +6111,16 @@ function closePrivacyNotice() {
     
     // Re-enable scrolling on body
     document.body.style.overflow = 'auto';
+    
+    // Re-enable form controls now that user acknowledged
+    const form = document.getElementById('censusForm');
+    if (form) {
+      form.querySelectorAll('input, select, textarea, button').forEach(function(el){
+        const was = el.dataset._wasDisabled === '1';
+        el.disabled = was; // restore original disabled state
+        delete el.dataset._wasDisabled;
+      });
+    }
     
     // Store in session to not show again for this session
     sessionStorage.setItem('privacyNoticeShown', 'true');
@@ -5786,7 +6155,8 @@ function initializePrivacyNotice() {
   // Check if there are any success or error modals present
   const successModal = document.getElementById('successModal');
   const errorModal = document.getElementById('errorModal');
-  const hasActiveModals = successModal || errorModal;
+  const isActuallyShown = (el) => !!el && ((el.style && el.style.display === 'flex') || (el.classList && el.classList.contains('show')));
+  const hasActiveModals = isActuallyShown(successModal) || isActuallyShown(errorModal);
   
   console.log('📊 Modal status check:', {
     successModal: !!successModal,
@@ -5796,16 +6166,11 @@ function initializePrivacyNotice() {
   
   // Don't show privacy notice if there are active modals
   if (hasActiveModals) {
-    console.log('🚫 Not showing privacy notice - active success/error modal present');
-    overlay.style.display = 'none';
-    // Mark privacy notice as shown since user is getting feedback
-    sessionStorage.setItem('privacyNoticeShown', 'true');
-    return;
+    // Still show privacy notice; it must be acknowledged explicitly
+    console.log('ℹ️ Success/Error modal present, but keeping privacy notice visible');
   }
   
-  // Reset privacy notice for testing - TEMPORARILY ENABLED FOR DEBUGGING
-  sessionStorage.removeItem('privacyNoticeShown');
-  console.log('🔄 Privacy notice session storage cleared for testing');
+  // Do not reset privacy notice in production – keep user's acknowledged state
   
   // Check if privacy notice was already shown in this session
   const privacyShown = sessionStorage.getItem('privacyNoticeShown');
@@ -5831,12 +6196,22 @@ function initializePrivacyNotice() {
   
   // Show the modal with animation
   overlay.style.display = 'flex';
+  privacyOpenedAt = Date.now();
   console.log('📺 Overlay display set to flex');
   
   // Trigger the animation after a small delay
   setTimeout(() => {
     overlay.classList.add('show');
     console.log('✨ Animation class "show" added to overlay');
+    
+    // While privacy notice is visible, disable form controls to avoid conflicts
+    const form = document.getElementById('censusForm');
+    if (form) {
+      form.querySelectorAll('input, select, textarea, button').forEach(function(el){
+        if (!el.dataset._wasDisabled) { el.dataset._wasDisabled = el.disabled ? '1' : '0'; }
+        el.disabled = true;
+      });
+    }
     
     // Start the countdown timer after modal is fully shown
     setTimeout(() => {
@@ -5846,22 +6221,27 @@ function initializePrivacyNotice() {
   }, 100);
 }
 
-// Close privacy notice when clicking on overlay background (not the modal)
+// Optional: allow closing by clicking overlay background
+const allowPrivacyBackgroundClose = false;
 document.addEventListener('click', function(e) {
   const overlay = document.getElementById('dataPrivacyOverlay');
   const modal = document.getElementById('dataPrivacyModal');
-  
+  if (!allowPrivacyBackgroundClose) { return; }
   if (overlay && overlay.classList.contains('show') && e.target === overlay) {
+    if (Date.now() - privacyOpenedAt < 1500) { return; }
     console.log('Clicked on overlay background, closing privacy notice');
     closePrivacyNotice();
   }
 });
 
-// Close privacy notice with Escape key
+// Optional: allow closing with Escape key
+const allowPrivacyEscapeClose = false;
 document.addEventListener('keydown', function(e) {
+  if (!allowPrivacyEscapeClose) { return; }
   if (e.key === 'Escape') {
     const overlay = document.getElementById('dataPrivacyOverlay');
     if (overlay && overlay.classList.contains('show')) {
+      if (Date.now() - privacyOpenedAt < 1500) { return; }
       console.log('Escape key pressed, closing privacy notice');
       closePrivacyNotice();
     }
@@ -5917,6 +6297,7 @@ function showTab(tabNumber) {
     }
     
     currentTab = tabNumber;
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0,0); }
     
     // Only update navigation if not in readonly mode
     const form = document.getElementById('censusForm');
@@ -5960,6 +6341,7 @@ function changeTab(direction) {
         }
         
         showTab(newTab);
+        try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0,0); }
         
         // Mark completed tabs
         if (direction === 1) {
@@ -6173,7 +6555,7 @@ function toggleCheckboxOther(checkboxName, otherId) {
 }
 
 // Age Calculation Function
-function calculateAge(dateInput) {
+function calculateFamilyAge(dateInput) {
     const birthDate = new Date(dateInput.value);
     const today = new Date();
     
@@ -6195,14 +6577,14 @@ function calculateAge(dateInput) {
     }
     
     // Update the age field in the same row
-    const ageInput = dateInput.closest('tr').querySelector('.age-display');
+    const ageInput = dateInput.closest('tr') ? dateInput.closest('tr').querySelector('.age-display') : (dateInput.closest('.family-member-content') ? dateInput.closest('.family-member-content').querySelector('.age-display') : null);
     if (ageInput) {
         ageInput.value = age >= 0 ? age : 0;
     }
 }
 
 // Age Calculation Function for Main Resident
-function calculateAgeFromCard(dateInput) {
+function calculateFamilyAgeFromCard(dateInput) {
     const birthDate = new Date(dateInput.value);
     const today = new Date();
     
@@ -6223,10 +6605,13 @@ function calculateAgeFromCard(dateInput) {
         age--;
     }
     
-    // Update the age field
-    const ageInput = document.getElementById('age');
-    if (ageInput) {
-        ageInput.value = age >= 0 ? age : 0;
+    // Update the nearest age field: card age if present, else main age
+    const cardAge = dateInput.closest('.family-member-content') ? dateInput.closest('.family-member-content').querySelector('.age-display') : null;
+    if (cardAge) {
+        cardAge.value = age >= 0 ? age : 0;
+    } else {
+        const ageInput = document.getElementById('age');
+        if (ageInput) ageInput.value = age >= 0 ? age : 0;
     }
 }
 
@@ -6252,7 +6637,23 @@ function addFamilyMember() {
     const newRow = document.createElement('tr');
     newRow.className = 'family-member-row';
     newRow.innerHTML = `
-        <td data-label="Name" class="scrollable-name-cell"><input type="text" name="familyName[]" class="table-input scrollable-name-input" placeholder="Pangalan"></td>
+        <td data-label="Name" class="scrollable-name-cell">
+            <div class="name-fields-group">
+                <input type="text" name="familyFirstName[]" class="table-input scrollable-name-input" placeholder="First Name" oninput="syncTableRowFullName(this)">
+                <input type="text" name="familyMiddleName[]" class="table-input scrollable-name-input" placeholder="Middle Name" oninput="syncTableRowFullName(this)">
+                <input type="text" name="familyLastName[]" class="table-input scrollable-name-input" placeholder="Last Name" oninput="syncTableRowFullName(this)">
+                <select name="familySuffix[]" class="table-input scrollable-name-input suffix-input" onchange="syncTableRowFullName(this)">
+                    <option value="">No Suffix</option>
+                    <option value="JR">JR</option>
+                    <option value="SR">SR</option>
+                    <option value="II">II</option>
+                    <option value="III">III</option>
+                    <option value="IV">IV</option>
+                    <option value="V">V</option>
+                </select>
+                <input type="hidden" name="familyName[]" value="">
+            </div>
+        </td>
         <td data-label="Relationship">
             <select name="familyRelation[]" class="table-input">
                 <option value="">Piliin ang Relasyon</option>
@@ -6278,7 +6679,7 @@ function addFamilyMember() {
                 <option value="Iba pa">Iba pa (Others)</option>
             </select>
         </td>
-        <td data-label="Birth Date"><input type="date" name="familyBirthDate[]" class="table-input" onchange="calculateAge(this)"></td>
+        <td data-label="Birth Date"><input type="date" name="familyBirthDate[]" class="table-input" onchange="calculateFamilyAge(this)" max="<?php echo date('Y-m-d'); ?>" min="1900-01-01"></td>
         <td data-label="Age"><input type="number" name="familyAge[]" class="table-input age-display" placeholder="Edad" min="0" max="120" readonly></td>
         <td data-label="Gender">
             <select name="familyGender[]" class="table-input">
@@ -6315,7 +6716,7 @@ function addFamilyMember() {
         newRow.style.transform = 'translateY(0)';
         
         // Focus on the first input of the new row
-        const firstInput = newRow.querySelector('input[name="familyName[]"]');
+        const firstInput = newRow.querySelector('input[name="familyFirstName[]"]');
         if (firstInput) {
             firstInput.focus();
         }
@@ -6487,6 +6888,20 @@ function showFamilyMessage(message, type = 'info') {
         messageElement.remove();
     }, 2000);
 }
+// Toggle "No work" for a family member row
+function toggleFamilyNoWork(checkboxEl) {
+    const wrapper = checkboxEl.closest('.form-group');
+    if (!wrapper) return;
+    const input = wrapper.querySelector('input[name="familyOccupation[]"]');
+    if (!input) return;
+    if (checkboxEl.checked) {
+        input.value = 'None';
+        input.readOnly = true;
+    } else {
+        input.readOnly = false;
+        if (input.value === 'None') input.value = '';
+    }
+}
 
 // Family Member Card Functions
 function toggleFamilyCard(header) {
@@ -6509,16 +6924,51 @@ function updateCardHeader(nameInput) {
     const card = nameInput.closest('.family-member-card');
     const header = card.querySelector('.family-member-header');
     const nameSpan = header.querySelector('.family-member-name');
-    
+    const fn = card.querySelector('input[name="familyFirstName[]"]');
+    const mn = card.querySelector('input[name="familyMiddleName[]"]');
+    const ln = card.querySelector('input[name="familyLastName[]"]');
+    const sx = card.querySelector('input[name="familySuffix[]"]');
+    if (fn || mn || ln || sx) {
+        const parts = [];
+        if (fn && fn.value.trim()) parts.push(fn.value.trim());
+        if (mn && mn.value.trim()) parts.push(mn.value.trim());
+        if (ln && ln.value.trim()) parts.push(ln.value.trim());
+        if (sx && sx.value.trim()) parts.push(sx.value.trim());
+        const combined = parts.join(' ');
+        const hidden = card.querySelector('input[name="familyName[]"]');
+        if (hidden) hidden.value = combined;
+        if (combined) {
+            nameSpan.textContent = combined;
+            return;
+        }
+    }
     if (nameInput.value.trim()) {
         nameSpan.textContent = nameInput.value.trim();
     } else {
-        // Find the card index
         const container = document.getElementById('familyMembersContainer');
         const cards = container.querySelectorAll('.family-member-card');
         let index = Array.from(cards).indexOf(card) + 1;
         nameSpan.textContent = 'Family Member ' + index;
     }
+}
+
+function updateCardHeaderFromParts(inputEl) {
+    const card = inputEl.closest('.family-member-card');
+    if (!card) return;
+    const fn = card.querySelector('input[name="familyFirstName[]"]');
+    const mn = card.querySelector('input[name="familyMiddleName[]"]');
+    const ln = card.querySelector('input[name="familyLastName[]"]');
+    const sx = card.querySelector('input[name="familySuffix[]"]');
+    const hidden = card.querySelector('input[name="familyName[]"]');
+    const header = card.querySelector('.family-member-header .family-member-name');
+    const parts = [];
+    if (fn && fn.value.trim()) parts.push(fn.value.trim());
+    if (mn && mn.value.trim()) parts.push(mn.value.trim());
+    if (ln && ln.value.trim()) parts.push(ln.value.trim());
+    if (sx && sx.value.trim()) parts.push(sx.value.trim());
+    const combined = parts.join(' ');
+    if (hidden) hidden.value = combined;
+    if (header) header.textContent = combined || header.textContent;
 }
 
 function calculateAgeFromCard(dateInput) {
@@ -6527,7 +6977,8 @@ function calculateAgeFromCard(dateInput) {
     
     if (!dateInput.value || isNaN(birthDate.getTime())) {
         // Clear age if no valid date
-        const ageInput = dateInput.closest('.family-member-content').querySelector('.age-display');
+        const container = dateInput.closest('.family-member-content');
+        const ageInput = container ? container.querySelector('.age-display') : null;
         if (ageInput) {
             ageInput.value = '';
         }
@@ -6543,7 +6994,8 @@ function calculateAgeFromCard(dateInput) {
     }
     
     // Update the age field in the same card
-    const ageInput = dateInput.closest('.family-member-content').querySelector('.age-display');
+    const container = dateInput.closest('.family-member-content');
+    const ageInput = container ? container.querySelector('.age-display') : null;
     if (ageInput) {
         ageInput.value = age >= 0 ? age : 0;
     }
@@ -6571,8 +7023,22 @@ function addFamilyMemberCard() {
         <div class="family-member-content">
             <div class="form-grid">
                 <div class="form-group">
-                    <label for="familyName${newIndex}">Name<br><small>Pangalan</small></label>
-                    <input type="text" id="familyName${newIndex}" name="familyName[]" class="form-control" placeholder="Full Name" onchange="updateCardHeader(this)">
+                    <label>Name<br><small>Pangalan</small></label>
+                    <div class="name-fields-group">
+                        <input type="text" name="familyFirstName[]" class="form-control" placeholder="First Name" oninput="updateCardHeaderFromParts(this)">
+                        <input type="text" name="familyMiddleName[]" class="form-control" placeholder="Middle Name" oninput="updateCardHeaderFromParts(this)">
+                        <input type="text" name="familyLastName[]" class="form-control" placeholder="Last Name" oninput="updateCardHeaderFromParts(this)">
+                          <select name="familySuffix[]" class="form-control suffix-input" onchange="updateCardHeaderFromParts(this)">
+                            <option value="">No Suffix</option>
+                            <option value="JR">JR</option>
+                            <option value="SR">SR</option>
+                            <option value="II">II</option>
+                            <option value="III">III</option>
+                            <option value="IV">IV</option>
+                            <option value="V">V</option>
+                        </select>
+                        <input type="hidden" name="familyName[]" value="">
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -6604,7 +7070,7 @@ function addFamilyMemberCard() {
                 
                 <div class="form-group">
                     <label for="familyBirthDate${newIndex}">Birth Date<br><small>Petsa ng Kapanganakan</small></label>
-                    <input type="date" id="familyBirthDate${newIndex}" name="familyBirthDate[]" class="form-control" onchange="calculateAgeFromCard(this)">
+                    <input type="date" id="familyBirthDate${newIndex}" name="familyBirthDate[]" class="form-control" onchange="calculateFamilyAgeFromCard(this)" max="<?php echo date('Y-m-d'); ?>" min="1900-01-01">
                 </div>
                 
                 <div class="form-group">
@@ -6639,7 +7105,13 @@ function addFamilyMemberCard() {
                 
                 <div class="form-group">
                     <label for="familyOccupation${newIndex}">Occupation<br><small>Hanapbuhay</small></label>
-                    <input type="text" id="familyOccupation${newIndex}" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay">
+                    <div style="display:flex; gap:8px; align-items:center;">
+                      <input type="text" id="familyOccupation${newIndex}" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay" style="flex:1 1 auto;">
+                      <label style="display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
+                        <input type="checkbox" class="family-no-work-check" onchange="toggleFamilyNoWork(this)">
+                        <span>No work</span>
+                      </label>
+                    </div>
                 </div>
                 
                 <!-- Disability, Organization, and Deceased Information in a wider grid -->
@@ -6760,13 +7232,24 @@ function updateAllCardHeaders() {
     cards.forEach((card, index) => {
         const nameSpan = card.querySelector('.family-member-name');
         const nameInput = card.querySelector('input[name="familyName[]"]');
-        
-        // Update the header text
-        if (nameInput && nameInput.value.trim()) {
-            nameSpan.textContent = nameInput.value.trim();
-        } else {
-            nameSpan.textContent = 'Family Member ' + (index + 1);
+        // If split fields exist, rebuild the hidden full name first
+        const fn = card.querySelector('input[name="familyFirstName[]"]');
+        const mn = card.querySelector('input[name="familyMiddleName[]"]');
+        const ln = card.querySelector('input[name="familyLastName[]"]');
+        const sx = card.querySelector('input[name="familySuffix[]"]');
+        let combined = '';
+        if (fn || mn || ln || sx) {
+            const parts = [];
+            if (fn && fn.value.trim()) parts.push(fn.value.trim());
+            if (mn && mn.value.trim()) parts.push(mn.value.trim());
+            if (ln && ln.value.trim()) parts.push(ln.value.trim());
+            if (sx && sx.value.trim()) parts.push(sx.value.trim());
+            combined = parts.join(' ');
+            if (nameInput) nameInput.value = combined;
+        } else if (nameInput) {
+            combined = nameInput.value.trim();
         }
+        nameSpan.textContent = combined || ('Family Member ' + (index + 1));
         
         // Update the input IDs to match the new index
         const inputs = card.querySelectorAll('input, select, textarea');
@@ -7374,6 +7857,10 @@ function closeModal(modalId) {
         
         setTimeout(() => {
             modal.style.display = 'none';
+            if (modalId === 'successModal') {
+                try { window.location.href = 'https://red-wasp-422222.hostingersite.com/'; }
+                catch (e) { window.location.assign('https://red-wasp-422222.hostingersite.com/'); }
+            }
         }, 300);
     }
 }
@@ -7413,30 +7900,27 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Check if success modal exists and start timer
     const successModal = document.getElementById('successModal');
-    if (successModal) {
+    if (successModal && (successModal.style.display === 'flex' || successModal.classList.contains('show'))) {
         console.log('✅ Success modal detected - starting timer');
         startModalTimer();
-        
-        // Hide privacy notice if it's showing
-        const privacyOverlay = document.getElementById('dataPrivacyOverlay');
-        if (privacyOverlay) {
-            privacyOverlay.style.display = 'none';
-            sessionStorage.setItem('privacyNoticeShown', 'true');
-            console.log('🔒 Privacy notice hidden due to success modal');
-        }
+        // Do not hide privacy notice automatically
+        // Ensure redirect happens if user waits for auto-close
+        try {
+            successModal.addEventListener('transitionend', function onEnd(e){
+                if (getComputedStyle(successModal).display === 'none') {
+                    try { window.location.href = 'https://red-wasp-422222.hostingersite.com/'; }
+                    catch (err) { window.location.assign('https://red-wasp-422222.hostingersite.com/'); }
+                    successModal.removeEventListener('transitionend', onEnd);
+                }
+            });
+        } catch (e) {}
     }
     
     // Check if error modal exists
     const errorModal = document.getElementById('errorModal');
-    if (errorModal) {
+    if (errorModal && (errorModal.style.display === 'flex' || errorModal.classList.contains('show'))) {
         console.log('❌ Error modal detected');
-        // Hide privacy notice if it's showing
-        const privacyOverlay = document.getElementById('dataPrivacyOverlay');
-        if (privacyOverlay) {
-            privacyOverlay.style.display = 'none';
-            sessionStorage.setItem('privacyNoticeShown', 'true');
-            console.log('🔒 Privacy notice hidden due to error modal');
-        }
+        // Do not hide privacy notice automatically
     }
     
     // Add click outside to close functionality
@@ -7479,8 +7963,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </script>
 
-<!-- Queue Information Display for Kiosk -->
-<?php if (isset($_SESSION['queue_ticket_number'])): ?>
+<!-- Queue Information Display removed per requirements -->
+<?php if (false): ?>
 <div class="queue-info-banner kiosk-queue-display">
     <div class="queue-info-content">
         <h2>🎫 YOUR QUEUE TICKET</h2>
@@ -7981,15 +8465,11 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Intercept F5/refresh and browser close actions
   window.addEventListener('beforeunload', function(e) {
+    // Allow unload during form submission to avoid prompt on submit
+    if (formSubmitting) return;
     if (formChanged) {
-      // For browser close events, we still need to use the browser's default confirmation
-      // as we can't show a custom modal that would block the closing action
-      const confirmationMessage = 'You have unsaved changes. Are you sure you want to leave this page? Your data may be lost.';
-      
-      // For older browsers
+      const confirmationMessage = 'You have unsaved changes.';
       e.returnValue = confirmationMessage;
-      
-      // For modern browsers
       return confirmationMessage;
     }
   });
@@ -7997,7 +8477,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Intercept F5/refresh key presses
   document.addEventListener('keydown', function(e) {
     // Check for F5 key (code 116) or Ctrl+R (code 82 with ctrlKey)
-    if ((e.key === 'F5' || (e.ctrlKey && e.key === 'r')) && formChanged) {
+    if ((e.key === 'F5' || (e.ctrlKey && e.key === 'r')) && formChanged && !formSubmitting) {
       e.preventDefault();
       
       // Store the refresh intent

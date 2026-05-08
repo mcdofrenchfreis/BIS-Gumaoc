@@ -5,6 +5,41 @@ $base_path = "../";
 include '../includes/header.php';
 ?>
 
+<?php
+// Inject compact mini navigation and disable the full navbar for this page
+// Ensure base path is set for mini_nav links
+if (!isset($base_path)) { $base_path = '../'; }
+// Render the mini navigation bar
+$force_guest = false; // allow session-based user resolution
+include __DIR__ . '/../includes/mini_nav.php';
+?>
+
+<style>
+  /* Hide the large header navbar injected by header.php */
+  .navbar { display: none !important; }
+  /* Remove the top offset reserved for the large navbar */
+  .content-wrapper { margin-top: 0 !important; min-height: unset !important; padding-bottom: 0 !important; }
+  /* Provide space for the fixed mini nav to avoid overlap with content */
+  .page-container { padding-top: 90px; }
+  /* Fix background gap artifacts from fixed attachments */
+  body { 
+    background-attachment: scroll !important; 
+    background-image: url('../assets/images/bg2.jpg') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+  }
+  /* Remove global green tint overlay from header.php on this page */
+  body::before { display: none !important; }
+  /* Use body as the single background source */
+  .page-container { background: none !important; background-attachment: scroll !important; }
+  .page-container::before { display: none !important; }
+  /* Remove extra spacing above footer on this page */
+  .minimalist-footer { margin-top: 0 !important; }
+  /* Trim bottom padding to tighten space above footer */
+  .content-section { padding-bottom: 20px !important; }
+</style>
+
 <div class="page-container">
     <div class="content-section">
         <div class="container">
@@ -69,40 +104,23 @@ include '../includes/header.php';
                             </div>
 
                             <div class="form-actions">
-                                <button type="submit" class="btn-submit">
-                                    🚨 Submit Report
-                                </button>
-                                <button type="reset" class="btn-reset">
-                                    🔄 Clear Form
-                                </button>
+                                <button type="submit" class="btn-submit">🚨 Submit Report</button>
+                                <button type="reset" class="btn-reset">🔄 Clear Form</button>
                             </div>
                         </form>
                     </div>
                 </div>
 
                 <div class="info-section">
-                    <div class="emergency-contacts">
-                        <h3>Emergency Contact</h3>
-                        <div class="contact-list">
-                            <div class="contact-item">
-                                <div class="contact-icon">🚨</div>
-                                <div class="contact-info">
-                                    <h4>Barangay Emergency</h4>
-                                    <p class="contact-number">(XXX) XXX-XXXX</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="safety-tips">
                         <h3>Safety Tips</h3>
                         <ul class="tips-list">
-                            <li>🔥 For fires: Get to safety first, then report</li>
-                            <li>🚗 For accidents: Check for injuries, call emergency services</li>
-                            <li>👮 For crimes: Do not confront, report immediately</li>
-                            <li>🌊 For flooding: Avoid flooded roads and areas</li>
-                            <li>⚡ For power outages: Report to proper authorities</li>
-                            <li>📱 Keep your phone charged for emergencies</li>
+                            <li>For fires: Get to safety first, then report</li>
+                            <li>For accidents: Check for injuries, call emergency services</li>
+                            <li>For crimes: Do not confront, report immediately</li>
+                            <li>For flooding: Avoid flooded roads and areas</li>
+                            <li>For power outages: Report to proper authorities</li>
+                            <li>Keep your phone charged for emergencies</li>
                         </ul>
                     </div>
 
@@ -183,9 +201,10 @@ include '../includes/header.php';
 }
 
 .report-grid {
-    display: grid;
-    grid-template-columns: 1fr 400px;
-    gap: 40px;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 420px !important;
+    gap: 32px !important;
+    align-items: start;
 }
 
 .form-card {
@@ -496,10 +515,8 @@ include '../includes/header.php';
         background-attachment: scroll;
     }
     
-    .report-grid {
-        grid-template-columns: 1fr;
-        gap: 30px;
-    }
+    /* Keep two columns on slightly larger tablets; stack only on small screens */
+    .report-grid { grid-template-columns: 1fr; gap: 24px; }
     
     .form-card {
         padding: 25px;
@@ -510,10 +527,7 @@ include '../includes/header.php';
         flex-direction: column;
     }
     
-    .info-section {
-        order: -1;
-        margin: 0 10px;
-    }
+    .info-section { margin: 0 10px; }
     
     .emergency-contacts,
     .safety-tips,
@@ -561,7 +575,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     const lng = position.coords.longitude;
                     locationInput.value = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
                     getCurrentLocationBtn.textContent = '✅ Location obtained';
-                    
                     setTimeout(() => {
                         getCurrentLocationBtn.textContent = '📍 Use Current Location';
                         getCurrentLocationBtn.disabled = false;
@@ -572,7 +585,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     getCurrentLocationBtn.textContent = '📍 Use Current Location';
                     getCurrentLocationBtn.disabled = false;
                 }
-            );
         } else {
             alert('Geolocation is not supported by this browser.');
         }

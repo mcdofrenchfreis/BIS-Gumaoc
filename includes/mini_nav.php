@@ -1,10 +1,13 @@
 <?php
 // Lightweight top navigation with Back button (left) and Profile (right)
 // Expects (if available): $base_path, $admin_view, $current_user
+// Optional: $force_guest = true to disable any user/admin session resolution and always show Guest
 if (!isset($base_path)) { $base_path = '../'; }
+if (!isset($force_guest)) { $force_guest = false; }
 
 // Ensure the correct area session is loaded (user/kiosk) without creating a default session
-{
+// Skip entirely when forcing guest mode
+if (!$force_guest) {
     // Per-page override if provided
     if (isset($force_area) && ($force_area === 'user' || $force_area === 'kiosk')) {
         $want = $force_area;
@@ -39,7 +42,7 @@ if (!isset($base_path)) { $base_path = '../'; }
 }
 
 // If the parent page did not provide $current_user, attempt to resolve from session
-if (!isset($current_user) || !is_array($current_user)) {
+if (!$force_guest && (!isset($current_user) || !is_array($current_user))) {
     if (!empty($_SESSION['user_id'])) {
         // Safely include DB connector relative to this file
         $dbPath = __DIR__ . '/db_connect.php';
@@ -62,7 +65,7 @@ if (!isset($current_user) || !is_array($current_user)) {
 }
 
 // If still not resolved and we initially loaded 'user' but kiosk cookie exists, switch to kiosk and retry
-if ((!isset($current_user) || !is_array($current_user)) && (empty($_SESSION['user_id'])) ) {
+if (!$force_guest && (!isset($current_user) || !is_array($current_user)) && (empty($_SESSION['user_id'])) ) {
     $haveKiosk = !empty($_COOKIE['GUMAOC_KIOSK_SESSID']);
     $haveUser  = !empty($_COOKIE['GUMAOC_USER_SESSID']);
     $currentName = (session_status()===PHP_SESSION_ACTIVE) ? session_name() : '';
@@ -90,9 +93,9 @@ if ((!isset($current_user) || !is_array($current_user)) && (empty($_SESSION['use
     }
 }
 
-$is_admin = !empty($admin_view);
+$is_admin = !$force_guest && !empty($admin_view);
 // Determine area for display (User vs Kiosk)
-$sessionName = (session_status() === PHP_SESSION_ACTIVE) ? session_name() : '';
+$sessionName = (!$force_guest && session_status() === PHP_SESSION_ACTIVE) ? session_name() : '';
 $area = ($sessionName === 'GUMAOC_KIOSK_SESSID') ? 'kiosk' : 'user';
 $display_name = 'Guest';
 $initials = 'G';
@@ -112,11 +115,11 @@ if ($is_admin) {
     if ($initials === '') {
         $initials = strtoupper(substr((string)$display_name, 0, 2));
     }
-} elseif (!empty($_SESSION['user_name'])) {
+} elseif (!$force_guest && !empty($_SESSION['user_name'])) {
     // Fallback to session-provided name
     $display_name = (string)$_SESSION['user_name'];
     $initials = strtoupper(substr($display_name, 0, 2));
-} elseif (!empty($_COOKIE['GUMAOC_USER_NAME'])) {
+} elseif (!$force_guest && !empty($_COOKIE['GUMAOC_USER_NAME'])) {
     // Final fallback: use auxiliary cookie set on kiosk login
     $display_name = (string)$_COOKIE['GUMAOC_USER_NAME'];
     $initials = strtoupper(substr($display_name, 0, 2));
@@ -188,6 +191,10 @@ area: <?php echo htmlspecialchars($area); ?>
         <div class="profile-name"><?php echo htmlspecialchars($display_name); ?></div>
         <span class="role-badge <?php echo $is_admin ? 'role-admin' : 'role-user'; ?>"><?php echo $is_admin ? 'Admin' : 'User'; ?></span>
       </div>
+      <a href="<?php echo $base_path; ?>pages/report.php" class="help-btn" style="text-decoration: none;" aria-label="Report an issue" title="Report an issue">
+        <span class="icon">📝</span>
+        <span class="label">Report Incident</span>
+      </a>
       <button type="button" id="miniHelpBtn" class="help-btn" aria-label="Call for assistance" title="Call for staff assistance">
         <span class="icon">🆘</span>
         <span class="label">Need Help</span>
@@ -218,8 +225,17 @@ area: <?php echo htmlspecialchars($area); ?>
   function hasHistory(){ return (window.history && window.history.length > 1); }
   if (backBtn) {
     backBtn.addEventListener('click', function(){
-      try { if (hasHistory()) { window.history.back(); } else { window.location.href = '<?php echo $base_path; ?>index.php'; } }
-      catch(e){ window.location.href = '<?php echo $base_path; ?>index.php'; }
+      try {
+        if (hasHistory()) {
+          window.history.back();
+        } else if (document.referrer) {
+          window.location.href = document.referrer;
+        } else {
+          // No history and no referrer: do nothing to avoid unintended redirects/logouts
+        }
+      } catch(e) {
+        // Swallow any errors; avoid redirecting to any page that might log the user out
+      }
     });
   }
 
@@ -230,7 +246,7 @@ area: <?php echo htmlspecialchars($area); ?>
   var assistEndpoint = <?php echo json_encode($base_path . 'assist-request.php'); ?>;
   var assistPayloadBase = {
     page: window.location.pathname + window.location.search,
-    user_id: <?php echo json_encode($_SESSION['user_id'] ?? null); ?>,
+    user_id: <?php echo json_encode($force_guest ? null : ($_SESSION['user_id'] ?? null)); ?>,
     user_name: <?php echo json_encode($display_name); ?>,
     is_admin: <?php echo json_encode($is_admin); ?>
   };
