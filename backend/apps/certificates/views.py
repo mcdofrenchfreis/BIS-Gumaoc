@@ -3,6 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from django.http import HttpResponse
+from django.template.loader import render_to_string
 from .models import CertificateRequest, CaptainClearance
 from .serializers import CertificateRequestSerializer, CaptainClearanceSerializer
 from apps.residents.models import Resident
@@ -18,9 +20,85 @@ class CertificateRequestViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def print(self, request, pk=None):
         certificate = self.get_object()
-        certificate.status = 'completed'
-        certificate.save()
-        return Response({'message': 'Certificate marked for printing'})
+        certificate.status = 'released'
+        certificate.save(update_fields=['status'])
+        return Response({'message': 'Certificate marked as released'})
+
+    @action(detail=True, methods=['get'])
+    def print_barangay_clearance(self, request, pk=None):
+        certificate = self.get_object()
+        if certificate.certificate_type != 'BRGY. CLEARANCE':
+            return Response({'error': 'Not a barangay clearance certificate'}, status=400)
+
+        html_content = render_to_string('certificates/print_barangay_clearance.html', {
+            'certificate': certificate,
+            'date_issued': certificate.updated_at.strftime('%B %d, %Y'),
+        })
+        return HttpResponse(html_content, content_type='text/html')
+
+    @action(detail=True, methods=['get'])
+    def print_business_clearance(self, request, pk=None):
+        certificate = self.get_object()
+        if certificate.certificate_type != 'BRGY. CLEARANCE':
+            return Response({'error': 'Not a business clearance certificate'}, status=400)
+
+        html_content = render_to_string('certificates/print_business_clearance.html', {
+            'certificate': certificate,
+            'date_issued': certificate.updated_at.strftime('%B %d, %Y'),
+        })
+        return HttpResponse(html_content, content_type='text/html')
+
+    @action(detail=True, methods=['get'])
+    def print_cedula(self, request, pk=None):
+        certificate = self.get_object()
+        if certificate.certificate_type not in ['CEDULA', 'CEDULA/CTC']:
+            return Response({'error': 'Not a cedula certificate'}, status=400)
+
+        import json
+        additional_data = json.loads(certificate.additional_data or '{}')
+
+        html_content = render_to_string('certificates/print_cedula.html', {
+            'certificate': certificate,
+            'additional_data': additional_data,
+            'date_issued': certificate.updated_at.strftime('%B %d, %Y'),
+        })
+        return HttpResponse(html_content, content_type='text/html')
+
+    @action(detail=True, methods=['get'])
+    def print_indigency(self, request, pk=None):
+        certificate = self.get_object()
+        if certificate.certificate_type != 'BRGY. INDIGENCY':
+            return Response({'error': 'Not an indigency certificate'}, status=400)
+
+        html_content = render_to_string('certificates/print_indigency.html', {
+            'certificate': certificate,
+            'date_issued': certificate.updated_at.strftime('%B %d, %Y'),
+        })
+        return HttpResponse(html_content, content_type='text/html')
+
+    @action(detail=True, methods=['get'])
+    def print_residency(self, request, pk=None):
+        certificate = self.get_object()
+        if certificate.certificate_type != 'PROOF OF RESIDENCY':
+            return Response({'error': 'Not a residency certificate'}, status=400)
+
+        html_content = render_to_string('certificates/print_residency.html', {
+            'certificate': certificate,
+            'date_issued': certificate.updated_at.strftime('%B %d, %Y'),
+        })
+        return HttpResponse(html_content, content_type='text/html')
+
+    @action(detail=True, methods=['get'])
+    def print_tricycle_permit(self, request, pk=None):
+        certificate = self.get_object()
+        if certificate.certificate_type != 'TRICYCLE PERMIT':
+            return Response({'error': 'Not a tricycle permit certificate'}, status=400)
+
+        html_content = render_to_string('certificates/print_tricycle_permit.html', {
+            'certificate': certificate,
+            'date_issued': certificate.updated_at.strftime('%B %d, %Y'),
+        })
+        return HttpResponse(html_content, content_type='text/html')
 
 
 class CertificateRequestAPIView(APIView):

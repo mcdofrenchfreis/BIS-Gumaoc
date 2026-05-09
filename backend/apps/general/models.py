@@ -83,34 +83,3 @@ class UserReport(models.Model):
         return f"{self.incident_type} - {self.user}"
 
 
-class Notification(models.Model):
-    TYPE_CHOICES = [
-        ('info', 'Info'),
-        ('success', 'Success'),
-        ('warning', 'Warning'),
-        ('error', 'Error'),
-        ('queue', 'Queue'),
-        ('certificate', 'Certificate'),
-    ]
-    
-    user = models.ForeignKey(Resident, on_delete=models.CASCADE, related_name='general_notifications')
-    title = models.CharField(max_length=255)
-    message = models.TextField()
-    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='info')
-    action_url = models.CharField(max_length=500, blank=True, null=True)
-    is_read = models.BooleanField(default=False)
-    read_at = models.DateTimeField(blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        db_table = 'general_notifications'
-        ordering = ['-created_at']
-        indexes = [
-            models.Index(fields=['user']),
-            models.Index(fields=['is_read']),
-            models.Index(fields=['created_at']),
-        ]
-
-    def __str__(self):
-        return f"{self.title} - {self.user}"

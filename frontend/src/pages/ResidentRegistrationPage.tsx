@@ -49,23 +49,21 @@ const ResidentRegistrationPage: React.FC = () => {
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
-    if (!userData) {
-      navigate('/login');
-      return;
+    if (userData) {
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      setFormData(prev => ({
+        ...prev,
+        first_name: parsedUser.first_name || '',
+        middle_name: parsedUser.middle_name || '',
+        last_name: parsedUser.last_name || '',
+        birth_date: parsedUser.birth_date || '',
+        address: parsedUser.address || '',
+        mobile_number: parsedUser.phone ? parsedUser.phone.replace('+63', '') : '',
+        email: parsedUser.email || '',
+      }));
     }
-    const parsedUser = JSON.parse(userData);
-    setUser(parsedUser);
-    setFormData(prev => ({
-      ...prev,
-      first_name: parsedUser.first_name || '',
-      middle_name: parsedUser.middle_name || '',
-      last_name: parsedUser.last_name || '',
-      birth_date: parsedUser.birth_date || '',
-      address: parsedUser.address || '',
-      mobile_number: parsedUser.phone ? parsedUser.phone.replace('+63', '') : '',
-      email: parsedUser.email || '',
-    }));
-  }, [navigate]);
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -137,14 +135,11 @@ const ResidentRegistrationPage: React.FC = () => {
     }
   };
 
-  if (!user) {
-    return <div className="loading">Loading...</div>;
-  }
-
+  
   return (
     <div className="resident-registration-wrapper">
-      <a href="/dashboard" className="page-nav-link">
-        <i className="fas fa-arrow-left"></i> Back to Dashboard
+      <a href={user ? "/dashboard" : "/"} className="page-nav-link">
+        <i className="fas fa-arrow-left"></i> {user ? 'Back to Dashboard' : 'Back to Home'}
       </a>
 
       <div className="container">

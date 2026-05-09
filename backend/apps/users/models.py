@@ -77,3 +77,16 @@ class AdminLog(models.Model):
 
     def __str__(self):
         return f"{self.admin} - {self.action_type}"
+
+
+class UserPhoto(models.Model):
+    resident = models.ForeignKey('residents.Resident', on_delete=models.CASCADE, related_name='photos')
+    photo_path = models.CharField(max_length=500)
+    photo_type = models.CharField(max_length=50, default='profile')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'user_photos'
+
+    def __str__(self):
+        return f"{self.resident} - {self.photo_type}"

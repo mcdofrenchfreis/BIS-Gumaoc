@@ -1,15 +1,14 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import ServiceViewSet, UpdateViewSet, UserReportViewSet, NotificationViewSet, MarkAllReadAPIView
-
-router = DefaultRouter()
-router.register(r'services', ServiceViewSet)
-router.register(r'updates', UpdateViewSet)
-router.register(r'user-reports', UserReportViewSet)
-router.register(r'notifications', NotificationViewSet)
+from django.urls import path
+from .views import ServiceViewSet, UpdateViewSet, UserReportViewSet, BackupAPIView, BackupDetailAPIView, RestoreBackupAPIView
 
 urlpatterns = [
-    path('', include(router.urls)),
-    path('notifications/<int:pk>/mark-read/', NotificationViewSet.as_view({'post': 'mark_read'}), name='notification-mark-read'),
-    path('notifications/mark-all-read/', MarkAllReadAPIView.as_view(), name='notifications-mark-all-read'),
+    path('services/', ServiceViewSet.as_view({'get': 'list', 'post': 'create'}), name='service-list'),
+    path('services/<int:pk>/', ServiceViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='service-detail'),
+    path('updates/', UpdateViewSet.as_view({'get': 'list', 'post': 'create'}), name='update-list'),
+    path('updates/<int:pk>/', UpdateViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='update-detail'),
+    path('reports/', UserReportViewSet.as_view({'get': 'list', 'post': 'create'}), name='report-list'),
+    path('reports/<int:pk>/', UserReportViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='report-detail'),
+    path('backup/', BackupAPIView.as_view(), name='backup'),
+    path('backup/<str:filename>/', BackupDetailAPIView.as_view(), name='backup-detail'),
+    path('backup/<str:filename>/restore/', RestoreBackupAPIView.as_view(), name='backup-restore'),
 ]

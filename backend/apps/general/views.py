@@ -4,8 +4,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
-from .models import Service, Update, UserReport, Notification
-from .serializers import ServiceSerializer, UpdateSerializer, UserReportSerializer, NotificationSerializer
+from .models import Service, Update, UserReport
+from .serializers import ServiceSerializer, UpdateSerializer, UserReportSerializer
+from .backup_util import BackupUtil
 
 
 class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
@@ -24,56 +25,44 @@ class UserReportViewSet(viewsets.ModelViewSet):
     queryset = UserReport.objects.all()
     serializer_class = UserReportSerializer
     filterset_fields = ['status', 'priority']
+    search_fields = ['incident_type', 'location']
     ordering_fields = ['created_at']
 
 
-class NotificationViewSet(viewsets.ModelViewSet):
-    queryset = Notification.objects.all()
-    serializer_class = NotificationSerializer
-    filterset_fields = ['type', 'is_read']
-    ordering_fields = ['created_at']
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        user = self.request.user
-        if hasattr(user, 'resident'):
-            queryset = queryset.filter(user=user.resident)
-        
-        filter_type = self.request.query_params.get('filter', 'all')
-        if filter_type == 'unread':
-            queryset = queryset.filter(is_read=False)
-        elif filter_type == 'read':
-            queryset = queryset.filter(is_read=True)
-        
-        return queryset
-
-    @action(detail=True, methods=['post'])
-    def mark_read(self, request, pk=None):
-        notification = self.get_object()
-        notification.is_read = True
-        notification.read_at = timezone.now()
-        notification.save()
-        return Response({'message': 'Notification marked as read'})
-
-
-class MarkAllReadAPIView(APIView):
+class BackupAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        backups = BackupUtil.list_backups()
+        return Response({
+            'backups': backups,
+            'count': len(backups)
+        })
+
     def post(self, request):
-        try:
-            user = request.user
-            if hasattr(user, 'resident'):
-                Notification.objects.filter(
-                    user=user.resident,
-                    is_read=False
-                ).update(is_read=True, read_at=timezone.now())
-                return Response({'message': 'All notifications marked as read'})
-            return Response(
-                {'error': 'User not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        result = BackupUtil.export_database()
+        if result['success']:
+            return Response(result, status=status.HTTP_201_CREATED)
+        return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class BackupDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, filename):
+        success = BackupUtil.delete_backup(filename)
+        if success:
+            return Response({'message': 'Backup deleted successfully'})
+        return Response({'error': 'Failed to delete backup'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class RestoreBackupAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, filename):
+        result = BackupUtil.import_database(filename)
+        if result['success']:
+            return Response(result)
+        return Response(result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
