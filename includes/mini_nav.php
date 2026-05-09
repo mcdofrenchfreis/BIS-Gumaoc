@@ -243,7 +243,7 @@ area: <?php echo htmlspecialchars($area); ?>
   var helpBtn = document.getElementById('miniHelpBtn');
   var cooldownMs = 30000; // 30s cooldown to prevent spam
   var lastKey = 'assist_last_time';
-  var assistEndpoint = <?php echo json_encode($base_path . 'assist-request.php'); ?>;
+  var assistEndpoint = <?php echo json_encode($base_path . 'api/assist-request.php'); ?>;
   var assistPayloadBase = {
     page: window.location.pathname + window.location.search,
     user_id: <?php echo json_encode($force_guest ? null : ($_SESSION['user_id'] ?? null)); ?>,

@@ -96,24 +96,23 @@ Open: `http://localhost:8000/`
 ```
 BIS-Gumaoc/
 ├─ admin/           # Admin-facing pages
+├─ api/             # API endpoints (assist-request, queue data, etc.)
 ├─ assets/          # Images, icons, static files
 ├─ css/             # Stylesheets
+├─ database/        # Database migrations, utilities, and SQL scripts
 ├─ includes/        # DB connection & shared includes (create db.php here)
-├─ pages/           # Feature pages / modules
-├─ sql/             # (Optional) extra SQL files if any
-├─ user/            # User-facing pages/scripts
+├─ kiosk/           # Kiosk-mode RFID login interface
+├─ pages/           # Feature pages / modules (profile, forms, certificates, etc.)
+├─ user/            # User-facing pages/scripts (dashboard, login, settings)
 ├─ vendor/          # Composer dependencies
-├─ background.jpg
-├─ check_db.php
+├─ .gitignore
 ├─ composer.json
 ├─ composer.lock
-├─ gumaoc_db.sql    # Database schema & seed data
+├─ gumaoc_db.sql    # Database schema & seed data (main dump)
 ├─ index.php        # Entry point / landing
-├─ login.php
-├─ logout.php
-├─ profile.php
-├─ register.php
-└─ rfid-login.php
+├─ login.php        # Main login page
+├─ logout.php       # Logout handler
+└─ README.md
 ```
 
 ---
