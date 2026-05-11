@@ -1381,9 +1381,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <?php unset($_SESSION['success']); ?>
 <?php endif; ?>
 
-<!-- Main Content Container -->
-<div class="container">
-  <div class="section">
+<!-- Main Content -->
     <?php if ($admin_view && $registration_data): ?>
       <div class="admin-view-banner">
         <div class="status-info">
@@ -1850,7 +1848,7 @@ document.addEventListener('DOMContentLoaded', function() {
                           </select>
                         </div>
                         <div class="form-group">
-                          <label>Years of Residence</label>
+                          <label>Years of Residence<br><small>Ilang Taon na Naninirahan</small></label>
                           <input type="number" name="familyYearsOfResidence[]" class="form-control" min="0" placeholder="Years" value="<?php echo isset($member['years_of_residence']) ? (int)$member['years_of_residence'] : ''; ?>">
                         </div>
                         <div class="form-group">
@@ -1899,9 +1897,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="form-group">
                           <label for="familyOccupation<?php echo $index; ?>">Occupation<br><small>Hanapbuhay</small></label>
-                          <div style="display:flex; gap:8px; align-items:center;">
-                            <input type="text" id="familyOccupation<?php echo $index; ?>" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay" value="<?php echo isset($member['occupation']) ? htmlspecialchars($member['occupation']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?> style="flex:1 1 auto;">
-                            <label style="display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
+                          <div class="family-occupation-row">
+                            <input type="text" id="familyOccupation<?php echo $index; ?>" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay" value="<?php echo isset($member['occupation']) ? htmlspecialchars($member['occupation']) : ''; ?>" <?php echo $readonly ? 'readonly' : ''; ?>>
+                            <label class="family-no-work-label">
                               <input type="checkbox" class="family-no-work-check" onchange="toggleFamilyNoWork(this)" <?php echo (isset($member['no_work']) && $member['no_work']) ? 'checked' : ''; ?>>
                               <span>No work</span>
                             </label>
@@ -1991,7 +1989,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </select>
                       </div>
                       <div class="form-group">
-                        <label>Years of Residence</label>
+                        <label>Years of Residence<br><small>Ilang Taon na Naninirahan</small></label>
                         <input type="number" name="familyYearsOfResidence[]" class="form-control" min="0" placeholder="Years">
                       </div>
                       <div class="form-group">
@@ -2040,9 +2038,9 @@ document.addEventListener('DOMContentLoaded', function() {
                       </div>
                       <div class="form-group">
                         <label for="familyOccupation0">Occupation<br><small>Hanapbuhay</small></label>
-                        <div style="display:flex; gap:8px; align-items:center;">
-                          <input type="text" id="familyOccupation0" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay" style="flex:1 1 auto;">
-                          <label style="display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
+                        <div class="family-occupation-row">
+                          <input type="text" id="familyOccupation0" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay">
+                          <label class="family-no-work-label">
                             <input type="checkbox" class="family-no-work-check" onchange="toggleFamilyNoWork(this)">
                             <span>No work</span>
                           </label>
@@ -2311,8 +2309,6 @@ document.addEventListener('DOMContentLoaded', function() {
         <?php endif; ?>
       </div>
     </form>
-  </div>
-</div>
 
 <style>
 /* Enhanced Data Privacy Notice Styles */
@@ -2823,13 +2819,6 @@ document.addEventListener('DOMContentLoaded', function() {
     padding: 1rem;
     font-size: 0.95rem;
   }
-}
-
-/* Blur effect for background content when modal is open */
-.privacy-overlay.show ~ .container {
-  filter: blur(5px);
-  pointer-events: none;
-  transition: filter 0.4s ease;
 }
 
 /* Tab Navigation Styles - Enhanced for Kiosk Visibility */
@@ -3366,7 +3355,9 @@ document.addEventListener('DOMContentLoaded', function() {
   display: flex;
   flex-direction: column;
   flex: 1;
-  margin: 0;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
   padding: 1rem;
   background: rgba(255, 255, 255, 0.95);
   border-radius: 0;
@@ -3401,11 +3392,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /* Responsive Design for Kiosk */
 @media (max-width: 1024px) {
-  .container {
-    max-width: 100%;
-    padding: 15px 10px;
-  }
-  
   .tab-navigation {
     padding: 0.8rem;
     gap: 0.3rem;
@@ -3427,11 +3413,6 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 @media (max-width: 768px) {
-  .container {
-    max-width: 100%;
-    padding: 10px 5px;
-  }
-  
   .tab-navigation {
     flex-wrap: wrap;
     padding: 0.5rem;
@@ -3464,11 +3445,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /* Fullscreen kiosk mode */
 @media (min-width: 1200px) {
-  .container {
-    max-width: 100%;
-    padding: 20px;
-  }
-  
   .tab-content-container {
     min-height: 500px;
   }
@@ -3712,48 +3688,6 @@ body::before {
   z-index: -1;
 }
 
-/* Container Styles */
-.container {
-  max-width: 1400px;
-  width: 100%;
-  flex: 1;
-  margin: 0 auto;
-  padding: 20px 15px;
-  background: rgba(255, 255, 255, 0.98);
-  border-radius: 0;
-  box-shadow: 0 25px 80px rgba(27, 94, 32, 0.15);
-  backdrop-filter: blur(25px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, 
-    rgba(232, 245, 233, 0.1) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(232, 245, 233, 0.1) 100%);
-  z-index: -1;
-}
-
-.section {
-  margin-bottom: 0;
-  position: relative;
-  z-index: 1;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
 /* Admin View Banner */
 .admin-view-banner {
   background: linear-gradient(135deg, #1b5e20 0%, #4caf50 100%);
@@ -3858,6 +3792,9 @@ body::before {
 /* Form Styles */
 .registration-form {
   background: rgba(255, 255, 255, 0.95);
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
   padding: 2.5rem;
   border-radius: 20px;
   box-shadow: 0 15px 40px rgba(27, 94, 32, 0.08);
@@ -4502,6 +4439,190 @@ h4 small {
   border-radius: 1px;
 }
 
+/* Re-applied simplified step wrappers and cohesive Step 2 layout */
+#tab-content-1 fieldset,
+#tab-content-2 fieldset,
+#tab-content-3 fieldset {
+  margin-bottom: 0;
+}
+#tab-content-1 fieldset:hover,
+#tab-content-2 fieldset:hover,
+#tab-content-3 fieldset:hover {
+  transform: none;
+  box-shadow: 0 8px 25px rgba(27, 94, 32, 0.05);
+}
+#tab-content-2 .subsection,
+#tab-content-3 .subsection {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 1.35rem;
+  backdrop-filter: none;
+}
+#tab-content-2 .subsection:last-child,
+#tab-content-3 .subsection:last-child {
+  margin-bottom: 0;
+}
+#tab-content-2 .subsection h4,
+#tab-content-3 .subsection h4 {
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.45rem;
+}
+
+.family-members-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1rem 0 0.25rem;
+}
+.family-members-container .family-member-card {
+  margin-bottom: 1rem;
+}
+.family-members-container .family-member-header {
+  padding: 0.85rem 1rem;
+}
+.family-members-container .family-member-content {
+  padding: 1.25rem;
+}
+.family-members-container .family-member-content .form-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 1rem !important;
+}
+.family-members-container .form-group {
+  min-width: 0;
+  margin-bottom: 0;
+}
+.family-members-container .form-group label {
+  margin-bottom: 0.45rem;
+  font-size: 1rem;
+}
+.family-members-container .form-group input,
+.family-members-container .form-group select,
+.family-members-container .form-group textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.85rem 1rem;
+  font-size: 0.98rem;
+  border-radius: 10px;
+}
+.family-members-container .name-fields-group {
+  display: grid !important;
+  gap: 0.8rem;
+  grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr) minmax(170px, 1fr) minmax(120px, 0.7fr) !important;
+}
+.family-members-container .name-fields-group > input[type="text"],
+.family-members-container .name-fields-group > select {
+  width: 100%;
+  min-width: 0;
+}
+.family-members-container .name-fields-group .suffix-input {
+  max-width: none;
+}
+.row-grid {
+  display: grid;
+  gap: 0.9rem 1rem;
+  width: 100%;
+}
+.row-grid.cols-5 {
+  grid-template-columns: repeat(5, minmax(150px, 1fr));
+}
+.row-grid.cols-3 {
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+}
+.row-grid.cols-2 {
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+}
+.row-grid.cols-2 > .form-group,
+.row-grid.cols-3 > .form-group,
+.row-grid.cols-5 > .form-group {
+  min-width: 0;
+}
+.family-occupation-row {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+.family-occupation-row > .form-control {
+  flex: 1 1 auto;
+}
+.family-no-work-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  margin-bottom: 0;
+  font-weight: 500;
+  color: #2e7d32;
+}
+.family-no-work-label input[type="checkbox"] {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+}
+.family-members-container .checkbox-row {
+  margin-top: 0.25rem;
+}
+.family-members-container .checkbox-row .checkbox-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.family-members-container .checkbox-row .checkbox-label {
+  flex: 1 1 260px;
+  min-height: 48px;
+  padding: 0.45rem 0.75rem;
+  gap: 0.5rem;
+  align-items: flex-start;
+  border-radius: 8px;
+}
+.family-members-container .checkbox-row .checkbox-label span {
+  line-height: 1.25;
+}
+.family-members-container .checkbox-row .checkbox-label input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  margin-top: 0.15rem;
+}
+@media (max-width: 1200px) {
+  .row-grid.cols-5 {
+    grid-template-columns: repeat(3, minmax(170px, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .family-members-container .name-fields-group {
+    grid-template-columns: repeat(2, minmax(170px, 1fr)) !important;
+  }
+  .row-grid.cols-5 {
+    grid-template-columns: repeat(2, minmax(170px, 1fr));
+  }
+  .row-grid.cols-3,
+  .row-grid.cols-2 {
+    grid-template-columns: repeat(2, minmax(170px, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .family-members-container .family-member-content {
+    padding: 1rem;
+  }
+  .family-members-container .name-fields-group,
+  .row-grid.cols-5,
+  .row-grid.cols-3,
+  .row-grid.cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+  .family-occupation-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .family-no-work-label {
+    align-self: flex-start;
+  }
+  .family-members-container .checkbox-row .checkbox-label {
+    flex: 1 1 100%;
+  }
+}
+
 /* Family Section Structure */
 .family-section {
   display: flex;
@@ -4719,11 +4840,6 @@ h4 small {
 
 /* Responsive Design */
 @media (max-width: 1024px) {
-  .container {
-    padding: 25px 15px;
-    margin: 15px;
-  }
-  
   .checkbox-group {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   }
@@ -4732,12 +4848,6 @@ h4 small {
 }
 
 @media (max-width: 768px) {
-  .container {
-    padding: 20px 10px;
-    margin: 10px;
-    border-radius: 16px;
-  }
-  
   .registration-form {
     padding: 1.5rem;
     border-radius: 16px;
@@ -4805,11 +4915,6 @@ h4 small {
 }
 
 @media (max-width: 480px) {
-  .container {
-    margin: 5px;
-    padding: 15px 8px;
-  }
-  
   .registration-form {
     padding: 1rem;
   }
@@ -5252,13 +5357,7 @@ fieldset:nth-child(5) { animation-delay: 0.5s; }
 }
 
 /* Ensure content is blurred when privacy notice is shown */
-.privacy-overlay.show ~ .container,
 .privacy-overlay.show ~ * {
-  filter: blur(3px);
-  pointer-events: none;
-}
-
-body:has(.privacy-overlay.show) .container {
   filter: blur(3px);
   pointer-events: none;
 }
@@ -7076,13 +7175,13 @@ function addFamilyMemberCard() {
         </div>
         <div class="family-member-content">
             <div class="form-grid">
-                <div class="form-group">
+                <div class="form-group full-row">
                     <label>Name<br><small>Pangalan</small></label>
                     <div class="name-fields-group">
                         <input type="text" name="familyFirstName[]" class="form-control" placeholder="First Name" oninput="updateCardHeaderFromParts(this)">
                         <input type="text" name="familyMiddleName[]" class="form-control" placeholder="Middle Name" oninput="updateCardHeaderFromParts(this)">
                         <input type="text" name="familyLastName[]" class="form-control" placeholder="Last Name" oninput="updateCardHeaderFromParts(this)">
-                          <select name="familySuffix[]" class="form-control suffix-input" onchange="updateCardHeaderFromParts(this)">
+                        <select name="familySuffix[]" class="form-control suffix-input" onchange="updateCardHeaderFromParts(this)">
                             <option value="">No Suffix</option>
                             <option value="JR">JR</option>
                             <option value="SR">SR</option>
@@ -7094,111 +7193,112 @@ function addFamilyMemberCard() {
                         <input type="hidden" name="familyName[]" value="">
                     </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="familyRelation${newIndex}">Relationship to Head<br><small>Relasyon sa Puno</small></label>
-                    <select id="familyRelation${newIndex}" name="familyRelation[]" class="form-control">
-                        <option value="">Piliin ang Relasyon</option>
-                        <option value="Asawa">Asawa (Spouse)</option>
-                        <option value="Anak">Anak (Child)</option>
-                        <option value="Ama">Ama (Father)</option>
-                        <option value="Ina">Ina (Mother)</option>
-                        <option value="Kapatid">Kapatid (Sibling)</option>
-                        <option value="Lolo">Lolo (Grandfather)</option>
-                        <option value="Lola">Lola (Grandmother)</option>
-                        <option value="Apo">Apo (Grandchild)</option>
-                        <option value="Tiyahin">Tiyahin (Aunt)</option>
-                        <option value="Tiyuhin">Tiyuhin (Uncle)</option>
-                        <option value="Pamangkin">Pamangkin (Nephew/Niece)</option>
-                        <option value="Pinsan">Pinsan (Cousin)</option>
-                        <option value="Manugang">Manugang (Son/Daughter-in-law)</option>
-                        <option value="Biyenan">Biyenan (Parent-in-law)</option>
-                        <option value="Ninong">Ninong (Godfather)</option>
-                        <option value="Ninang">Ninang (Godmother)</option>
-                        <option value="Inaanak">Inaanak (Godchild)</option>
-                        <option value="Kasambahay">Kasambahay (Helper)</option>
-                        <option value="Boarder">Boarder</option>
-                        <option value="Iba pa">Iba pa (Others)</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="familyBirthDate${newIndex}">Birth Date<br><small>Petsa ng Kapanganakan</small></label>
-                    <input type="date" id="familyBirthDate${newIndex}" name="familyBirthDate[]" class="form-control" onchange="calculateFamilyAgeFromCard(this)" max="<?php echo date('Y-m-d'); ?>" min="1900-01-01">
-                </div>
-                
-                <div class="form-group">
-                    <label for="familyAge${newIndex}">Age<br><small>Edad</small></label>
-                    <input type="number" id="familyAge${newIndex}" name="familyAge[]" class="form-control age-display" placeholder="Edad" min="0" max="120" readonly>
-                </div>
-                
-                <div class="form-group">
-                    <label for="familyGender${newIndex}">Gender<br><small>Kasarian</small></label>
-                    <select id="familyGender${newIndex}" name="familyGender[]" class="form-control">
-                        <option value="">Piliin</option>
-                        <option value="Lalaki">Lalaki</option>
-                        <option value="Babae">Babae</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="familyCivilStatus${newIndex}">Civil Status<br><small>Katayuang Sibil</small></label>
-                    <select id="familyCivilStatus${newIndex}" name="familyCivilStatus[]" class="form-control">
-                        <option value="">Piliin</option>
-                        <option value="Single">Single</option>
-                        <option value="Married">Married</option>
-                        <option value="Widowed">Widowed</option>
-                        <option value="Separated">Separated</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="familyEmail${newIndex}">Email Address<br><small>Email Address</small></label>
-                    <input type="email" id="familyEmail${newIndex}" name="familyEmail[]" class="form-control" placeholder="email@example.com">
-                </div>
-                
-                <div class="form-group">
-                    <label for="familyOccupation${newIndex}">Occupation<br><small>Hanapbuhay</small></label>
-                    <div style="display:flex; gap:8px; align-items:center;">
-                      <input type="text" id="familyOccupation${newIndex}" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay" style="flex:1 1 auto;">
-                      <label style="display:inline-flex; align-items:center; gap:6px; white-space:nowrap;">
-                        <input type="checkbox" class="family-no-work-check" onchange="toggleFamilyNoWork(this)">
-                        <span>No work</span>
-                      </label>
+
+                <div class="row-grid cols-5">
+                    <div class="form-group">
+                        <label for="familyBirthDate${newIndex}">Birth Date<br><small>Petsa ng Kapanganakan</small></label>
+                        <input type="date" id="familyBirthDate${newIndex}" name="familyBirthDate[]" class="form-control family-dob" onchange="calculateFamilyAgeFromCard(this)" max="<?php echo date('Y-m-d'); ?>" min="1900-01-01">
+                    </div>
+                    <div class="form-group">
+                        <label for="familyAge${newIndex}">Age<br><small>Edad</small></label>
+                        <input type="number" id="familyAge${newIndex}" name="familyAge[]" class="form-control age-display family-age" placeholder="Edad" min="0" max="120" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="familyGender${newIndex}">Gender<br><small>Kasarian</small></label>
+                        <select id="familyGender${newIndex}" name="familyGender[]" class="form-control">
+                            <option value="">Piliin</option>
+                            <option value="Lalaki">Lalaki</option>
+                            <option value="Babae">Babae</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Years of Residence<br><small>Ilang Taon na Naninirahan</small></label>
+                        <input type="number" name="familyYearsOfResidence[]" class="form-control" min="0" placeholder="Years">
+                    </div>
+                    <div class="form-group">
+                        <label for="familyRelation${newIndex}">Relationship<br><small>Relasyon</small></label>
+                        <select id="familyRelation${newIndex}" name="familyRelation[]" class="form-control">
+                            <option value="">Piliin</option>
+                            <option value="Asawa">Asawa (Spouse)</option>
+                            <option value="Anak">Anak (Child)</option>
+                            <option value="Ama">Ama (Father)</option>
+                            <option value="Ina">Ina (Mother)</option>
+                            <option value="Kapatid">Kapatid (Sibling)</option>
+                            <option value="Lolo">Lolo (Grandfather)</option>
+                            <option value="Lola">Lola (Grandmother)</option>
+                            <option value="Apo">Apo (Grandchild)</option>
+                            <option value="Tiyahin">Tiyahin (Aunt)</option>
+                            <option value="Tiyuhin">Tiyuhin (Uncle)</option>
+                            <option value="Pamangkin">Pamangkin (Nephew/Niece)</option>
+                            <option value="Pinsan">Pinsan (Cousin)</option>
+                            <option value="Manugang">Manugang (Son/Daughter-in-law)</option>
+                            <option value="Biyenan">Biyenan (Parent-in-law)</option>
+                            <option value="Ninong">Ninong (Godfather)</option>
+                            <option value="Ninang">Ninang (Godmother)</option>
+                            <option value="Inaanak">Inaanak (Godchild)</option>
+                            <option value="Kasambahay">Kasambahay (Helper)</option>
+                            <option value="Boarder">Boarder</option>
+                            <option value="Iba pa">Iba pa (Others)</option>
+                        </select>
                     </div>
                 </div>
-                
-                <!-- Disability, Organization, and Deceased Information in a wider grid -->
-                <div class="form-grid disability-org-grid">
-                    <!-- Disability Information -->
+
+                <div class="row-grid cols-3">
+                    <div class="form-group">
+                        <label for="familyCivilStatus${newIndex}">Civil Status<br><small>Katayuang Sibil</small></label>
+                        <select id="familyCivilStatus${newIndex}" name="familyCivilStatus[]" class="form-control">
+                            <option value="">Piliin</option>
+                            <option value="Single">Single</option>
+                            <option value="Married">Married</option>
+                            <option value="Widowed">Widowed</option>
+                            <option value="Separated">Separated</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="familyEmail${newIndex}">Email Address<br><small>Email Address</small></label>
+                        <input type="email" id="familyEmail${newIndex}" name="familyEmail[]" class="form-control" placeholder="email@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="familyOccupation${newIndex}">Occupation<br><small>Hanapbuhay</small></label>
+                        <div class="family-occupation-row">
+                            <input type="text" id="familyOccupation${newIndex}" name="familyOccupation[]" class="form-control" placeholder="Hanapbuhay">
+                            <label class="family-no-work-label">
+                                <input type="checkbox" class="family-no-work-check" onchange="toggleFamilyNoWork(this)">
+                                <span>No work</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group full-row">
+                    <label for="familyBirthPlace${newIndex}">Place of Birth<br><small>Lugar ng Kapanganakan</small></label>
+                    <input type="text" id="familyBirthPlace${newIndex}" name="familyBirthPlace[]" class="form-control" placeholder="City, Province, Country">
+                </div>
+
+                <div class="row-grid cols-2">
                     <div class="form-group">
                         <label>Disability (if applicable)<br><small>Kapansanan (kung mayroon)</small></label>
                         <input type="text" name="disabilityType[]" class="form-control" placeholder="Type of disability">
                     </div>
-                    
-                    <!-- Organization Membership -->
                     <div class="form-group">
                         <label>Organization Membership (if applicable)<br><small>Samahang Kinaaniban (kung mayroon)</small></label>
                         <input type="text" name="organizationType[]" class="form-control" placeholder="Organization name">
                     </div>
-                    
-                    <!-- Deceased Status Checkbox -->
-                    <div class="form-group">
-                      <label class="checkbox-label">
-                        <input type="checkbox" name="isDeceased[]" class="deceased-checkbox">
-                        Deceased<br><small>Namatay</small>
-                      </label>
-                    </div>
-                    
-                    <!-- Has Account Checkbox -->
-                    <div class="form-group">
-                      <label class="checkbox-label">
-                        <input type="checkbox" name="hasAccount[]" class="has-account-checkbox">
-                        Already has an account<br><small>May account na</small>
-                      </label>
+                </div>
+
+                <div class="form-group checkbox-row">
+                    <div class="checkbox-container">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="isDeceased[]" class="deceased-checkbox">
+                            <span>Deceased<br><small>Namatay</small></span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="hasAccount[]" class="has-account-checkbox">
+                            <span>Already has an account<br><small>May account na</small></span>
+                        </label>
                     </div>
                 </div>
-                
+
                 <div class="form-group remove-btn-container">
                     <button type="button" class="btn-remove-family-member" onclick="removeFamilyMemberCard(this)" title="Remove this family member">✕ Remove Family Member</button>
                 </div>

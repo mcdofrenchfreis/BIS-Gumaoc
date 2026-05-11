@@ -38,36 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = "Invalid email or password";
         }
-    } elseif (isset($_POST['rfid_code'])) {
-        // RFID login
-        $rfid_code = trim($_POST['rfid_code']);
-        
-        $stmt = $pdo->prepare("SELECT * FROM residents WHERE (rfid_code = ? OR rfid = ?) AND status = 'active'");
-        $stmt->execute([$rfid_code, $rfid_code]);
-        $user = $stmt->fetch();
-        
-        if ($user) {
-            session_regenerate_id(true);
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_name'] = $user['first_name'] . ' ' . $user['last_name'];
-            $_SESSION['user_type'] = 'resident';
-            $_SESSION['user_email'] = $user['email'];
-            $_SESSION['rfid_authenticated'] = true;
-            // Ensure session is flushed before redirect
-            session_write_close();
-            
-            // Check if profile is complete
-            if (isset($user['profile_complete']) && $user['profile_complete'] == 0) {
-                $_SESSION['profile_incomplete'] = true;
-                header('Location: ../pages/complete-profile.php');
-                exit;
-            }
-            
-            header('Location: dashboard.php');
-            exit;
-        } else {
-            $error = "Invalid RFID or user not found";
-        }
     }
 }
 
@@ -96,6 +66,12 @@ $additional_css = [
             --error-text: #721c24;
         }
 
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
         .login-wrapper {
             min-height: 100vh;
             display: flex;
@@ -105,6 +81,7 @@ $additional_css = [
             background-size: cover;
             padding: 20px;
             position: relative;
+            box-sizing: border-box;
         }
 
         .login-wrapper::before {
@@ -132,6 +109,7 @@ $additional_css = [
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            box-sizing: border-box;
         }
 
         .login-header {
@@ -204,6 +182,7 @@ $additional_css = [
             font-size: 15px;
             transition: all 0.3s ease;
             background: rgba(255, 255, 255, 0.9);
+            box-sizing: border-box;
         }
 
         .form-group input:focus {
@@ -227,6 +206,7 @@ $additional_css = [
             align-items: center;
             justify-content: center;
             gap: 8px;
+            box-sizing: border-box;
         }
 
         .btn-login:hover {
@@ -244,13 +224,15 @@ $additional_css = [
             margin-top: 20px;
             padding-top: 20px;
             border-top: 1px solid #e1e5e9;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .register-link a {
             color: var(--primary-color);
             text-decoration: none;
             font-weight: 500;
-            margin: 0 10px;
         }
 
         .register-link a:hover {
@@ -302,123 +284,7 @@ $additional_css = [
         .back-btn i {
             font-size: 16px;
         }
-        
-        .login-tabs {
-            margin-bottom: 20px;
-        }
-        
-        .tab-buttons {
-            display: flex;
-            margin-bottom: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 4px;
-        }
-        
-        .tab-button {
-            flex: 1;
-            padding: 12px 16px;
-            background: transparent;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            color: #666;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        
-        .tab-button.active {
-            background: var(--primary-color);
-            color: white;
-        }
-        
-        .tab-button:hover:not(.active) {
-            background: #e9ecef;
-            color: #333;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .btn-rfid {
-            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-        }
-        
-        .btn-rfid:hover {
-            background: linear-gradient(135deg, #138496 0%, #117a8b 100%);
-        }
-        
-        .rfid-input {
-            font-family: 'Courier New', monospace;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-        
-        .rfid-instructions {
-            text-align: center;
-            margin-top: 15px;
-            color: #666;
-            font-size: 12px;
-        }
-        
-        .rfid-instructions i {
-            color: #17a2b8;
-            margin-right: 5px;
-        }
     </style>
-    <script>
-        function showTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // Remove active class from all buttons
-            document.querySelectorAll('.tab-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName + '-tab').classList.add('active');
-            
-            // Add active class to selected button
-            event.target.classList.add('active');
-            
-            // Focus on first input of active tab
-            setTimeout(() => {
-                const activeTab = document.querySelector('.tab-content.active');
-                const firstInput = activeTab.querySelector('input');
-                if (firstInput) {
-                    firstInput.focus();
-                }
-            }, 100);
-        }
-        
-        // Auto-submit RFID when code is detected (assuming 10+ character RFID codes)
-        document.addEventListener('DOMContentLoaded', function() {
-            const rfidInput = document.getElementById('rfid_code');
-            if (rfidInput) {
-                rfidInput.addEventListener('input', function() {
-                    if (this.value.length >= 10) {
-                        // Auto-submit after short delay to allow complete scan
-                        setTimeout(() => {
-                            this.closest('form').submit();
-                        }, 500);
-                    }
-                });
-            }
-        });
-    </script>
 </head>
 <body>
     <a href="../index.php" class="back-btn">
@@ -434,8 +300,8 @@ $additional_css = [
                 </div>
                 
                 <div class="info-box">
-                    <h4>🔐 Login Options</h4>
-                    <p>Login using your email and password, or scan your RFID card.</p>
+                    <h4>🔐 Welcome</h4>
+                    <p>Please login using your email and password.</p>
                 </div>
                 
                 <?php if (isset($error)): ?>
@@ -445,59 +311,22 @@ $additional_css = [
                 </div>
                 <?php endif; ?>
                 
-                <!-- Login Method Tabs -->
-                <div class="login-tabs">
-                    <div class="tab-buttons">
-                        <button type="button" class="tab-button active" onclick="showTab('email')">
-                            <i class="fas fa-envelope"></i> Email Login
-                        </button>
-                        <button type="button" class="tab-button" onclick="showTab('rfid')">
-                            <i class="fas fa-credit-card"></i> RFID Login
-                        </button>
+                <form method="POST" action="">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" name="email" required autofocus placeholder="your.email@example.com">
                     </div>
                     
-                    <!-- Email Login Tab -->
-                    <div id="email-tab" class="tab-content active">
-                        <form method="POST" action="">
-                            <div class="form-group">
-                                <label for="email">Email Address</label>
-                                <input type="email" id="email" name="email" required autofocus placeholder="your.email@example.com">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="password">Password</label>
-                                <input type="password" id="password" name="password" required>
-                            </div>
-                            
-                            <button type="submit" class="btn-login">
-                                <i class="fas fa-sign-in-alt"></i>
-                                Login with Email
-                            </button>
-                        </form>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
                     </div>
                     
-                    <!-- RFID Login Tab -->
-                    <div id="rfid-tab" class="tab-content">
-                        <form method="POST" action="">
-                            <div class="form-group">
-                                <label for="rfid_code">RFID Card</label>
-                                <input type="text" id="rfid_code" name="rfid_code" placeholder="Scan or enter RFID code" class="rfid-input">
-                            </div>
-                            
-                            <button type="submit" class="btn-login btn-rfid">
-                                <i class="fas fa-credit-card"></i>
-                                Login with RFID
-                            </button>
-                            
-                            <div class="rfid-instructions">
-                                <small>
-                                    <i class="fas fa-info-circle"></i>
-                                    Place your RFID card near the reader or manually enter your RFID code
-                                </small>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                    <button type="submit" class="btn-login">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Login
+                    </button>
+                </form>
                 
                 <div class="register-link">
                     <a href="../pages/resident-registration.php">Complete Census Registration</a>
