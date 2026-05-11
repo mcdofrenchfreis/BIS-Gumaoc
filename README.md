@@ -101,7 +101,6 @@ BIS-Gumaoc/
 ├─ css/             # Stylesheets
 ├─ database/        # Database migrations, utilities, and SQL scripts
 ├─ includes/        # DB connection & shared includes (create db.php here)
-├─ kiosk/           # Kiosk-mode RFID login interface
 ├─ pages/           # Feature pages / modules (profile, forms, certificates, etc.)
 ├─ user/            # User-facing pages/scripts (dashboard, login, settings)
 ├─ vendor/          # Composer dependencies

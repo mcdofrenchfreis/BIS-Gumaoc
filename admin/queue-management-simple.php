@@ -68,8 +68,7 @@ $today_stats = $queueManager->getQueueStats();
 
     <!-- Quick Actions -->
     <div class="admin-actions">
-        <a href="queue-kiosk.php" class="btn btn-primary" target="_blank">📺 Open Kiosk Display</a>
-        <a href="../pages/queue-status.php" class="btn btn-secondary">📊 Public Queue Status</a>
+                <a href="../pages/queue-status.php" class="btn btn-secondary">📊 Public Queue Status</a>
         <a href="../pages/queue-ticket.php" class="btn btn-outline">🎫 Generate Ticket</a>
     </div>
 

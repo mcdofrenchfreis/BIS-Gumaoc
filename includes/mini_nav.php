@@ -5,40 +5,12 @@
 if (!isset($base_path)) { $base_path = '../'; }
 if (!isset($force_guest)) { $force_guest = false; }
 
-// Ensure the correct area session is loaded (user/kiosk) without creating a default session
+// Ensure the correct area session is loaded (user only) without creating a default session
 // Skip entirely when forcing guest mode
-if (!$force_guest) {
-    // Per-page override if provided
-    if (isset($force_area) && ($force_area === 'user' || $force_area === 'kiosk')) {
-        $want = $force_area;
-    }
-    // Prefer explicit cookies to decide which area to load on shared paths like /pages/
-    // Since primary login is kiosk, prefer kiosk cookie over user when both exist
-    elseif (!empty($_COOKIE['GUMAOC_KIOSK_SESSID'])) {
-        $want = 'kiosk';
-    } elseif (!empty($_COOKIE['GUMAOC_USER_SESSID'])) {
-        $want = 'user';
-    } else {
-        $script = $_SERVER['SCRIPT_NAME'] ?? '';
-        $want = (strpos($script, '/kiosk/') !== false) ? 'kiosk' : ((strpos($script, '/user/') !== false) ? 'user' : 'user');
-    }
-    $expectedName = ($want === 'kiosk') ? 'GUMAOC_KIOSK_SESSID' : 'GUMAOC_USER_SESSID';
-
-    if (session_status() === PHP_SESSION_ACTIVE) {
-        // If a session is active but not the expected area, close it so we can init the right one
-        if (session_name() !== $expectedName) {
-            @session_write_close();
-        }
-    }
-
-    if (session_status() !== PHP_SESSION_ACTIVE || session_name() !== $expectedName) {
-        $p = __DIR__ . '/../' . $want . '/session_bootstrap.php';
-        if (file_exists($p)) { require_once $p; }
-    }
-    // Final safety: ensure session is active to read $_SESSION
-    if (session_status() !== PHP_SESSION_ACTIVE) {
-        @session_start();
-    }
+if (!$force_guest && session_status() === PHP_SESSION_NONE) {
+    // Always load user session bootstrap
+    $p = __DIR__ . '/../user/session_bootstrap.php';
+    if (file_exists($p)) { require_once $p; }
 }
 
 // If the parent page did not provide $current_user, attempt to resolve from session
@@ -64,39 +36,13 @@ if (!$force_guest && (!isset($current_user) || !is_array($current_user))) {
     }
 }
 
-// If still not resolved and we initially loaded 'user' but kiosk cookie exists, switch to kiosk and retry
 if (!$force_guest && (!isset($current_user) || !is_array($current_user)) && (empty($_SESSION['user_id'])) ) {
-    $haveKiosk = !empty($_COOKIE['GUMAOC_KIOSK_SESSID']);
     $haveUser  = !empty($_COOKIE['GUMAOC_USER_SESSID']);
-    $currentName = (session_status()===PHP_SESSION_ACTIVE) ? session_name() : '';
-    if ($haveKiosk && $currentName !== 'GUMAOC_KIOSK_SESSID') {
-        @session_write_close();
-        $p = __DIR__ . '/../kiosk/session_bootstrap.php';
-        if (file_exists($p)) { require_once $p; }
-        if (session_status() !== PHP_SESSION_ACTIVE) { @session_start(); }
-        if (!empty($_SESSION['user_id'])) {
-            $dbPath = __DIR__ . '/db_connect.php';
-            if (file_exists($dbPath)) {
-                require_once $dbPath;
-                try {
-                    if (isset($pdo)) {
-                        $stmt = $pdo->prepare('SELECT * FROM residents WHERE id = ?');
-                        $stmt->execute([$_SESSION['user_id']]);
-                        $fetched = $stmt->fetch();
-                        if ($fetched && is_array($fetched)) {
-                            $current_user = $fetched;
-                        }
-                    }
-                } catch (Throwable $e) {}
-            }
-        }
-    }
 }
 
 $is_admin = !$force_guest && !empty($admin_view);
-// Determine area for display (User vs Kiosk)
-$sessionName = (!$force_guest && session_status() === PHP_SESSION_ACTIVE) ? session_name() : '';
-$area = ($sessionName === 'GUMAOC_KIOSK_SESSID') ? 'kiosk' : 'user';
+// Always use user area now
+$area = 'user';
 $display_name = 'Guest';
 $initials = 'G';
 
@@ -120,7 +66,7 @@ if ($is_admin) {
     $display_name = (string)$_SESSION['user_name'];
     $initials = strtoupper(substr($display_name, 0, 2));
 } elseif (!$force_guest && !empty($_COOKIE['GUMAOC_USER_NAME'])) {
-    // Final fallback: use auxiliary cookie set on kiosk login
+    // Final fallback: use auxiliary cookie set on login
     $display_name = (string)$_COOKIE['GUMAOC_USER_NAME'];
     $initials = strtoupper(substr($display_name, 0, 2));
 }
@@ -129,7 +75,6 @@ if ($is_admin) {
 <!-- DEBUG SESSION
 session_name: <?php echo htmlspecialchars((string)(session_status()===PHP_SESSION_ACTIVE?session_name():'NONE')); ?>
 has_user_cookie: <?php echo isset($_COOKIE['GUMAOC_USER_SESSID']) ? '1' : '0'; ?>
-has_kiosk_cookie: <?php echo isset($_COOKIE['GUMAOC_KIOSK_SESSID']) ? '1' : '0'; ?>
 _SESSION[user_id]: <?php echo isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : 0; ?>
 _SESSION[user_name]: <?php echo htmlspecialchars((string)($_SESSION['user_name'] ?? '')); ?>
 area: <?php echo htmlspecialchars($area); ?>

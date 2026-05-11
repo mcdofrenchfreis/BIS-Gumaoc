@@ -5,7 +5,7 @@ $page_title = 'Certificate Request - Barangay Gumaoc East';
 $header_title = 'Certificate Request Form';
 $header_subtitle = 'Request for Barangay Certificates';
 
-// Bridge kiosk session cookies → normal session if needed (RFID kiosk uses a different session name)
+// Bridge session cookies if needed
 if (empty($_SESSION['user_id']) && !empty($_COOKIE['GUMAOC_USER_ID'])) {
     $_SESSION['user_id'] = (int)$_COOKIE['GUMAOC_USER_ID'];
     if (!empty($_COOKIE['GUMAOC_USER_NAME'])) {
@@ -125,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_GET['readonly']) && empty($
             );
 
             if (!empty($ticket['success'])) {
-                // Set session values consumed by this page for kiosk banner and print
+                // Set session values consumed by this page for banner and print
                 $_SESSION['queue_ticket_number'] = $ticket['ticket_number'] ?? '';
                 $_SESSION['queue_position'] = $ticket['queue_position'] ?? null;
                 $_SESSION['estimated_time'] = $ticket['estimated_time'] ?? null;
@@ -1706,9 +1706,9 @@ window.addEventListener('load', function() {
   if (hasTicket) {
     setTimeout(function(){ 
       window.print(); 
-      // Redirect back to RFID login after printing
+      // Redirect back to user login after printing
       setTimeout(function(){
-        window.location.href = '../kiosk/rfid-login.php';
+        window.location.href = '../user/login.php';
       }, 2000);
     }, 900);
   }

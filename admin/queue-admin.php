@@ -1366,10 +1366,7 @@ $page_title = 'Queue Management Dashboard';
             <a href="../pages/queue-ticket.php" class="header-action-btn" target="_blank">
                 <i class="fas fa-user"></i> Customer Portal
             </a>
-            <a href="../pages/queue-kiosk.php" class="header-action-btn" target="_blank">
-                <i class="fas fa-tv"></i> Display Kiosk
-            </a>
-            <a href="queue-monitor.php" class="header-action-btn">
+                        <a href="queue-monitor.php" class="header-action-btn">
                 <i class="fas fa-chart-line"></i> Live Monitor
             </a>
             <button onclick="generateDummyTickets()" class="header-action-btn" style="border: none; cursor: pointer;">

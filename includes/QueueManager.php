@@ -115,7 +115,7 @@ class QueueManager {
     }
     
     /**
-     * Get queue status for all services (enhanced for kiosk display)
+     * Get queue status for all services
      */
     public function getQueueStatus() {
         $stmt = $this->pdo->prepare("
@@ -194,7 +194,7 @@ class QueueManager {
     }
     
     /**
-     * Get currently serving tickets (for kiosk display)
+     * Get currently serving tickets
      */
     public function getCurrentlyServing() {
         $stmt = $this->pdo->prepare("
@@ -217,7 +217,7 @@ class QueueManager {
     }
     
     /**
-     * Get next tickets in queue (for kiosk display)
+     * Get next tickets in queue
      */
     public function getNextInQueue($limit = 5) {
         // Ensure limit is a positive integer and within reasonable bounds

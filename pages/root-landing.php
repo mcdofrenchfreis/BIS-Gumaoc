@@ -9,18 +9,6 @@
   </div>
 
   <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem;">
-    <!-- Kiosk -->
-    <a href="kiosk/index.php" class="service-btn" style="
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: .5rem; text-decoration: none; padding: 1.25rem; border-radius: 16px;
-      background: linear-gradient(135deg, #e8f5e9 0%, #ffffff 100%);
-      border: 1px solid #c8e6c9; box-shadow: 0 6px 18px rgba(46,125,50,.1);
-      font-weight: 700; color: #2e7d32;">
-      <div style="font-size: 2rem;">🖥️</div>
-      <div style="font-size: 1.1rem;">Kiosk</div>
-      <div style="font-weight: 500; color:#2e7d32; opacity:.85; font-size:.95rem;">Public self-service</div>
-    </a>
-
     <!-- User Portal -->
     <a href="user/login.php" class="service-btn" style="
       display: flex; flex-direction: column; align-items: center; justify-content: center;

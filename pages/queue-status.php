@@ -805,8 +805,7 @@ body {
             <h3>🚀 Quick Actions</h3>
             <div class="action-buttons">
                 <a href="queue-ticket.php" class="btn btn-primary">🎫 Get New Ticket</a>
-                <a href="queue-kiosk.php" class="btn btn-success">📺 Kiosk Display</a>
-                <a href="certificate-request.php" class="btn btn-outline">📄 Request Certificate</a>
+                                <a href="certificate-request.php" class="btn btn-outline">📄 Request Certificate</a>
                 <a href="resident-registration.php" class="btn btn-outline">👥 Register as Resident</a>
             </div>
         </div>

@@ -168,9 +168,6 @@ $queue_status = $queueManager->getQueueStatus();
                     <a href="queue-status.php" class="btn btn-secondary">
                         📊 View Queue Status
                     </a>
-                    <a href="queue-kiosk.php" class="btn btn-success">
-                        📺 Kiosk Display
-                    </a>
                 </div>
                 
                 <div class="service-links">

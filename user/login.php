@@ -502,7 +502,6 @@ $additional_css = [
                 <div class="register-link">
                     <a href="../pages/resident-registration.php">Complete Census Registration</a>
                     <a href="reset_password.php">Forgot Password?</a>
-                    <a href="../kiosk/rfid-login.php">Quick RFID Access</a>
                 </div>
             </div>
         </div>

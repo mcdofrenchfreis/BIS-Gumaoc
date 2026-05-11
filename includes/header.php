@@ -1,18 +1,8 @@
 <?php
-// Load the correct session bootstrap for the current area instead of starting a default session
+// Load the user session bootstrap for all areas
 if (session_status() === PHP_SESSION_NONE) {
-    $script = $_SERVER['SCRIPT_NAME'] ?? '';
-    if (strpos($script, '/user/') !== false) {
-        $p = __DIR__ . '/../user/session_bootstrap.php';
-        if (file_exists($p)) { require_once $p; }
-    } elseif (strpos($script, '/kiosk/') !== false) {
-        $p = __DIR__ . '/../kiosk/session_bootstrap.php';
-        if (file_exists($p)) { require_once $p; }
-    } else {
-        // Default to user session so shared pages can see resident sessions
-        $p = __DIR__ . '/../user/session_bootstrap.php';
-        if (file_exists($p)) { require_once $p; }
-    }
+    $p = __DIR__ . '/../user/session_bootstrap.php';
+    if (file_exists($p)) { require_once $p; }
 }
 
 // Dynamic base path configuration
@@ -22,8 +12,6 @@ if (!isset($base_path)) {
     if (strpos($current_dir, '/pages') !== false) {
         $base_path = '../';
     } elseif (strpos($current_dir, '/admin') !== false) {
-        $base_path = '../';
-    } elseif (strpos($current_dir, '/kiosk') !== false) {
         $base_path = '../';
     } elseif (strpos($current_dir, '/user') !== false) {
         $base_path = '../';

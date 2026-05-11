@@ -22,40 +22,14 @@ if ($debug_mode) {
 	exit;
 }
 
-// Check authentication - allow admin or kiosk sessions
-$is_authenticated = false;
-$auth_debug = [];
+// Check authentication - allow admin only
+$is_admin = isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
 
-// Check for admin authentication
-if (isset($_SESSION['admin_id']) && isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
-	$is_authenticated = true;
-	$auth_debug['method'] = 'admin_with_flag';
-}
-// Check for kiosk authentication
-else if (isset($_SESSION['kiosk_logged_in']) && $_SESSION['kiosk_logged_in'] === true) {
-	$is_authenticated = true;
-	$auth_debug['method'] = 'kiosk';
-}
-// Legacy admin session check
-else if (isset($_SESSION['admin_id']) && !empty($_SESSION['admin_id'])) {
-	$is_authenticated = true;
-	$auth_debug['method'] = 'admin_legacy';
-	// Set the flag for future requests
-	$_SESSION['admin_logged_in'] = true;
-}
-
-$auth_debug['is_authenticated'] = $is_authenticated;
-$auth_debug['admin_id'] = $_SESSION['admin_id'] ?? null;
-$auth_debug['admin_logged_in'] = $_SESSION['admin_logged_in'] ?? null;
-$auth_debug['kiosk_logged_in'] = $_SESSION['kiosk_logged_in'] ?? null;
-
-if (!$is_authenticated) {
-	http_response_code(401);
+if (!$is_admin) {
+	http_response_code(403);
 	echo json_encode([
 		'success' => false, 
-		'message' => 'Authentication required', 
-		'auth_debug' => $auth_debug,
-		'session_debug' => $_SESSION,
+		'message' => 'Admin authentication required', 
 		'timestamp' => date('c')
 	]);
 	exit;

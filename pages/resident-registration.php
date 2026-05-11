@@ -1,13 +1,17 @@
 <?php
 session_start();
 $base_path = '../';
-// Require privacy consent before accessing the form
-if (empty($_SESSION['privacy_consent'])) {
-	$here = $_SERVER['REQUEST_URI'] ?? ($base_path . 'pages/resident-registration.php');
-	$dest = $base_path . 'pages/privacy-consent.php?return=' . urlencode($here);
-	header('Location: ' . $dest);
-	exit;
+
+// Handle privacy consent submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['privacy_consent'])) {
+    if (isset($_POST['consent_given']) && $_POST['consent_given'] === 'yes') {
+        $_SESSION['privacy_consent'] = true;
+        $_SESSION['privacy_consent_time'] = time();
+    }
 }
+
+// Check if privacy consent is needed
+$show_privacy_modal = empty($_SESSION['privacy_consent']);
 $page_title = 'Census Registration - Barangay Gumaoc East';
 $header_title = 'Census Registration Form';
 $header_subtitle = 'Barangay Population Census Data Collection';
@@ -122,8 +126,238 @@ if (!$admin_view) {
   </style>
 </head>
 <body>
-<?php include '../includes/mini_nav_census.php'; ?>
+<?php include '../includes/mini_nav.php'; ?>
 <style> body { padding-top: 64px; } </style>
+
+<!-- Privacy Consent Modal -->
+<?php if ($show_privacy_modal): ?>
+<style>
+.privacy-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.privacy-modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 1200px;
+  width: 100%;
+  max-height: 85vh;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.privacy-modal-header {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  padding: 25px 30px;
+  text-align: center;
+}
+
+.privacy-modal-header h3 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.privacy-modal-body {
+  padding: 30px;
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.privacy-modal-footer {
+  padding: 20px 30px;
+  background: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  text-align: center;
+}
+
+.privacy-section {
+  margin-bottom: 25px;
+}
+
+.privacy-section h4 {
+  color: #28a745;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.privacy-section ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.privacy-section li {
+  margin-bottom: 8px;
+}
+
+.privacy-btn {
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 15px rgba(27, 94, 32, 0.3);
+}
+
+.privacy-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(27, 94, 32, 0.4);
+}
+
+.privacy-alert {
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+}
+
+.privacy-alert-info {
+  background: #e8f5e8;
+  border: 1px solid #28a745;
+  color: #155724;
+}
+
+.privacy-alert-warning {
+  background: #f0f8f0;
+  border: 1px solid #28a745;
+  color: #155724;
+}
+
+@media (max-width: 768px) {
+  .privacy-modal-content {
+    margin: 10px;
+    max-height: 95vh;
+  }
+  
+  .privacy-modal-header {
+    padding: 20px;
+  }
+  
+  .privacy-modal-body {
+    padding: 20px;
+  }
+  
+  .privacy-modal-body > form > div[style*="display: flex"] {
+    flex-direction: column !important;
+    gap: 20px !important;
+  }
+}
+</style>
+
+<div class="privacy-modal-overlay">
+  <div class="privacy-modal-content">
+    <div class="privacy-modal-header">
+      <h3><i class="fas fa-shield-alt"></i> Privacy & Data Protection Consent</h3>
+    </div>
+    
+    <div class="privacy-modal-body">
+      <form method="POST" id="privacyConsentForm">
+        <input type="hidden" name="privacy_consent" value="1">
+        
+        <div class="privacy-alert privacy-alert-info">
+          <strong><i class="fas fa-info-circle"></i> Barangay Information System - Gumaoc</strong><br>
+          We are committed to protecting your personal data and privacy in accordance with the Data Privacy Act of 2012.
+        </div>
+        
+        <div style="display: flex; gap: 30px; margin-bottom: 20px;">
+          <div style="flex: 1; min-width: 0;">
+            <div class="privacy-section">
+              <h4><i class="fas fa-database"></i> Information We Collect</h4>
+              <ul>
+                <li><strong>Personal Information:</strong> Name, age, birth date, address, contact details</li>
+                <li><strong>Government IDs:</strong> Valid identification numbers for verification</li>
+                <li><strong>Service Records:</strong> History of barangay services availed</li>
+                <li><strong>Biometric Data:</strong> RFID/fingerprint data for system access (if applicable)</li>
+              </ul>
+            </div>
+            
+            <div class="privacy-section">
+              <h4><i class="fas fa-shield-alt"></i> Data Protection</h4>
+              <p>We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction.</p>
+            </div>
+          </div>
+          
+          <div style="flex: 1; min-width: 0;">
+            <div class="privacy-section">
+              <h4><i class="fas fa-cogs"></i> How We Use Your Information</h4>
+              <ul>
+                <li>Provide barangay services and assistance</li>
+                <li>Maintain accurate resident records</li>
+                <li>Process requests for certificates and clearances</li>
+                <li>Improve service delivery and planning</li>
+              </ul>
+            </div>
+            
+            <div class="privacy-section">
+              <h4><i class="fas fa-user-shield"></i> Your Rights</h4>
+              <ul>
+                <li>Right to access your personal data</li>
+                <li>Right to correct inaccurate information</li>
+                <li>Right to request data deletion (subject to legal requirements)</li>
+                <li>Right to file complaints with the National Privacy Commission</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="privacy-alert privacy-alert-warning">
+          <strong><i class="fas fa-exclamation-triangle"></i> Consent Required:</strong> By clicking "I Agree", you acknowledge that you have read, understood, and agree to the collection and processing of your personal data as described above.
+        </div>
+      </form>
+    </div>
+    
+    <div class="privacy-modal-footer">
+      <button type="submit" form="privacyConsentForm" name="consent_given" value="yes" class="privacy-btn">
+        <i class="fas fa-check"></i> I Agree & Continue
+      </button>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
+
+<style>
+.modal.show {
+  display: block !important;
+}
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1040;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+  opacity: 0.5;
+}
+.disabled-content {
+  pointer-events: none;
+  opacity: 0.5;
+  user-select: none;
+}
+</style>
+
+<div class="<?php echo $show_privacy_modal ? 'disabled-content' : ''; ?>">
 
 <?php if (!$admin_view): ?>
   <div class="kiosk-submit-bar" id="kioskTopBar" style="display: none;">
@@ -271,8 +505,8 @@ if (!$admin_view) {
           try {
             if (typeof form.requestSubmit === 'function') { form.requestSubmit(); }
             else { form.submit(); }
-            alert('Submission received. You will receive an email notification. Next: open the user portal to request your Barangay ID, then you can use the kiosk.');
-            try { window.localStorage.setItem('nextSteps', 'Request ID in user portal, then use kiosk'); } catch (e) {}
+            alert('Submission received. You will receive an email notification. Next: open the user portal to request your Barangay ID.');
+            try { window.localStorage.setItem('nextSteps', 'Request ID in user portal'); } catch (e) {}
           } finally {
             if (!restoreNoValidate) {
               form.removeAttribute('novalidate');
@@ -1133,7 +1367,7 @@ document.addEventListener('DOMContentLoaded', function() {
           <ul style="margin-left: 1rem;">
             <li>Check your email for confirmation and any updates.</li>
             <li>Log in to the user website to request your Barangay ID.</li>
-            <li>After requesting your ID, you can use the kiosk to request certifications.</li>
+            <li>After requesting your ID, you can request certifications through the user portal.</li>
           </ul>
         </div>
       </div>
@@ -2071,10 +2305,6 @@ document.addEventListener('DOMContentLoaded', function() {
             <em>Kumpletuhin ang lahat ng kinakailangang field at mag-navigate sa lahat ng tab, pagkatapos ay i-click ang Submit</em></small></p>
           </div>
           <button type="submit" class="btn btn-primary" id="hiddenSubmitBtn">Submit Census Form<br><small>I-submit ang Census Form</small></button>
-          <button type="reset" class="btn">Clear Form<br><small>I-clear ang Form</small></button>
-          <?php if (!$admin_view): ?>
-          <button type="button" class="btn btn-warning" onclick="testBlotterDetection()" title="Test the blotter detection system with a known name">🔍 Test Blotter Detection</button>
-          <?php endif; ?>
         <?php else: ?>
           <a href="../admin/view-resident-registrations.php" class="btn btn-secondary">← Back to Admin Dashboard</a>
           <button type="button" class="btn btn-primary" onclick="window.print()">🖨️ Print Form</button>
@@ -3457,7 +3687,7 @@ body {
   font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
   color: #2c3e50;
-  background: url('../background.jpg') no-repeat center center fixed;
+  background: url('../assets/images/background.jpg') no-repeat center center fixed;
   background-size: cover;
   min-height: 100vh;
   margin: 0;
@@ -6078,185 +6308,9 @@ let privacyTimer;
 let timeRemaining = 0; // disabled auto-close
 let privacyOpenedAt = 0; // timestamp to avoid instant-close on initial render
 
-function startPrivacyTimer() {
-  // Timer disabled – no auto close
-  const timerElement = document.getElementById('privacyTimer');
-  if (timerElement) {
-    timerElement.style.color = '';
-    timerElement.style.fontWeight = '';
-  }
-}
+// Privacy consent is now handled by the Bootstrap modal - old functions removed
 
-function closePrivacyNotice() {
-  console.log('Closing privacy notice...');
-  
-  const overlay = document.getElementById('dataPrivacyOverlay');
-  
-  if (!overlay) {
-    console.log('Privacy overlay not found');
-    return;
-  }
-  
-  // Clear timer
-  if (privacyTimer) {
-    clearInterval(privacyTimer);
-    privacyTimer = null;
-  }
-  
-  // Animate out
-  overlay.classList.remove('show');
-  
-  setTimeout(() => {
-    overlay.style.display = 'none';
-    
-    // Re-enable scrolling on body
-    document.body.style.overflow = 'auto';
-    
-    // Re-enable form controls now that user acknowledged
-    const form = document.getElementById('censusForm');
-    if (form) {
-      form.querySelectorAll('input, select, textarea, button').forEach(function(el){
-        const was = el.dataset._wasDisabled === '1';
-        el.disabled = was; // restore original disabled state
-        delete el.dataset._wasDisabled;
-      });
-    }
-    
-    // Store in session to not show again for this session
-    sessionStorage.setItem('privacyNoticeShown', 'true');
-    
-    // Remove blur effect from container
-    const containers = document.querySelectorAll('.container');
-    containers.forEach(container => {
-      container.style.filter = 'none';
-      container.style.pointerEvents = 'auto';
-    });
-    
-    console.log('Privacy notice closed successfully');
-  }, 400);
-}
-
-// Initialize privacy notice when DOM is loaded
-function initializePrivacyNotice() {
-  console.log('🚀 initializePrivacyNotice() called - DOM loaded, initializing privacy notice...');
-  
-  const overlay = document.getElementById('dataPrivacyOverlay');
-  
-  if (!overlay) {
-    console.error('❌ Privacy overlay element not found! Expected #dataPrivacyOverlay');
-    return;
-  }
-  console.log('✅ Privacy overlay found:', overlay);
-  
-  // Check if this is an admin view - don't show privacy notice for admin views
-  const isAdminView = <?php echo $admin_view ? 'true' : 'false'; ?>;
-  console.log('👥 Is admin view:', isAdminView);
-  
-  // Check if there are any success or error modals present
-  const successModal = document.getElementById('successModal');
-  const errorModal = document.getElementById('errorModal');
-  const isActuallyShown = (el) => !!el && ((el.style && el.style.display === 'flex') || (el.classList && el.classList.contains('show')));
-  const hasActiveModals = isActuallyShown(successModal) || isActuallyShown(errorModal);
-  
-  console.log('📊 Modal status check:', {
-    successModal: !!successModal,
-    errorModal: !!errorModal,
-    hasActiveModals: hasActiveModals
-  });
-  
-  // Don't show privacy notice if there are active modals
-  if (hasActiveModals) {
-    // Still show privacy notice; it must be acknowledged explicitly
-    console.log('ℹ️ Success/Error modal present, but keeping privacy notice visible');
-  }
-  
-  // Do not reset privacy notice in production – keep user's acknowledged state
-  
-  // Check if privacy notice was already shown in this session
-  const privacyShown = sessionStorage.getItem('privacyNoticeShown');
-  console.log('📋 Privacy notice session status - already shown:', privacyShown);
-  
-  if (privacyShown === 'true') {
-    console.log('🚫 Not showing privacy notice - already shown in this session');
-    overlay.style.display = 'none';
-    return;
-  }
-  
-  if (isAdminView) {
-    console.log('🚫 Not showing privacy notice - admin view detected');
-    overlay.style.display = 'none';
-    return;
-  }
-  
-  console.log('🎉 All checks passed! Showing privacy notice...');
-  
-  // Prevent scrolling on body
-  document.body.style.overflow = 'hidden';
-  console.log('🔒 Body scroll disabled');
-  
-  // Show the modal with animation
-  overlay.style.display = 'flex';
-  privacyOpenedAt = Date.now();
-  console.log('📺 Overlay display set to flex');
-  
-  // Trigger the animation after a small delay
-  setTimeout(() => {
-    overlay.classList.add('show');
-    console.log('✨ Animation class "show" added to overlay');
-    
-    // While privacy notice is visible, disable form controls to avoid conflicts
-    const form = document.getElementById('censusForm');
-    if (form) {
-      form.querySelectorAll('input, select, textarea, button').forEach(function(el){
-        if (!el.dataset._wasDisabled) { el.dataset._wasDisabled = el.disabled ? '1' : '0'; }
-        el.disabled = true;
-      });
-    }
-    
-    // Start the countdown timer after modal is fully shown
-    setTimeout(() => {
-      console.log('⏰ Starting privacy timer...');
-      startPrivacyTimer();
-    }, 1000);
-  }, 100);
-}
-
-// Optional: allow closing by clicking overlay background
-const allowPrivacyBackgroundClose = false;
-document.addEventListener('click', function(e) {
-  const overlay = document.getElementById('dataPrivacyOverlay');
-  const modal = document.getElementById('dataPrivacyModal');
-  if (!allowPrivacyBackgroundClose) { return; }
-  if (overlay && overlay.classList.contains('show') && e.target === overlay) {
-    if (Date.now() - privacyOpenedAt < 1500) { return; }
-    console.log('Clicked on overlay background, closing privacy notice');
-    closePrivacyNotice();
-  }
-});
-
-// Optional: allow closing with Escape key
-const allowPrivacyEscapeClose = false;
-document.addEventListener('keydown', function(e) {
-  if (!allowPrivacyEscapeClose) { return; }
-  if (e.key === 'Escape') {
-    const overlay = document.getElementById('dataPrivacyOverlay');
-    if (overlay && overlay.classList.contains('show')) {
-      if (Date.now() - privacyOpenedAt < 1500) { return; }
-      console.log('Escape key pressed, closing privacy notice');
-      closePrivacyNotice();
-    }
-  }
-});
-
-// Prevent accidental closure by clicks inside the modal
-function setupPrivacyModalEventHandlers() {
-  const modal = document.getElementById('dataPrivacyModal');
-  if (modal) {
-    modal.addEventListener('click', function(e) {
-      e.stopPropagation();
-    });
-  }
-}
+// Privacy consent is now handled by the Bootstrap modal - old privacy notice system removed
 
 // Tab Navigation Functions
 let currentTab = 1;
@@ -7673,56 +7727,6 @@ function startBlotterModalTimer() {
     }, 1000);
 }
 
-// Test Blotter Detection Function
-function testBlotterDetection() {
-    // Use test data from memory - Mar Yvan Sagun Dela Cruz
-    const firstNameInput = document.getElementById('firstName');
-    const middleNameInput = document.getElementById('middleName');
-    const lastNameInput = document.getElementById('lastName');
-    
-    // Store original values
-    const originalFirstName = firstNameInput.value;
-    const originalMiddleName = middleNameInput.value;
-    const originalLastName = lastNameInput.value;
-    
-    // Set test values
-    firstNameInput.value = 'Mar Yvan';
-    middleNameInput.value = 'Sagun';
-    lastNameInput.value = 'Dela Cruz';
-    
-    // Show toast notification
-    showToastNotification('🔍 Testing blotter detection with known test case...', 'info');
-    
-    // Test the blotter detection
-    checkBlotterRecord('Mar Yvan', 'Sagun', 'Dela Cruz')
-    .then(result => {
-        console.log('Blotter test result:', result);
-        
-        if (result.has_unresolved_issues) {
-            showToastNotification('✅ Test successful! Blotter warning modal should appear.', 'success');
-            showBlotterWarningModal();
-        } else {
-            showToastNotification('ℹ️ No unresolved issues found for test case. System working correctly.', 'info');
-        }
-        
-        // Reset form values after a short delay
-        setTimeout(() => {
-            firstNameInput.value = originalFirstName;
-            middleNameInput.value = originalMiddleName;
-            lastNameInput.value = originalLastName;
-            showToastNotification('🔄 Form values reset to original state', 'info');
-        }, 3000);
-    })
-    .catch(error => {
-        console.error('Blotter test error:', error);
-        showToastNotification('❌ Test failed: ' + error.message, 'error');
-        
-        // Reset values immediately on error
-        firstNameInput.value = originalFirstName;
-        middleNameInput.value = originalMiddleName;
-        lastNameInput.value = originalLastName;
-    });
-}
 
 // Toast Notification System
 function showToastNotification(message, type = 'info') {
@@ -7895,8 +7899,7 @@ function startModalTimer() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 DOM Content Loaded - Initializing modal system...');
     
-    // Setup privacy modal event handlers
-    setupPrivacyModalEventHandlers();
+    // Privacy modal is now handled by Bootstrap - no custom event handlers needed
     
     // Check if success modal exists and start timer
     const successModal = document.getElementById('successModal');
@@ -7946,19 +7949,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Always attempt to initialize privacy notice unless there are modals
-    if (!successModal && !errorModal) {
-        console.log('🛡️ No blocking modals - attempting to show privacy notice...');
-        // Small delay to ensure DOM is fully loaded before showing privacy notice
-        setTimeout(() => {
-            console.log('🔍 Delayed privacy notice check starting...');
-            initializePrivacyNotice();
-        }, 150);
-    } else {
-        console.log('🚫 Privacy notice blocked - modal present:', {
-            success: !!successModal,
-            error: !!errorModal
-        });
-    }
+    // Privacy consent is now handled by the Bootstrap modal - no need for old privacy notice system
+    console.log('🛡️ Privacy consent handled by Bootstrap modal');
 });
 
 </script>
@@ -8492,5 +8484,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 </script>
-
+</div>
+<!-- End Main Content Wrapper -->
 <?php include '../includes/footer.php'; ?>
