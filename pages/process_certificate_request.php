@@ -1,7 +1,6 @@
 <?php
 session_start();
 include '../includes/db_connect.php';
-include '../includes/QueueManager.php'; // Add this line
 
 // Check if form was submitted
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

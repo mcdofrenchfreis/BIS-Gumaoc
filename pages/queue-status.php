@@ -1,15 +1,7 @@
 <?php
 session_start();
-$base_path = '../';
-$page_title = 'Queue Status - Barangay Gumaoc East';
-
-include '../includes/db_connect.php';
-include '../includes/QueueManager.php';
-
-// Initialize queue manager
-$queueManager = new QueueManager($pdo);
-
-// Handle lookup request
+header('Location: index.php');
+exit;
 $lookup_result = null;
 $lookup_error = null;
 
@@ -804,7 +796,6 @@ body {
         <div class="quick-actions">
             <h3>🚀 Quick Actions</h3>
             <div class="action-buttons">
-                <a href="queue-ticket.php" class="btn btn-primary">🎫 Get New Ticket</a>
                                 <a href="certificate-request.php" class="btn btn-outline">📄 Request Certificate</a>
                 <a href="resident-registration.php" class="btn btn-outline">👥 Register as Resident</a>
             </div>

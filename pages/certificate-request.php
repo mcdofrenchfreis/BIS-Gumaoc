@@ -1309,14 +1309,7 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="service-name">Service: <?php echo htmlspecialchars($_SESSION['service_name'] ?? 'Certificate Request'); ?></div>
             <div class="estimated-time">Estimated processing time: <?php echo $_SESSION['estimated_time'] ?? 'Please check status'; ?></div>
         </div>
-        <div class="queue-actions">
-            <a href="queue-status.php?lookup=1&ticket_number=<?php echo urlencode($_SESSION['queue_ticket_number']); ?>" class="btn btn-primary btn-large">
-                📊 CHECK QUEUE STATUS
-            </a>
-            <a href="queue-ticket.php" class="btn btn-secondary btn-large">
-                🎫 GET NEW TICKET
-            </a>
-        </div>
+        
         <div class="queue-instructions">
             <h4>📋 IMPORTANT INSTRUCTIONS:</h4>
             <ul>

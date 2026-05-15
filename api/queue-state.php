@@ -1,43 +1,12 @@
 <?php
-// Enable error reporting for debugging
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 header('Content-Type: application/json');
 session_start();
 
-// Debug mode check
-$debug_mode = isset($_GET['debug']) || isset($_POST['debug']);
-
-if ($debug_mode) {
-	echo json_encode([
-		'debug' => true,
-		'session_data' => $_SESSION,
-		'session_id' => session_id(),
-		'request_method' => $_SERVER['REQUEST_METHOD'],
-		'headers' => getallheaders(),
-		'timestamp' => date('c')
-	]);
-	exit;
-}
-
-// Check authentication - allow admin only
-$is_admin = isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true;
-
-if (!$is_admin) {
-	http_response_code(403);
-	echo json_encode([
-		'success' => false, 
-		'message' => 'Admin authentication required', 
-		'timestamp' => date('c')
-	]);
-	exit;
-}
-
-require_once __DIR__ . '/../includes/db_connect.php';
-
-try {
+echo json_encode([
+    'success' => false,
+    'message' => 'Queue management feature has been disabled.',
+]);
+exit;
 	// Active windows with current ticket (if any)
 	$windows_stmt = $pdo->query(
 		"

@@ -730,8 +730,6 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                             </a></li>
                         </ul>
                     </li>
-                    <li><a href="<?php echo $base_path; ?>pages/report.php" class="nav-link">🚨 Report</a></li>
-                    <li><a href="<?php echo $base_path; ?>pages/queue-status.php" class="nav-link">🎫 Queue</a></li>
                     <?php if ($is_admin_context): ?>
                         <li><a href="<?php echo $base_path; ?>admin/assist-requests.php" class="nav-link">🆘 Assistance</a></li>
                     <?php endif; ?>

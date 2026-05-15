@@ -213,36 +213,6 @@ include '../includes/header.php';
             </div>
         </div>
 
-        <!-- Queue Status Summary -->
-        <?php if (count($queue_tickets) > 0): ?>
-        <div class="notification-section">
-            <h3>🎫 Recent Queue Tickets</h3>
-            <div class="queue-summary-grid">
-                <?php foreach ($queue_tickets as $ticket): ?>
-                <div class="queue-summary-card">
-                    <div class="queue-card-header">
-                        <span class="ticket-number"><?php echo htmlspecialchars($ticket['ticket_number']); ?></span>
-                        <span class="queue-status status-<?php echo $ticket['status']; ?>">
-                            <?php echo ucfirst($ticket['status']); ?>
-                        </span>
-                    </div>
-                    <div class="queue-card-body">
-                        <p class="service-name"><?php echo htmlspecialchars($ticket['service_name'] ?? 'General Service'); ?></p>
-                        <?php if ($ticket['queue_position'] && $ticket['status'] === 'waiting'): ?>
-                        <p class="queue-position">Position: #<?php echo $ticket['queue_position']; ?></p>
-                        <?php endif; ?>
-                        <p class="ticket-date"><?php echo date('M j, Y g:i A', strtotime($ticket['created_at'])); ?></p>
-                    </div>
-                    <div class="queue-card-actions">
-                        <a href="queue-status.php?lookup=1&ticket_number=<?php echo urlencode($ticket['ticket_number']); ?>" 
-                           class="btn btn-sm btn-primary">View Details</a>
-                    </div>
-                </div>
-                <?php endforeach; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
         <!-- Certificate Requests Summary -->
         <?php if (count($certificate_requests) > 0): ?>
         <div class="notification-section">

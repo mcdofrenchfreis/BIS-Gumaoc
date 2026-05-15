@@ -110,7 +110,6 @@
             <li><a href="manage-blotter.php" class="admin-sub-nav-link"><i class="fas fa-gavel"></i> Blotter Management</a></li>
             <li><a href="captain-clearances.php" class="admin-sub-nav-link"><i class="fas fa-file-signature"></i> Captain Clearances</a></li>
             <li><a href="blotter-reports.php" class="admin-sub-nav-link"><i class="fas fa-chart-bar"></i> Blotter Reports</a></li>
-            <li><a href="queue-monitor.php" class="admin-sub-nav-link"><i class="fas fa-tv"></i> Queue Monitor</a></li>
             <li><a href="view-resident-registrations.php" class="admin-sub-nav-link"><i class="fas fa-users"></i> Resident Registrations</a></li>
             <li><a href="view-certificate-requests.php" class="admin-sub-nav-link"><i class="fas fa-file-alt"></i> Certificate Requests</a></li>
             <li><a href="view-business-applications.php" class="admin-sub-nav-link"><i class="fas fa-building"></i> Business Applications</a></li>

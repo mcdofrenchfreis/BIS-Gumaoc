@@ -1,4 +1,6 @@
 <?php
+header('Location: dashboard.php');
+exit;
 session_start();
 include '../includes/admin_header.php';
 include '../includes/db_connect.php';

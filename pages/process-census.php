@@ -379,36 +379,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Commit transaction
             $pdo->commit();
             
-            // Add registration to queue system instead of sending RFID credentials
-            $queue_added = false;
-            $queue_ticket_number = null;
-            
-            try {
-                // Include the QueueManager
-                require_once '../includes/QueueManager.php';
-                $queueManager = new QueueManager($pdo);
-                
-                $customer_name = trim($first_name . ' ' . $middle_name . ' ' . $last_name);
-                
-                // Generate queue ticket using enhanced method
-                $queue_result = $queueManager->generateTicketForForm(
-                    'resident_registration',
-                    $customer_name,
-                    $contact_number,
-                    'Resident Census Registration Processing'
-                );
-                
-                if ($queue_result['success']) {
-                    $queue_added = true;
-                    $queue_ticket_number = $queue_result['ticket_number'];
-                    error_log("Registration added to queue successfully. Ticket: " . $queue_ticket_number);
-                } else {
-                    error_log("Failed to add registration to queue: " . ($queue_result['message'] ?? 'Unknown error'));
-                }
-            } catch (Exception $e) {
-                error_log("Queue system error: " . $e->getMessage());
-            }
-            
             // Send confirmation email instead of RFID activation email
             $email_sent = false;
             if (!empty($email)) {
