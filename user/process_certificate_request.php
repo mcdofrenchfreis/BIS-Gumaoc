@@ -2,6 +2,7 @@
 // Process Certificate Request Handler
 require_once 'auth_check.php';
 require_once '../includes/db_connect.php';
+require_once '../includes/phone_helpers.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header("Location: certificate-request.php");
@@ -24,9 +25,11 @@ try {
     $full_name = preg_replace('/\s+/', ' ', $full_name); // Remove extra spaces
     
     $address = trim($_POST['address1']);
-    $mobile_number = $_POST['full_mobile_number'] ?? '';
-    if (empty($mobile_number) && !empty($_POST['mobileNumber'])) {
-        $mobile_number = '+63' . $_POST['mobileNumber'];
+    $mobile_raw = $_POST['full_mobile_number'] ?? $_POST['mobileNumber'] ?? '';
+    try {
+        $mobile_number = require_valid_ph_mobile($mobile_raw, false);
+    } catch (InvalidArgumentException $e) {
+        throw new Exception($e->getMessage());
     }
     
     $civil_status = $_POST['civilStatus'];
@@ -37,12 +40,6 @@ try {
     $years_of_residence = !empty($_POST['yearsOfResidence']) ? (int)$_POST['yearsOfResidence'] : null;
     $purpose = trim($_POST['purpose']);
     
-    // Validate mobile number format if provided
-    if (!empty($_POST['mobileNumber'])) {
-        if (!preg_match('/^9[0-9]{9}$/', $_POST['mobileNumber'])) {
-            throw new Exception("Invalid mobile number format. Please enter a valid Philippine mobile number starting with 9.");
-        }
-    }
     
     // Validate birth date
     $birth_date_obj = new DateTime($birth_date);
@@ -171,7 +168,7 @@ try {
             $cert_name = 'Tricycle Operating Permit';
         }
         
-        $_SESSION['success'] = "Your {$cert_name} request has been submitted successfully! Request ID: #" . str_pad($request_id, 5, '0', STR_PAD_LEFT) . ". You will be notified when it's ready for pickup at the Barangay Hall.";
+        $_SESSION['success'] = "Your {$cert_name} request has been submitted successfully! You will be notified when it is ready for pickup at the Barangay Hall.";
         
         // Log the submission with additional details
         $log_details = "Certificate request submitted: ID #{$request_id}, Type: {$certificate_type}, User: " . $_SESSION['user_id'];

@@ -13,11 +13,13 @@ $display_phone = $user['phone'] ?? 'No phone';
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title><?php echo htmlspecialchars($page_title); ?> - Barangay Gumaoc East</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/background.css">
+    <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="css/portal-services.css">
     <style>
         * {
             margin: 0;
@@ -34,361 +36,7 @@ $display_phone = $user['phone'] ?? 'No phone';
             overflow-x: hidden;
         }
         
-        /* Removed body::before to allow background.css to work */
-        
-        /* User Navbar */
-        .user-navbar {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(25px);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.12);
-            transition: all 0.3s ease;
-        }
-        
-        .user-navbar:hover {
-            box-shadow: 0 6px 40px rgba(0, 0, 0, 0.15);
-        }
-        
-        .navbar-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            height: 70px;
-        }
-        
-        .navbar-brand {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: #333;
-            font-weight: 700;
-            font-size: 18px;
-            transition: all 0.3s ease;
-        }
-        
-        .navbar-brand:hover {
-            transform: scale(1.02);
-        }
-        
-        .brand-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #2e7d32, #4caf50);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 12px;
-            color: white;
-            font-size: 18px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
-        }
-        
-        .brand-icon:hover {
-            transform: scale(1.05) rotate(5deg);
-            box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
-        }
-        
-        .navbar-nav {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .nav-item {
-            position: relative;
-        }
-        
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #666;
-            font-weight: 500;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .nav-link::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(46, 125, 50, 0.1), transparent);
-            transition: left 0.5s ease;
-        }
-        
-        .nav-link:hover::before {
-            left: 100%;
-        }
-        
-        .nav-link:hover {
-            background: #f8f9fa;
-            color: #333;
-            transform: translateY(-1px);
-        }
-        
-        .nav-link.active {
-            background: linear-gradient(135deg, #e7f3ff, #f0f8ff);
-            color: #0066cc;
-            box-shadow: 0 2px 8px rgba(0, 102, 204, 0.2);
-        }
-        
-        .user-menu {
-            position: relative;
-        }
-        
-        .user-button {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            border: none;
-            background: #f8f9fa;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .user-button:hover {
-            background: #e9ecef;
-            transform: scale(1.02);
-        }
-        
-        .user-avatar-small {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #2e7d32, #4caf50);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .user-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            padding: 12px 0;
-            min-width: 200px;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(10px);
-            transition: all 0.3s ease;
-            border: 1px solid #e9ecef;
-        }
-        
-        .user-menu:hover .user-dropdown {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-        
-        .dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 16px;
-            text-decoration: none;
-            color: #333;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .dropdown-item:hover {
-            background: #f8f9fa;
-            transform: translateX(5px);
-        }
-        
-        .dropdown-divider {
-            height: 1px;
-            background: #e9ecef;
-            margin: 8px 0;
-        }
-        
-        /* Mobile hamburger menu */
-        .mobile-menu-toggle {
-            display: none;
-            flex-direction: column;
-            cursor: pointer;
-            padding: 8px;
-            border: none;
-            background: none;
-            transition: all 0.3s ease;
-        }
-        
-        .hamburger-line {
-            width: 25px;
-            height: 3px;
-            background: #333;
-            margin: 3px 0;
-            transition: all 0.3s ease;
-            border-radius: 2px;
-        }
-        
-        .mobile-menu-toggle.active .hamburger-line:nth-child(1) {
-            transform: rotate(45deg) translate(5px, 5px);
-        }
-        
-        .mobile-menu-toggle.active .hamburger-line:nth-child(2) {
-            opacity: 0;
-        }
-        
-        .mobile-menu-toggle.active .hamburger-line:nth-child(3) {
-            transform: rotate(-45deg) translate(7px, -6px);
-        }
-        
-        .mobile-nav {
-            display: none;
-            position: fixed;
-            top: 70px;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(25px);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-            z-index: 999;
-            padding: 20px;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: all 0.3s ease;
-        }
-        
-        .mobile-nav.active {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .mobile-nav-item {
-            display: block;
-            padding: 12px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        
-        .mobile-nav-item:last-child {
-            border-bottom: none;
-        }
-        
-        .mobile-nav-link {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-            color: #666;
-            font-weight: 500;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-        
-        .mobile-nav-link:hover {
-            color: #2e7d32;
-            transform: translateX(10px);
-        }
-        
-        .mobile-nav-link.active {
-            color: #2e7d32;
-            font-weight: 600;
-        }
-        
-        .mobile-user-info {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 16px;
-            margin-top: 16px;
-        }
-        
-        .mobile-user-avatar {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #2e7d32, #4caf50);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 16px;
-            margin-right: 12px;
-        }
-        
-        .mobile-user-details h4 {
-            color: #333;
-            font-size: 16px;
-            margin-bottom: 4px;
-        }
-        
-        .mobile-user-details p {
-            color: #666;
-            font-size: 14px;
-            margin: 0;
-        }
-        
-        /* Loading Animation */
-        .page-loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
-        }
-        
-        .page-loader.hidden {
-            opacity: 0;
-            visibility: hidden;
-        }
-        
-        .loader-icon {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-top: 4px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        
-        .loader-text {
-            color: white;
-            font-size: 18px;
-            font-weight: 500;
-            opacity: 0.9;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        /* Navbar & loader: see navbar_component.php + user/css/background.css */
         
         /* Dashboard Content */
         .dashboard-content {
@@ -645,6 +293,7 @@ $display_phone = $user['phone'] ?? 'No phone';
         .service-btn {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
             padding: 12px 24px;
             background: linear-gradient(135deg, #2e7d32, #4caf50);
@@ -653,53 +302,13 @@ $display_phone = $user['phone'] ?? 'No phone';
             border-radius: 10px;
             font-weight: 500;
             transition: all 0.3s ease;
+            max-width: 100%;
         }
         
         .service-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(46, 125, 50, 0.3);
             color: white;
-        }
-        
-        /* Emergency Response Card Styling */
-        .emergency-card {
-            border: 2px solid #ff9800;
-            background: linear-gradient(135deg, #fff3e0, #ffeaa7);
-        }
-        
-        .emergency-card:hover {
-            border-color: #f57c00;
-            box-shadow: 0 25px 60px rgba(255, 152, 0, 0.2);
-        }
-        
-        .emergency-icon {
-            background: linear-gradient(135deg, #ff9800, #f57c00) !important;
-            box-shadow: 0 10px 30px rgba(255, 152, 0, 0.4) !important;
-        }
-        
-        .emergency-card:hover .emergency-icon {
-            box-shadow: 0 15px 40px rgba(255, 152, 0, 0.5) !important;
-        }
-        
-        .emergency-btn {
-            background: linear-gradient(135deg, #ff9800, #f57c00) !important;
-            margin-bottom: 10px;
-            display: block;
-            width: 100%;
-        }
-        
-        .emergency-btn:hover {
-            box-shadow: 0 8px 20px rgba(255, 152, 0, 0.4) !important;
-        }
-        
-        .emergency-hotline {
-            background: linear-gradient(135deg, #f44336, #d32f2f) !important;
-            display: block;
-            width: 100%;
-        }
-        
-        .emergency-hotline:hover {
-            box-shadow: 0 8px 20px rgba(244, 67, 54, 0.4) !important;
         }
         
         /* Quick Stats */
@@ -778,81 +387,152 @@ $display_phone = $user['phone'] ?? 'No phone';
         
         /* Responsive Design */
         @media (max-width: 968px) {
-            .navbar-nav {
-                display: none;
+            .dashboard-content {
+                padding-top: 68px;
             }
-            
-            .mobile-menu-toggle {
-                display: flex;
-            }
-            
+
             .welcome-section {
-                padding: 30px 20px;
+                padding: 1.5rem 1.25rem;
+                border-radius: 16px;
+                margin-bottom: 1rem;
             }
             
             .welcome-section h1 {
-                font-size: 28px;
+                font-size: 1.5rem;
+                line-height: 1.25;
+            }
+
+            .welcome-section > p {
+                font-size: 0.9375rem;
+                margin-bottom: 1.25rem;
             }
             
             .user-info-card {
                 flex-direction: column;
                 text-align: center;
+                width: 100%;
+                max-width: 100%;
+                padding: 1rem;
+                gap: 0.75rem;
             }
-            
-            .services-grid {
-                grid-template-columns: 1fr;
+
+            .user-details {
+                text-align: center;
+            }
+
+            .user-details h3 {
+                font-size: 1.0625rem;
+                word-break: break-word;
+            }
+
+            .user-details p {
+                font-size: 0.8125rem;
+                word-break: break-all;
             }
             
             .quick-stats {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.75rem;
+                margin-bottom: 1rem;
+            }
+
+            .stat-card {
+                padding: 1rem 0.75rem;
+                border-radius: 14px;
+            }
+
+            .stat-number {
+                font-size: 1.375rem;
+            }
+
+            .stat-label {
+                font-size: 0.75rem;
+                line-height: 1.3;
             }
             
             .services-section {
-                padding: 30px 20px;
+                padding: 1.25rem 1rem;
+                border-radius: 16px;
+            }
+
+            .section-title {
+                font-size: 1.125rem;
+                margin-bottom: 1rem;
             }
         }
         
         @media (max-width: 480px) {
-            .navbar-container {
-                padding: 0 15px;
+            .dashboard-content {
+                padding-top: 64px;
+                padding-bottom: 1rem;
             }
-            
+
             .dashboard-container {
-                padding: 0 15px;
+                padding: 0 0.75rem;
             }
             
             .welcome-section {
-                padding: 20px 15px;
-                margin-bottom: 20px;
+                padding: 1.25rem 1rem;
+                margin-bottom: 0.875rem;
             }
             
             .welcome-section h1 {
-                font-size: 24px;
+                font-size: 1.25rem;
+            }
+
+            .welcome-section > p {
+                font-size: 0.875rem;
+                margin-bottom: 1rem;
             }
             
             .user-avatar-large {
-                width: 50px;
-                height: 50px;
-                font-size: 20px;
-            }
-            
-            .service-card {
-                padding: 25px 20px;
-            }
-            
-            .service-icon {
-                width: 60px;
-                height: 60px;
-                font-size: 28px;
+                width: 48px;
+                height: 48px;
+                font-size: 1.125rem;
+                border-radius: 12px;
             }
             
             .quick-stats {
-                grid-template-columns: 1fr;
-                gap: 15px;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 0.5rem;
+            }
+
+            .stat-card {
+                padding: 0.75rem 0.5rem;
+            }
+
+            .stat-number {
+                font-size: 1.125rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .stat-label {
+                font-size: 0.6875rem;
             }
             
-            .stat-card {
-                padding: 20px 15px;
+            .services-section {
+                padding: 1rem 0.75rem;
+            }
+
+            .section-title {
+                font-size: 1rem;
+                gap: 0.5rem;
+            }
+
+            .section-title i {
+                font-size: 0.9375rem;
+            }
+        }
+
+        @media (hover: none) {
+            .stat-card:hover,
+            .service-card:hover,
+            .portal-service-card:hover {
+                transform: none;
+            }
+
+            .user-avatar-large:hover {
+                transform: none;
             }
         }
     </style>
@@ -908,32 +588,7 @@ $display_phone = $user['phone'] ?? 'No phone';
                     <i class="fas fa-th-large"></i>
                     Available Services
                 </h3>
-                
-                <div class="services-grid">
-                    <div class="service-card">
-                        <div class="service-icon">
-                            <i class="fas fa-desktop"></i>
-                        </div>
-                        <h3>E-Services Portal</h3>
-                        <p>Access all available digital services, business permits, certificates, and community programs in one convenient location.</p>
-                        <a href="e-services.php" class="service-btn">
-                            <i class="fas fa-arrow-right"></i>
-                            Explore Services
-                        </a>
-                    </div>
-                    
-                    <div class="service-card">
-                        <div class="service-icon">
-                            <i class="fas fa-tachometer-alt"></i>
-                        </div>
-                        <h3>Dashboard Overview</h3>
-                        <p>Your personal dashboard with quick stats, recent activity, and easy access to all your account information.</p>
-                        <a href="dashboard.php" class="service-btn">
-                            <i class="fas fa-refresh"></i>
-                            Refresh Dashboard
-                        </a>
-                    </div>
-                </div>
+                <?php include __DIR__ . '/includes/portal_services.php'; ?>
             </div>
         </div>
     </div>
@@ -947,42 +602,19 @@ $display_phone = $user['phone'] ?? 'No phone';
                 setTimeout(() => loader.remove(), 500);
             }, 1000);
             
-            // Mobile menu functionality
-            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-            const mobileNav = document.getElementById('mobileNav');
-            
-            mobileMenuToggle.addEventListener('click', function() {
-                this.classList.toggle('active');
-                mobileNav.classList.toggle('active');
-                
-                // Prevent body scroll when menu is open
-                if (mobileNav.classList.contains('active')) {
-                    document.body.style.overflow = 'hidden';
-                } else {
-                    document.body.style.overflow = 'auto';
-                }
+            document.querySelectorAll('.quick-action-btn[href^="#"]').forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    const id = this.getAttribute('href').slice(1);
+                    const target = document.getElementById(id);
+                    if (target) {
+                        e.preventDefault();
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
             });
-            
-            // Close mobile menu when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!mobileMenuToggle.contains(e.target) && !mobileNav.contains(e.target)) {
-                    mobileMenuToggle.classList.remove('active');
-                    mobileNav.classList.remove('active');
-                    document.body.style.overflow = 'auto';
-                }
-            });
-            
-            // Close mobile menu when window resizes to desktop size
-            window.addEventListener('resize', function() {
-                if (window.innerWidth > 968) {
-                    mobileMenuToggle.classList.remove('active');
-                    mobileNav.classList.remove('active');
-                    document.body.style.overflow = 'auto';
-                }
-            });
-            
+
             // Add smooth scrolling to service cards
-            const serviceCards = document.querySelectorAll('.service-card');
+            const serviceCards = document.querySelectorAll('.portal-service-card, .service-card');
             
             serviceCards.forEach((card, index) => {
                 card.style.animationDelay = `${0.1 * index}s`;
@@ -1034,43 +666,13 @@ $display_phone = $user['phone'] ?? 'No phone';
                         }
                     }, 600);
                     
-                    // Handle different button types
-                    if (this.classList.contains('emergency-hotline')) {
-                        // Emergency hotline - prevent default and show confirmation
-                        e.preventDefault();
-                        const confirmCall = confirm(
-                            'Are you sure you want to call emergency services (911)?\n\n' +
-                            'This will dial emergency services immediately. ' +
-                            'Only call if this is a real emergency requiring immediate assistance.'
-                        );
-                        
-                        if (confirmCall) {
-                            window.location.href = 'tel:911';
-                            showNotification('Calling emergency services...', 'warning');
-                        }
-                    } else if (this.classList.contains('emergency-btn')) {
-                        // Emergency report - show confirmation but allow navigation if confirmed
-                        const confirmReport = confirm(
-                            'You are about to report an emergency or incident.\n\n' +
-                            'Please make sure this is for a legitimate emergency or incident that needs to be reported to barangay officials.'
-                        );
-                        
-                        if (confirmReport) {
-                            showNotification('Redirecting to emergency report form...', 'info');
-                            // Allow normal navigation to proceed
-                        } else {
-                            e.preventDefault();
-                        }
-                    } else {
-                        // Regular buttons - just add visual feedback and allow navigation
-                        this.style.transform = 'scale(0.95)';
-                        setTimeout(() => {
-                            this.style.transform = '';
-                        }, 150);
-                        
-                        if (this.href) {
-                            showNotification('Loading...', 'info');
-                        }
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 150);
+
+                    if (this.href) {
+                        showNotification('Loading...', 'info');
                     }
                 });
             });
@@ -1165,15 +767,15 @@ $display_phone = $user['phone'] ?? 'No phone';
         }
         
         .notification-error {
-            border-left-color: #f44336;
+            border-left-color: #2e7d32;
         }
         
         .notification-warning {
-            border-left-color: #ff9800;
+            border-left-color: #2e7d32;
         }
         
         .notification-info {
-            border-left-color: #2196f3;
+            border-left-color: #2e7d32;
         }
         
         .notification i {
@@ -1182,15 +784,15 @@ $display_phone = $user['phone'] ?? 'No phone';
         }
         
         .notification-error i {
-            color: #f44336;
+            color: #2e7d32;
         }
         
         .notification-warning i {
-            color: #ff9800;
+            color: #2e7d32;
         }
         
         .notification-info i {
-            color: #2196f3;
+            color: #2e7d32;
         }
         
         .notification-close {

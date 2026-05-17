@@ -96,16 +96,6 @@ try {
     $services_count = $pdo->query("SELECT COUNT(*) FROM services")->fetchColumn();
     $updates_count = $pdo->query("SELECT COUNT(*) FROM updates")->fetchColumn();
     
-    // Get RFID statistics
-    $rfid_available = 0;
-    $rfid_assigned = 0;
-    try {
-        $rfid_available = $pdo->query("SELECT COUNT(*) FROM scanned_rfid_codes WHERE status = 'available'")->fetchColumn();
-        $rfid_assigned = $pdo->query("SELECT COUNT(*) FROM scanned_rfid_codes WHERE status = 'assigned'")->fetchColumn();
-    } catch (Exception $e) {
-        // Table doesn't exist yet
-    }
-    
 } catch (Exception $e) {
     $error_message = "Database error: " . $e->getMessage();
     // Set default values if there's an error
@@ -117,8 +107,6 @@ try {
     $pending_business = 0;
     $services_count = 0;
     $updates_count = 0;
-    $rfid_available = 0;
-    $rfid_assigned = 0;
 }
 ?>
 <!DOCTYPE html>
@@ -751,144 +739,6 @@ try {
             }
         }
 
-        /* Queue Monitor (Dashboard preview) - Enhanced */
-        .queue-section .queue-stats { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); 
-            gap: 1rem; 
-            margin-bottom: 1.5rem; 
-        }
-        
-        .queue-section .qstat { 
-            background: #f8faf8; 
-            border: 1px solid #e8f0e8; 
-            border-radius: 8px; 
-            padding: 1rem; 
-            text-align: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s ease;
-        }
-        
-        .queue-section .qstat:hover {
-            transform: translateY(-5px);
-        }
-        
-        .queue-section .qnum { 
-            font-size: 1.6rem; 
-            font-weight: 600; 
-            color: #006400; 
-        }
-        
-        .queue-section .qlabel { 
-            font-size: 0.85rem; 
-            color: #555; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-            margin-top: 0.5rem;
-            font-weight: 500;
-        }
-        
-        .queue-lists { 
-            display: grid; 
-            grid-template-columns: 2fr 1fr; 
-            gap: 1.5rem; 
-        }
-        
-        .queue-panel { 
-            background: #ffffff; 
-            border: 1px solid #e8f0e8; 
-            border-radius: 8px; 
-            padding: 1.5rem; 
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-        
-        .queue-panel h3 { 
-            margin: 0 0 1rem 0; 
-            color: #006400; 
-            font-size: 1.1rem; 
-            font-weight: 600; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-            border-bottom: 2px solid #e8f0e8;
-            padding-bottom: 0.8rem;
-        }
-        
-        .queue-list { 
-            max-height: 350px; 
-            overflow-y: auto; 
-            display: grid; 
-            gap: 0.8rem; 
-        }
-        
-        .queue-ticket { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            background: #f8faf8; 
-            border: 1px solid #e8f0e8; 
-            padding: 0.8rem 1rem; 
-            border-radius: 6px;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        
-        .queue-ticket:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-            border-color: #228B22;
-        }
-        
-        .qbadges { 
-            display: flex; 
-            gap: 8px; 
-            align-items: center; 
-        }
-        
-        .qbadge { 
-            padding: 3px 10px; 
-            border-radius: 4px; 
-            font-size: 12px; 
-            font-weight: 600; 
-            border: 1px solid transparent;
-            background: #e8f0e8;
-            color: #006400;
-        }
-        
-        .qbadge.urgent {
-            background: #fff0f0;
-            color: #d14836;
-        }
-        
-        .qbadge.new {
-            background: #f0f8ff;
-            color: #0066cc;
-        }
-        
-        @media (max-width: 992px) {
-            .queue-lists {
-                grid-template-columns: 1fr;
-            }
-            
-            .queue-section .queue-stats {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-        
-        @media (max-width: 576px) {
-            .queue-section .queue-stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        .qbadge.waiting { background:#fff8e1; color:#856404; border-color: #ffe082; }
-        .qbadge.serving { background:#e8f5e9; color:#1b5e20; border-color: #a5d6a7; }
-        .qbadge.urgent { background:#ffebee; color:#b71c1c; border-color: #ef9a9a; }
-        .qbadge.priority { background:#e3f2fd; color:#0d47a1; border-color: #90caf9; }
-        .queue-actions { display:flex; justify-content: flex-end; margin-top: 0.75rem; }
-        .queue-link { display:inline-block; padding: 0.6rem 1rem; background: #228B22; color:#fff; text-decoration:none; border-radius: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.85rem; box-shadow: 0 4px 8px rgba(0, 100, 0, 0.15); transition: all 0.3s ease; }
-
-        @media (max-width: 768px) {
-            .queue-section .queue-stats { grid-template-columns: repeat(5, minmax(80px, 1fr)); }
-            .queue-lists { grid-template-columns: 1fr; }
-        }
     </style>
 </head>
 <body>
@@ -935,18 +785,6 @@ try {
                 <div class="stat-pending"><?php echo $pending_business; ?> pending processing</div>
             </a>
             <?php endif; ?>
-            
-            <a class="stat-card" href="rfid-scanner.php">
-                <h3>📱 Available RFID Codes</h3>
-                <div class="stat-number"><?php echo $rfid_available; ?></div>
-                <div class="stat-pending">Ready for assignment</div>
-            </a>
-            
-            <a class="stat-card" href="rfid-scanner.php">
-                <h3>🆔 Assigned RFID Codes</h3>
-                <div class="stat-number"><?php echo $rfid_assigned; ?></div>
-                <div class="stat-pending">Currently in use</div>
-            </a>
         </div>
         
         <div class="dashboard-main">
@@ -956,7 +794,7 @@ try {
                     Management Tools
                 </h2>
                 
-                <div class="dashboard-actions">                    
+                <div class="dashboard-actions">
                     <?php if ($showCensus): ?>
                     <div class="action-card">
                         <div class="action-icon">👥</div>
@@ -965,7 +803,7 @@ try {
                         <a href="view-resident-registrations.php" class="admin-btn">View Submissions</a>
                     </div>
                     <?php endif; ?>
-                    
+
                     <?php if ($showCertificates): ?>
                     <div class="action-card">
                         <div class="action-icon">📄</div>
@@ -974,7 +812,7 @@ try {
                         <a href="view-certificate-requests.php" class="admin-btn">View Requests</a>
                     </div>
                     <?php endif; ?>
-                    
+
                     <?php if ($showBusinessApps): ?>
                     <div class="action-card">
                         <div class="action-icon">🏢</div>
@@ -983,49 +821,13 @@ try {
                         <a href="view-business-applications.php" class="admin-btn">View Applications</a>
                     </div>
                     <?php endif; ?>
-                    
+
                     <div class="action-card">
-                        <div class="action-icon">📝</div>
-                        <h3>Blotter Management</h3>
-                        <p>Record and manage complaints, incidents, and disputes within the barangay</p>
-                        <a href="manage-blotter.php" class="admin-btn">Manage Blotter</a>
+                        <div class="action-icon">📢</div>
+                        <h3>Announcements</h3>
+                        <p>Publish and manage barangay announcements for residents</p>
+                        <a href="manage-announcements.php" class="admin-btn">Manage Announcements</a>
                     </div>
-                    
-                    <div class="action-card">
-                        <div class="action-icon">🛡️</div>
-                        <h3>Captain Clearances</h3>
-                        <p>Manage clearances for residents with records or requiring special permissions</p>
-                        <a href="captain-clearances.php" class="admin-btn">Manage Clearances</a>
-                    </div>
-                    
-                    <div class="action-card">
-                        <div class="action-icon">📈</div>
-                        <h3>Blotter Reports</h3>
-                        <p>Generate reports and analyze trends in community incidents and resolutions</p>
-                        <a href="blotter-reports.php" class="admin-btn">View Reports</a>
-                    </div>
-                    
-                    <div class="action-card">
-                        <div class="action-icon">🆘</div>
-                        <h3>Assistance Requests</h3>
-                        <p>Review and manage assistance requests submitted by residents</p>
-                        <a href="assist-requests.php" class="admin-btn">View Requests</a>
-                    </div>
-                    
-                    <div class="action-card">
-                        <div class="action-icon">📱</div>
-                        <h3>RFID Scanner</h3>
-                        <p>Scan and manage RFID codes for resident registration</p>
-                        <a href="rfid-scanner.php" class="admin-btn">Open Scanner</a>
-                    </div>
-                    
-                    <div class="action-card">
-                        <div class="action-icon">🎫</div>
-                        <h3>Queue Management</h3>
-                        <p>Monitor and control the queue system, manage service counters and tickets</p>
-                        <a href="queue-admin.php" class="admin-btn">Manage Queue</a>
-                    </div>
-                    
                     <div class="action-card">
                         <div class="action-icon">📋</div>
                         <h3>System Logs</h3>
@@ -1047,33 +849,6 @@ try {
                         <a href="backup.php" class="admin-btn">Open Backup Module</a>
                     </div>
                 </div>
-            </div>
-        </div>
-        
-        <div class="dashboard-section queue-section">
-            <h2 class="section-title">
-                <div class="section-icon">🖥️</div>
-                Queue Monitor
-            </h2>
-            <div class="queue-stats" id="queue-stats">
-                <div class="qstat"><div class="qnum">0</div><div class="qlabel">Waiting</div></div>
-                <div class="qstat"><div class="qnum">0</div><div class="qlabel">Serving</div></div>
-                <div class="qstat"><div class="qnum">0</div><div class="qlabel">Completed</div></div>
-                <div class="qstat"><div class="qnum">0</div><div class="qlabel">Cancelled</div></div>
-                <div class="qstat"><div class="qnum">0</div><div class="qlabel">Total</div></div>
-            </div>
-            <div class="queue-lists">
-                <div class="queue-panel">
-                    <h3>Currently Serving</h3>
-                    <div class="queue-list" id="queue-serving"></div>
-                </div>
-                <div class="queue-panel">
-                    <h3>Waiting Queue</h3>
-                    <div class="queue-list" id="queue-waiting"></div>
-                </div>
-            </div>
-            <div class="queue-actions">
-                <a href="queue-monitor.php" class="queue-link">Open Full Monitor</a>
             </div>
         </div>
     </div>
@@ -1110,74 +885,6 @@ try {
                 });
             });
         });
-        
-        // Queue Monitor (Dashboard preview)
-        (function() {
-            const apiUrl = '../api/queue-state.php';
-            const statsEl = document.getElementById('queue-stats');
-            const servingEl = document.getElementById('queue-serving');
-            const waitingEl = document.getElementById('queue-waiting');
-            if (!statsEl || !servingEl || !waitingEl) return;
-
-            function escapeHtml(s) {
-                if (s == null) return '';
-                return String(s).replace(/[&<>\"]+/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c] || c));
-            }
-
-            function badgeForPriority(level) {
-                if (level === 'urgent') return '<span class="qbadge urgent">Urgent</span>';
-                if (level === 'priority') return '<span class="qbadge priority">Priority</span>';
-                return '';
-            }
-
-            function renderQueue() {
-                fetch(apiUrl, { credentials: 'same-origin' })
-                    .then(r => r.json())
-                    .then(data => {
-                        const s = data && data.stats ? data.stats : {};
-                        statsEl.innerHTML = `
-                            <div class=\"qstat\"><div class=\"qnum\">${s.waiting || 0}</div><div class=\"qlabel\">Waiting</div></div>
-                            <div class=\"qstat\"><div class=\"qnum\">${s.serving || 0}</div><div class=\"qlabel\">Serving</div></div>
-                            <div class=\"qstat\"><div class=\"qnum\">${s.completed || 0}</div><div class=\"qlabel\">Completed</div></div>
-                            <div class=\"qstat\"><div class=\"qnum\">${s.cancelled || 0}</div><div class=\"qlabel\">Cancelled</div></div>
-                            <div class=\"qstat\"><div class=\"qnum\">${s.total || 0}</div><div class=\"qlabel\">Total</div></div>
-                        `;
-
-                        const serving = (data && data.serving) ? data.serving : [];
-                        servingEl.innerHTML = serving.map(t => `
-                            <div class=\"queue-ticket\">
-                                <div>
-                                    <div><strong>${escapeHtml(t.ticket_number)}</strong> — ${escapeHtml(t.service_name || '')}</div>
-                                    <div style=\"font-size:12px;color:#555\">${escapeHtml(t.customer_name || '')}</div>
-                                </div>
-                                <div class=\"qbadges\">
-                                    <span class=\"qbadge serving\">${escapeHtml(t.window_number || t.window_name || 'Serving')}</span>
-                                </div>
-                            </div>
-                        `).join('');
-
-                        const waiting = (data && data.waiting) ? data.waiting : [];
-                        waitingEl.innerHTML = waiting.slice(0, 15).map(t => `
-                            <div class=\"queue-ticket\">
-                                <div>
-                                    <div><strong>${escapeHtml(t.ticket_number)}</strong> — ${escapeHtml(t.service_name || '')}</div>
-                                    <div style=\"font-size:12px;color:#555\">#${t.queue_position ?? '-'} · ${escapeHtml(t.priority_level || 'normal')}</div>
-                                </div>
-                                <div class=\"qbadges\">
-                                    <span class=\"qbadge waiting\">Waiting</span>
-                                    ${badgeForPriority(t.priority_level)}
-                                </div>
-                            </div>
-                        `).join('');
-                    })
-                    .catch(() => {
-                        // Silent fail on preview
-                    });
-            }
-
-            renderQueue();
-            setInterval(renderQueue, 10000);
-        })();
-    </script>
+</script>
 </body>
 </html>

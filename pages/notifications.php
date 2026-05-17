@@ -213,6 +213,36 @@ include '../includes/header.php';
             </div>
         </div>
 
+        <!-- Queue Status Summary -->
+        <?php if (count($queue_tickets) > 0): ?>
+        <div class="notification-section">
+            <h3>🎫 Recent Queue Tickets</h3>
+            <div class="queue-summary-grid">
+                <?php foreach ($queue_tickets as $ticket): ?>
+                <div class="queue-summary-card">
+                    <div class="queue-card-header">
+                        <span class="ticket-number"><?php echo htmlspecialchars($ticket['ticket_number']); ?></span>
+                        <span class="queue-status status-<?php echo $ticket['status']; ?>">
+                            <?php echo ucfirst($ticket['status']); ?>
+                        </span>
+                    </div>
+                    <div class="queue-card-body">
+                        <p class="service-name"><?php echo htmlspecialchars($ticket['service_name'] ?? 'General Service'); ?></p>
+                        <?php if ($ticket['queue_position'] && $ticket['status'] === 'waiting'): ?>
+                        <p class="queue-position">Position: #<?php echo $ticket['queue_position']; ?></p>
+                        <?php endif; ?>
+                        <p class="ticket-date"><?php echo date('M j, Y g:i A', strtotime($ticket['created_at'])); ?></p>
+                    </div>
+                    <div class="queue-card-actions">
+                        <a href="queue-status.php?lookup=1&ticket_number=<?php echo urlencode($ticket['ticket_number']); ?>" 
+                           class="btn btn-sm btn-primary">View Details</a>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Certificate Requests Summary -->
         <?php if (count($certificate_requests) > 0): ?>
         <div class="notification-section">
@@ -221,7 +251,7 @@ include '../includes/header.php';
                 <?php foreach ($certificate_requests as $request): ?>
                 <div class="certificate-summary-card">
                     <div class="cert-card-header">
-                        <span class="request-id">#<?php echo str_pad($request['id'], 5, '0', STR_PAD_LEFT); ?></span>
+                        <span class="cert-type-label"><?php echo htmlspecialchars($request['certificate_type']); ?></span>
                         <span class="cert-status status-<?php echo $request['status']; ?>">
                             <?php echo ucfirst($request['status']); ?>
                         </span>
@@ -304,30 +334,13 @@ include '../includes/header.php';
 </div>
 
 <style>
-/* Override body background for notifications page */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: url('../assets/images/bg2.jpg') center/cover no-repeat;
-    background-attachment: fixed;
-    background-color: #2d5a27;
+    background-color: #f7faf7;
     min-height: 100vh;
     position: relative;
 }
 
-/* Green tint overlay */
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, 
-        rgba(30, 58, 26, 0.8) 100%);
-    z-index: 1;
-}
-
-/* Ensure content is above overlay */
 .content-wrapper {
     position: relative;
     z-index: 2;
@@ -364,9 +377,9 @@ body::before {
 }
 
 .filter-tab.active {
-    background: #2196f3;
+    background: #2e7d32;
     color: white;
-    border-color: #2196f3;
+    border-color: #2e7d32;
 }
 
 /* Notification Sections */

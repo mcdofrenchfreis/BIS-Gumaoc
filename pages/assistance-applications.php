@@ -2,12 +2,14 @@
 session_start();
 $base_path = '../';
 $page_title = 'Assistance Applications - Barangay Gumaoc East';
+require_once __DIR__ . '/../includes/phone_helpers.php';
 
 // Optional: fetch logged-in user for auto-population (mirrors certificate-request pattern)
 $current_user = null;
 try {
   if (isset($_SESSION['rfid_authenticated']) && $_SESSION['rfid_authenticated'] === true && isset($_SESSION['user_id'])) {
     include_once '../includes/db_connect.php';
+    require_once '../includes/phone_helpers.php';
     $stmt = $pdo->prepare('SELECT * FROM residents WHERE id = ?');
     $stmt->execute([$_SESSION['user_id']]);
     $current_user = $stmt->fetch();
@@ -23,26 +25,13 @@ try {
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
   <link rel="stylesheet" href="<?php echo $base_path; ?>css/styles.css">
+  <script src="<?php echo $base_path; ?>assets/js/ph-mobile.js"></script>
   <style>
-    body { padding-top: 64px; }
-    /* Background and overlay similar to certificate-request */
     body {
-      background: url('<?php echo $base_path; ?>assets/images/background.jpg') center/cover no-repeat fixed;
-      background-color: #2d5a27;
+      padding-top: 64px;
+      background-color: #f7faf7;
       min-height: 100vh;
       position: relative;
-    }
-    body::before {
-      content: '';
-      position: fixed; inset: 0;
-      background: linear-gradient(135deg,
-        rgba(45, 90, 39, 0.7) 0%,
-        rgba(74, 124, 89, 0.6) 25%,
-        rgba(53, 122, 60, 0.65) 50%,
-        rgba(45, 90, 39, 0.7) 75%,
-        rgba(30, 58, 26, 0.8) 100%);
-      z-index: 0;
-      pointer-events: none;
     }
 
     .assist-page {
@@ -166,7 +155,7 @@ try {
                         <span class="ph-flag">🇵🇭</span>
                         <span class="code">+63</span>
                       </div>
-                      <input type="tel" id="mobileNumber" name="mobileNumber" placeholder="9XX XXX XXXX" pattern="9[0-9]{9}" maxlength="10" title="Enter PH mobile number without +63 (10 digits starting with 9)" value="<?php echo isset($current_user['phone']) ? preg_replace('/^(\+?63)/','',$current_user['phone']) : ''; ?>">
+                      <input type="tel" id="mobileNumber" name="mobileNumber" placeholder="9XX XXX XXXX" pattern="9[0-9]{9}" maxlength="10" title="Enter PH mobile number without +63 (10 digits starting with 9)" value="<?php echo isset($current_user['phone']) ? htmlspecialchars(format_ph_mobile_input($current_user['phone'])) : ''; ?>">
                     </div>
                     <small class="input-help">Enter your mobile number without +63 (e.g., 9171234567)</small>
                   </div>
@@ -290,6 +279,11 @@ try {
 
       // Initialize age if birthdate present
       calculateAge();
+
+      const mobileInput = document.getElementById('mobileNumber');
+      if (mobileInput && window.PhMobile) {
+        PhMobile.bindPhMobileInput(mobileInput);
+      }
     });
 
     function calculateAge(){

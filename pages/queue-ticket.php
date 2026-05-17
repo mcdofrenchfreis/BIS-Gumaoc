@@ -1,7 +1,18 @@
 <?php
 session_start();
-header('Location: index.php');
-exit;
+$base_path = '../';
+$page_title = 'Get Queue Ticket - Barangay Gumaoc East';
+$header_title = 'Queue Management System';
+$header_subtitle = 'Get your queue number for faster service';
+
+include '../includes/header.php';
+include '../includes/db_connect.php';
+include '../includes/QueueManager.php';
+
+$queueManager = new QueueManager($pdo);
+$success_message = '';
+$error_message = '';
+$ticket_data = null;
 
 // Handle form submission
 if ($_POST && isset($_POST['generate_ticket'])) {

@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 include '../includes/header.php';
 ?>
+<link rel="stylesheet" href="css/mobile.css">
 
 <style>
 .reset-wrapper {
@@ -47,20 +48,9 @@ include '../includes/header.php';
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #f7faf7;
     padding: 20px;
-}
-
-.reset-wrapper::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('../background.jpg') center/cover;
-    opacity: 0.1;
-    z-index: -1;
+    position: relative;
 }
 
 .reset-container {
@@ -70,12 +60,11 @@ include '../includes/header.php';
 }
 
 .reset-card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
+    background: #ffffff;
+    border-radius: 16px;
     padding: 40px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 8px 32px rgba(27, 94, 32, 0.1);
+    border: 1px solid #e8f5e9;
 }
 
 .reset-header {
@@ -117,14 +106,14 @@ include '../includes/header.php';
 
 .form-group input:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #2e7d32;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.12);
 }
 
 .btn-reset {
     width: 100%;
     padding: 14px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
     color: white;
     border: none;
     border-radius: 10px;
@@ -140,7 +129,7 @@ include '../includes/header.php';
 
 .btn-reset:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 10px 20px rgba(27, 94, 32, 0.22);
 }
 
 .btn-reset i {
@@ -168,8 +157,8 @@ include '../includes/header.php';
 }
 
 .info-box {
-    background: #e3f2fd;
-    border: 1px solid #2196f3;
+    background: #f7faf7;
+    border: 1px solid #e8f5e9;
     border-radius: 8px;
     padding: 15px;
     margin-bottom: 20px;
@@ -177,7 +166,7 @@ include '../includes/header.php';
 }
 
 .info-box h4 {
-    color: #1976d2;
+    color: #1b5e20;
     margin: 0 0 8px 0;
     font-size: 16px;
 }
@@ -197,7 +186,7 @@ include '../includes/header.php';
 }
 
 .back-link a {
-    color: #667eea;
+    color: #2e7d32;
     text-decoration: none;
     font-weight: 500;
 }

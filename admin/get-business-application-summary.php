@@ -1,6 +1,10 @@
 <?php
 session_start();
 require_once __DIR__ . '/../includes/db_connect.php';
+require_once __DIR__ . '/../includes/business_application_status.php';
+
+business_application_ensure_status_schema($pdo);
+$ba_status_labels = business_application_status_labels();
 
 // Require admin login
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
@@ -23,18 +27,9 @@ $stmt = $pdo->prepare(
         r.civil_status AS resident_civil_status,
         r.gender AS resident_gender,
         r.birthdate AS resident_birthdate,
-        r.birth_place AS resident_birth_place,
-        cr.years_of_residence AS cr_years_of_residence,
-        cr.purpose AS cr_purpose
+        r.birth_place AS resident_birth_place
      FROM business_applications ba
      LEFT JOIN residents r ON ba.user_id = r.id
-     LEFT JOIN certificate_requests cr
-       ON cr.user_id = ba.user_id
-      AND cr.submitted_at = (
-            SELECT MAX(cr2.submitted_at)
-              FROM certificate_requests cr2
-             WHERE cr2.user_id = ba.user_id
-         )
      WHERE ba.id = ?"
 );
 $stmt->execute([$id]);
@@ -157,10 +152,12 @@ if ($uploadDir !== false && is_dir($uploadDir)) {
     .info-item.full-row .info-label { margin: 0 0 2px; }
     .info-item.full-row .info-value { width: 100%; margin-top: 0; }
     .badge { display:inline-block; padding:0.3rem 0.6rem; border-radius:20px; font-size:0.8rem; font-weight:600; }
-    .status-pending { background:#cce7ff; color:#004085; }
+    .status-pending { background:#fff3cd; color:#856404; }
+    .status-ready { background:#e1bee7; color:#6a1b9a; }
+    .status-received { background:#c8e6c9; color:#1b5e20; }
+    .status-reviewing { background:#cce7ff; color:#004085; }
     .status-approved { background:#d4edda; color:#155724; }
     .status-rejected { background:#f8d7da; color:#721c24; }
-    .status-reviewing { background:#fff3cd; color:#856404; }
     .actions { display:flex; gap:1rem; margin-top: 1rem; align-items:center; flex-wrap:wrap; }
     .print-btn { background: linear-gradient(135deg, #4CAF50, #45a049); color:#fff; border:none; padding:0.6rem 1rem; border-radius:8px; cursor:pointer; font-weight:600; }
     .scroll-top-btn { position: fixed; right: 20px; bottom: 20px; width: 44px; height: 44px; border-radius: 50%; border: none; background: #2e7d32; color: #fff; box-shadow: 0 6px 18px rgba(0,0,0,0.2); cursor: pointer; display: none; align-items: center; justify-content: center; font-size: 20px; z-index: 9999; }
@@ -188,16 +185,17 @@ if ($uploadDir !== false && is_dir($uploadDir)) {
       </div>
       <div class="requester">
         <h2><?php echo h($full_name ?: ($app['business_name'] ?? 'Business Application')); ?></h2>
-        <span class="badge status-<?php echo h($app['status']); ?>"><?php echo ucfirst(h($app['status'])); ?></span>
+        <span class="badge status-<?php echo h($app['status']); ?>"><?php echo h(business_application_status_label($app['status'])); ?></span>
         <form method="POST" action="view-business-applications.php" class="status-form">
           <input type="hidden" name="action" value="update_status">
           <input type="hidden" name="id" value="<?php echo (int)$app['id']; ?>">
           <label for="statusSelectHeader" class="info-label" style="color:#fff; opacity:0.95;">Status:</label>
           <select id="statusSelectHeader" name="status" class="action-select" onchange="this.form.submit()">
-            <option value="pending" <?php echo $app['status']==='pending' ? 'selected' : ''; ?>>Pending</option>
-            <option value="reviewing" <?php echo $app['status']==='reviewing' ? 'selected' : ''; ?>>Reviewing</option>
-            <option value="approved" <?php echo $app['status']==='approved' ? 'selected' : ''; ?>>Approved</option>
-            <option value="rejected" <?php echo $app['status']==='rejected' ? 'selected' : ''; ?>>Rejected</option>
+            <?php foreach ($ba_status_labels as $value => $label): ?>
+            <option value="<?php echo h($value); ?>" <?php echo $app['status'] === $value ? 'selected' : ''; ?>>
+              <?php echo h($label); ?>
+            </option>
+            <?php endforeach; ?>
           </select>
         </form>
       </div>
@@ -216,8 +214,6 @@ if ($uploadDir !== false && is_dir($uploadDir)) {
           <div class="info-item"><div class="info-label">Gender:</div><div class="info-value"><?php echo h($app['resident_gender'] ?? ''); ?></div></div>
           <div class="info-item"><div class="info-label">Birthdate and Age:</div><div class="info-value"><?php echo h($birth_age_text ?: ''); ?></div></div>
           <div class="info-item"><div class="info-label">Birthplace:</div><div class="info-value"><?php echo h($app['resident_birth_place'] ?? ''); ?></div></div>
-          <div class="info-item"><div class="info-label">Years of Residence:</div><div class="info-value"><?php echo h($app['cr_years_of_residence'] ?? '—'); ?></div></div>
-          <div class="info-item full-row"><div class="info-label">Purpose:</div><div class="info-value"><?php echo h($app['cr_purpose'] ?? '—'); ?></div></div>
         </div>
       </div>
 

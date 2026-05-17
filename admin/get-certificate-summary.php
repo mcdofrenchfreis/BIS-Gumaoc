@@ -2,6 +2,15 @@
 // admin/get-certificate-summary.php
 // Returns an HTML summary for a certificate request ID
 
+session_start();
+
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    http_response_code(403);
+    header('Content-Type: text/html; charset=UTF-8');
+    echo '<p style="color:#dc3545;">Unauthorized. Please log in as admin.</p>';
+    exit;
+}
+
 header('Content-Type: text/html; charset=UTF-8');
 $standalone = isset($_GET['standalone']) && $_GET['standalone'] == '1';
 
@@ -13,6 +22,10 @@ if ($id <= 0) {
 }
 
 require_once __DIR__ . '/../includes/db_connect.php';
+require_once __DIR__ . '/../includes/certificate_request_status.php';
+
+certificate_request_ensure_status_schema($pdo);
+$cert_status_labels = certificate_request_status_labels();
 
 function esc($v) {
     return htmlspecialchars((string)$v ?? '', ENT_QUOTES, 'UTF-8');
@@ -396,21 +409,22 @@ if ($certType === 'BUSINESS APPLICATION'):
                     </div>
                     <div class="requester">
                         <h2><?php echo htmlspecialchars($r['full_name'] ?: $r['certificate_type']); ?></h2>
-                        <span class="badge status-<?php echo htmlspecialchars($r['status']); ?>"><?php echo ucfirst($r['status']); ?></span>
-                        <?php if ($r['status'] !== 'released'): ?>
+                        <span class="badge status-<?php echo htmlspecialchars($r['status']); ?>"><?php echo htmlspecialchars(certificate_request_status_label($r['status'])); ?></span>
+                        <?php if ($r['status'] !== 'received'): ?>
                         <form method="POST" action="view-certificate-requests.php" class="status-form">
                             <input type="hidden" name="action" value="update_status">
                             <input type="hidden" name="id" value="<?php echo (int)$r['id']; ?>">
                             <label for="headerStatusSelect" class="info-label" style="color:#fff; opacity:0.95;">Status:</label>
                             <select id="headerStatusSelect" name="status" class="action-select" onchange="this.form.submit()">
-                                <option value="pending" <?php echo $r['status']==='pending' ? 'selected' : ''; ?>>Pending</option>
-                                <option value="processing" <?php echo $r['status']==='processing' ? 'selected' : ''; ?>>Processing</option>
-                                <option value="ready" <?php echo $r['status']==='ready' ? 'selected' : ''; ?>>Ready</option>
-                                <option value="released" <?php echo $r['status']==='released' ? 'selected' : ''; ?>>Released</option>
+                                <?php foreach ($cert_status_labels as $value => $label): ?>
+                                <option value="<?php echo htmlspecialchars($value); ?>" <?php echo $r['status'] === $value ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($label); ?>
+                                </option>
+                                <?php endforeach; ?>
                             </select>
                         </form>
                         <?php else: ?>
-                            <div class="status-locked">Released (Locked)</div>
+                            <div class="status-locked">Received by Resident</div>
                         <?php endif; ?>
                     </div>
                 </div>

@@ -3663,29 +3663,13 @@ body {
   font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
   color: #2c3e50;
-  background: url('../assets/images/background.jpg') no-repeat center center fixed;
-  background-size: cover;
+  background-color: #f7faf7;
   min-height: 100vh;
   margin: 0;
   padding: 0;
   position: relative;
   display: flex;
   flex-direction: column;
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, 
-    rgba(232, 245, 233, 0.9) 0%,
-    rgba(255, 255, 255, 0.95) 50%,
-    rgba(232, 245, 233, 0.9) 100%);
-  backdrop-filter: blur(20px);
-  z-index: -1;
 }
 
 /* Admin View Banner */
@@ -8075,6 +8059,12 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="estimated-time">Estimated processing time: <?php echo $_SESSION['estimated_time'] ?? 'Please check status'; ?></div>
         </div>
         <div class="queue-actions">
+            <a href="queue-status.php?lookup=1&ticket_number=<?php echo urlencode($_SESSION['queue_ticket_number']); ?>" class="btn btn-primary btn-large">
+                📊 CHECK QUEUE STATUS
+            </a>
+            <a href="queue-ticket.php" class="btn btn-secondary btn-large">
+                🎫 GET NEW TICKET
+            </a>
         </div>
         <div class="queue-instructions">
             <h4>📋 IMPORTANT INSTRUCTIONS:</h4>

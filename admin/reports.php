@@ -17,8 +17,8 @@ $showBusinessApps = true;
 // Initialize data buckets (defaults)
 $stats = [
     'census' => ['total' => 0, 'pending' => 0, 'approved' => 0, 'rejected' => 0],
-    'certificates' => ['total' => 0, 'pending' => 0, 'processing' => 0, 'ready' => 0, 'released' => 0],
-    'business' => ['total' => 0, 'pending' => 0, 'reviewing' => 0, 'approved' => 0, 'rejected' => 0],
+    'certificates' => ['total' => 0, 'pending' => 0, 'processing' => 0, 'ready' => 0, 'released' => 0, 'received' => 0],
+    'business' => ['total' => 0, 'pending' => 0, 'reviewing' => 0, 'approved' => 0, 'ready' => 0, 'received' => 0, 'rejected' => 0],
     'business_details' => [
         'with_reference_no' => 0,
         'with_or_number' => 0,
@@ -27,8 +27,6 @@ $stats = [
         'attachments_ctc_image' => 0,
         'attachments_certificate_image' => 0
     ],
-    'queue_today' => ['waiting' => 0, 'serving' => 0, 'completed' => 0, 'cancelled' => 0, 'no_show' => 0, 'total' => 0],
-    'rfid' => ['available' => 0, 'assigned' => 0]
 ];
 
 // Monthly trends containers
@@ -60,7 +58,7 @@ try {
     if ($showCertificates) {
         try {
             $stats['certificates']['total'] = (int)$pdo->query("SELECT COUNT(*) FROM certificate_requests")->fetchColumn();
-            foreach (['pending','processing','ready','released'] as $st) {
+            foreach (['pending','processing','ready','released','received'] as $st) {
                 $stmt = $pdo->query("SELECT COUNT(*) FROM certificate_requests WHERE status = '".$st."'");
                 $stats['certificates'][$st] = (int)$stmt->fetchColumn();
             }
@@ -78,7 +76,7 @@ try {
     if ($showBusinessApps) {
         try {
             $stats['business']['total'] = (int)$pdo->query("SELECT COUNT(*) FROM business_applications")->fetchColumn();
-            foreach (['pending','reviewing','approved','rejected'] as $st) {
+            foreach (['pending','reviewing','approved','ready','received','rejected'] as $st) {
                 $stmt = $pdo->query("SELECT COUNT(*) FROM business_applications WHERE status = '".$st."'");
                 $stats['business'][$st] = (int)$stmt->fetchColumn();
             }
@@ -98,28 +96,6 @@ try {
             } catch (Exception $e) { /* table may not exist */ }
         } catch (Exception $e) {}
     }
-
-    // Queue today (safe fallbacks)
-    try {
-        $qt = $pdo->query("SELECT 
-                COUNT(CASE WHEN status='waiting' THEN 1 END) AS waiting,
-                COUNT(CASE WHEN status='serving' THEN 1 END) AS serving,
-                COUNT(CASE WHEN status='completed' THEN 1 END) AS completed,
-                COUNT(CASE WHEN status='cancelled' THEN 1 END) AS cancelled,
-                COUNT(CASE WHEN status='no_show' THEN 1 END) AS no_show
-            FROM queue_tickets
-            WHERE DATE(created_at)=CURDATE()")->fetch(PDO::FETCH_ASSOC) ?: [];
-        foreach (['waiting','serving','completed','cancelled','no_show'] as $k) {
-            $stats['queue_today'][$k] = (int)($qt[$k] ?? 0);
-        }
-        $stats['queue_today']['total'] = array_sum(array_intersect_key($stats['queue_today'], array_flip(['waiting','serving','completed','cancelled','no_show'])));
-    } catch (Exception $e) {}
-
-    // RFID
-    try {
-        $stats['rfid']['available'] = (int)$pdo->query("SELECT COUNT(*) FROM scanned_rfid_codes WHERE status='available'")->fetchColumn();
-        $stats['rfid']['assigned'] = (int)$pdo->query("SELECT COUNT(*) FROM scanned_rfid_codes WHERE status='assigned'")->fetchColumn();
-    } catch (Exception $e) {}
 
 } catch (Exception $e) {
     $error_message = 'Error building reports: ' . $e->getMessage();
@@ -216,27 +192,8 @@ try {
             </div>
             <?php endif; ?>
 
-            <div class="card">
-                <h3>Queue (Today)</h3>
-                <div class="metric"><?php echo (int)$stats['queue_today']['total']; ?></div>
-                <div class="muted">
-                    <span class="pill">Waiting: <?php echo (int)$stats['queue_today']['waiting']; ?></span>
-                    <span class="pill">Serving: <?php echo (int)$stats['queue_today']['serving']; ?></span>
-                    <span class="pill">Completed: <?php echo (int)$stats['queue_today']['completed']; ?></span>
-                    <span class="pill">Cancelled: <?php echo (int)$stats['queue_today']['cancelled']; ?></span>
-                    <span class="pill">No show: <?php echo (int)$stats['queue_today']['no_show']; ?></span>
-                </div>
+            
             </div>
-
-            <div class="card">
-                <h3>RFID Codes</h3>
-                <div class="metric"><?php echo (int)$stats['rfid']['available'] + (int)$stats['rfid']['assigned']; ?></div>
-                <div class="muted">
-                    <span class="pill">Available: <?php echo (int)$stats['rfid']['available']; ?></span>
-                    <span class="pill">Assigned: <?php echo (int)$stats['rfid']['assigned']; ?></span>
-                </div>
-            </div>
-        </div>
 
         <div class="grid row-3" style="margin-bottom:14px;">
             <?php if ($showCensus): ?>
@@ -279,7 +236,7 @@ try {
                     <?php if ($showBusinessApps): ?>
                     <div class="rowpair"><span>Total Business Apps</span><strong><?php echo (int)$stats['business']['total']; ?></strong></div>
                     <?php endif; ?>
-                    <div class="rowpair"><span>Queue Today</span><strong><?php echo (int)$stats['queue_today']['total']; ?></strong></div>
+                    
                 </div>
             </div>
         </div>

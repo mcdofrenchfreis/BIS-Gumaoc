@@ -436,11 +436,7 @@ $page_description = $page_description ?? 'Administration Panel for Barangay Guma
                 <li><a href="javascript:history.back()" class="admin-nav-link" title="Go Back"><i class="fas fa-arrow-left"></i> Back</a></li>
                 <li><a href="dashboard.php" class="dashboard-btn"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
                 <li><a href="reports.php" class="admin-nav-link"><i class="fas fa-chart-pie"></i> Reports</a></li>
-                <li><a href="queue-admin.php" class="admin-nav-link"><i class="fas fa-list-ol"></i> Queue Management</a></li>
-                <li><a href="rfid-scanner.php" class="admin-nav-link"><i class="fas fa-qrcode"></i> RFID Scanner</a></li>
-                <li><a href="manage-rfid.php" class="admin-nav-link"><i class="fas fa-id-card"></i> RFID Management</a></li>
                 <li><a href="view-resident-registrations.php" class="admin-nav-link"><i class="fas fa-users"></i> Residents</a></li>
-                <li><a href="../index.php" class="admin-nav-link" target="_blank"><i class="fas fa-external-link-alt"></i> View Site</a></li>
                 <li>
                     <span class="admin-user-info">Welcome, <strong><?php echo htmlspecialchars($admin_user['full_name']); ?></strong></span>
                 </li>

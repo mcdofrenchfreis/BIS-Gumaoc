@@ -1,182 +1,94 @@
-/* Fully code-based Filipino Barangay Background */
+/* Minimal green-and-white shell for user portal */
+
+:root {
+    --page-bg: #f7faf7;
+    --card-bg: #ffffff;
+    --card-border: #e8f5e9;
+    --text-primary: #1a1a1a;
+    --nav-green-start: #1b5e20;
+    --nav-green-end: #2e7d32;
+    --user-nav-h: 60px;
+    --user-nav-total: calc(var(--user-nav-h) + env(safe-area-inset-top, 0px));
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    background-color: var(--page-bg);
+    overscroll-behavior-y: none;
+}
+
 body {
-    /* Base background color */
-    background-color: #f8f8f8;
-    position: relative;
-    font-family: 'Arial', sans-serif;
+    background-color: var(--page-bg);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    overflow-x: hidden;
+    overscroll-behavior-y: none;
+    min-height: 100%;
+    min-height: 100dvh;
 }
 
-/* Main background pattern - pure CSS */
-body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: -2;
-    
-    /* Create a complex pattern using multiple gradients */
-    background: 
-        /* Filipino flag colors in the corners */
-        radial-gradient(circle at top left, rgba(0, 56, 168, 0.1), transparent 30%),
-        radial-gradient(circle at top right, rgba(206, 17, 38, 0.1), transparent 30%),
-        radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.1), transparent 30%),
-        radial-gradient(circle at bottom right, rgba(252, 209, 22, 0.1), transparent 30%),
-        
-        /* Bahay Kubo pattern using gradients */
-        linear-gradient(45deg, 
-            transparent 0%, transparent 40%, 
-            rgba(166, 124, 82, 0.1) 40%, rgba(166, 124, 82, 0.1) 60%, 
-            transparent 60%, transparent 100%
-        ) 0 0 / 100px 100px,
-        
-        /* Banig weaving pattern */
-        repeating-linear-gradient(45deg, 
-            rgba(255, 158, 128, 0.1) 0px, 
-            rgba(255, 158, 128, 0.1) 5px, 
-            transparent 5px, 
-            transparent 10px
-        ),
-        repeating-linear-gradient(135deg, 
-            rgba(255, 128, 171, 0.1) 0px, 
-            rgba(255, 128, 171, 0.1) 5px, 
-            transparent 5px, 
-            transparent 10px
-        ),
-        
-        /* Sampaguita-inspired dot pattern */
-        radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.5) 2px, transparent 6px) 0 0 / 50px 50px,
-        radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.5) 2px, transparent 6px) 0 0 / 50px 50px,
-        radial-gradient(circle at 25% 75%, rgba(255, 255, 255, 0.5) 2px, transparent 6px) 0 0 / 50px 50px,
-        radial-gradient(circle at 75% 25%, rgba(255, 255, 255, 0.5) 2px, transparent 6px) 0 0 / 50px 50px,
-        
-        /* Subtle texture */
-        repeating-conic-gradient(
-            rgba(0, 0, 0, 0.03) 0%, 
-            rgba(0, 0, 0, 0) 2%, 
-            rgba(0, 0, 0, 0.03) 4%, 
-            rgba(0, 0, 0, 0) 6%, 
-            rgba(0, 0, 0, 0.03) 8%, 
-            rgba(0, 0, 0, 0) 10%, 
-            rgba(0, 0, 0, 0.03) 12%, 
-            rgba(0, 0, 0, 0) 14%, 
-            rgba(0, 0, 0, 0.03) 16%, 
-            rgba(0, 0, 0, 0) 18%, 
-            rgba(0, 0, 0, 0.03) 20%
-        ) 50% 50% / 100px 100px;
-}
-
-/* Animated overlay */
-body::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: -1;
-    background: 
-        /* Animated sun rays - Filipino sun symbol */
-        conic-gradient(
-            from 0deg at 50% 50%,
-            rgba(252, 209, 22, 0) 0deg,
-            rgba(252, 209, 22, 0.05) 5deg,
-            rgba(252, 209, 22, 0) 10deg,
-            rgba(252, 209, 22, 0) 45deg,
-            rgba(252, 209, 22, 0.05) 50deg,
-            rgba(252, 209, 22, 0) 55deg,
-            rgba(252, 209, 22, 0) 90deg,
-            rgba(252, 209, 22, 0.05) 95deg,
-            rgba(252, 209, 22, 0) 100deg,
-            rgba(252, 209, 22, 0) 135deg,
-            rgba(252, 209, 22, 0.05) 140deg,
-            rgba(252, 209, 22, 0) 145deg,
-            rgba(252, 209, 22, 0) 180deg,
-            rgba(252, 209, 22, 0.05) 185deg,
-            rgba(252, 209, 22, 0) 190deg,
-            rgba(252, 209, 22, 0) 225deg,
-            rgba(252, 209, 22, 0.05) 230deg,
-            rgba(252, 209, 22, 0) 235deg,
-            rgba(252, 209, 22, 0) 270deg,
-            rgba(252, 209, 22, 0.05) 275deg,
-            rgba(252, 209, 22, 0) 280deg,
-            rgba(252, 209, 22, 0) 315deg,
-            rgba(252, 209, 22, 0.05) 320deg,
-            rgba(252, 209, 22, 0) 325deg
-        );
-    animation: rotate 120s linear infinite;
-}
-
-@keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* Container styling with Filipino-inspired borders */
-.container, .card, .form-container, .welcome-section, .services-section {
-    background-color: rgba(255, 255, 255, 0.95);
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    position: relative;
-    overflow: hidden;
-}
-
-/* Filipino flag-inspired borders */
-.card, .form-container, .welcome-section, .services-section {
-    border: none;
-    position: relative;
-}
-
-/* Create decorative borders using pseudo-elements */
-.card::before, .form-container::before, .welcome-section::before, .services-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-top: 4px solid #0038A8; /* Blue */
-    border-right: 4px solid #CE1126; /* Red */
-    border-bottom: 4px solid #FCD116; /* Yellow */
-    border-left: 4px solid #FFFFFF; /* White */
-    pointer-events: none;
-    border-radius: 8px;
-}
-
-/* Add a subtle pattern to cards */
-.card::after, .form-container::after, .welcome-section::after, .services-section::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-        /* Subtle sun rays pattern */
-        repeating-conic-gradient(
-            rgba(252, 209, 22, 0.03) 0deg,
-            rgba(252, 209, 22, 0) 9deg
-        );
-    pointer-events: none;
-    opacity: 0.5;
-    border-radius: 8px;
-}
-
-/* Ensure navbar has proper styling */
+/* Keep navbar pinned to viewport (avoid transform on body — breaks position:fixed) */
 .user-navbar {
-    background: rgba(255, 255, 255, 0.95);
-    border-bottom: 3px solid #0038A8;
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1100;
+    transform: none;
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
 }
 
-/* Add a subtle accent to the navbar */
+@media (max-width: 768px) {
+    .page-content,
+    .dashboard-content,
+    .main-content {
+        padding-top: calc(var(--user-nav-total) + 0.5rem);
+    }
+
+    .welcome-section,
+    .services-section,
+    .form-container {
+        padding: 1.25rem 1rem;
+    }
+}
+
+body::before,
+body::after {
+    display: none;
+}
+
+.card,
+.form-container,
+.welcome-section,
+.services-section {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    box-shadow: 0 4px 20px rgba(27, 94, 32, 0.06);
+    position: relative;
+    overflow: visible;
+}
+
+.card::before,
+.form-container::before,
+.welcome-section::before,
+.services-section::before,
+.card::after,
+.form-container::after,
+.welcome-section::after,
+.services-section::after {
+    display: none;
+}
+
+.user-navbar {
+    background: linear-gradient(135deg, var(--nav-green-start) 0%, var(--nav-green-end) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 12px rgba(27, 94, 32, 0.25);
+}
+
 .user-navbar::after {
-    content: '';
-    position: absolute;
-    bottom: -3px;
-    left: 0;
-    height: 3px;
-    width: 100%;
-    background: linear-gradient(to right, #0038A8, #CE1126, #FCD116);
+    display: none;
 }

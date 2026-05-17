@@ -2,6 +2,11 @@
 session_start();
 include '../includes/db_connect.php';
 include '../includes/AdminLogger.php';
+require_once '../includes/certificate_request_status.php';
+
+certificate_request_ensure_status_schema($pdo);
+$cert_statuses = certificate_request_statuses();
+$cert_status_labels = certificate_request_status_labels();
 
 // Check if admin is logged in
 if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
@@ -15,41 +20,22 @@ $logger = new AdminLogger($pdo);
 if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['status'])) {
     $id = (int)$_POST['id'];
     $new_status = $_POST['status'];
-    $allowed_statuses = ['pending', 'processing', 'ready', 'released'];
-    
-    if (in_array($new_status, $allowed_statuses)) {
-        // Get current status first
+    if (in_array($new_status, $cert_statuses, true)) {
         $stmt = $pdo->prepare("SELECT status, certificate_type, full_name FROM certificate_requests WHERE id = ?");
         $stmt->execute([$id]);
         $current_data = $stmt->fetch();
         $current_status = $current_data['status'];
-        
-        // Check status progression rules
-        $status_valid = false;
-        $error_message = '';
-        
-        if ($current_status === 'pending') {
-            if (in_array($new_status, ['processing', 'ready', 'released'])) {
-                $status_valid = true;
-            } else {
-                $error_message = "From pending status, you can only move to processing, ready, or released.";
-            }
-        } elseif ($current_status === 'processing') {
-            if (in_array($new_status, ['ready', 'released'])) {
-                $status_valid = true;
-            } else {
-                $error_message = "From processing status, you can only move to ready or released.";
-            }
-        } elseif ($current_status === 'ready') {
-            if ($new_status === 'released') {
-                $status_valid = true;
-            } else {
-                $error_message = "From ready status, you can only move to released.";
-            }
-        } elseif ($current_status === 'released') {
-            $error_message = "Released certificates cannot be changed. Status is locked.";
+
+        $status_valid = certificate_request_can_transition($current_status, $new_status);
+        $error_message = $status_valid
+            ? ''
+            : 'Invalid status change. After release, mark as Received when the resident picks up the certificate.';
+
+        if ($current_status === 'received') {
+            $status_valid = false;
+            $error_message = 'Completed requests (received by resident) cannot be changed.';
         }
-        
+
         if ($status_valid) {
             // Begin transaction to update both certificate and queue ticket
             $pdo->beginTransaction();
@@ -72,9 +58,10 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
                 if ($queue_ticket_id) {
                     $queue_status_mapping = [
                         'pending' => 'waiting',
-                        'processing' => 'serving', 
+                        'processing' => 'serving',
                         'ready' => 'serving',
-                        'released' => 'completed'
+                        'released' => 'completed',
+                        'received' => 'completed',
                     ];
                     
                     $queue_status = $queue_status_mapping[$new_status] ?? 'waiting';
@@ -144,13 +131,11 @@ $where_conditions = [];
 $params = [];
 
 if ($active_tab === 'released') {
-    // For released tab, only show released certificates
-    $where_conditions[] = "cr.status = 'released'";
+    $where_conditions[] = "cr.status IN ('released', 'received')";
 } else {
-    // For active tab, show all non-released certificates
-    $where_conditions[] = "cr.status != 'released'";
-    
-    if ($status_filter && in_array($status_filter, ['pending', 'processing', 'ready'])) {
+    $where_conditions[] = "cr.status NOT IN ('released', 'received')";
+
+    if ($status_filter && in_array($status_filter, ['pending', 'processing', 'ready'], true)) {
         $where_conditions = ["cr.status = ?"];
         $params[] = $status_filter;
     }
@@ -198,8 +183,8 @@ $requests = $stmt->fetchAll();
 $cert_types = $pdo->query("SELECT DISTINCT certificate_type FROM certificate_requests ORDER BY certificate_type")->fetchAll(PDO::FETCH_COLUMN);
 
 // Get counts for tab badges
-$active_count = $pdo->query("SELECT COUNT(*) FROM certificate_requests WHERE status != 'released'")->fetchColumn();
-$released_count = $pdo->query("SELECT COUNT(*) FROM certificate_requests WHERE status = 'released'")->fetchColumn();
+$active_count = $pdo->query("SELECT COUNT(*) FROM certificate_requests WHERE status NOT IN ('released', 'received')")->fetchColumn();
+$released_count = $pdo->query("SELECT COUNT(*) FROM certificate_requests WHERE status IN ('released', 'received')")->fetchColumn();
 
 // Check if we should show toast
 $show_toast = isset($_SESSION['toast_message']);
@@ -212,30 +197,14 @@ if (isset($_SESSION['toast_message'])) {
     unset($_SESSION['toast_type']);
 }
 
-// Function to get print URL based on certificate type
-function getPrintUrl($certificate_type, $id) {
-    // Normalize certificate type for better matching
-    $certificate_type = strtoupper(trim($certificate_type));
-    
-    $print_urls = [
-        'BRGY. INDIGENCY' => '../pages/print-indigency.php',
-        'INDIGENCY' => '../pages/print-indigency.php',
-        'BRGY. CLEARANCE' => '../pages/print-barangay-clearance.php',
-        'BARANGAY CLEARANCE' => '../pages/print-barangay-clearance.php',
-        'CLEARANCE' => '../pages/print-barangay-clearance.php',
-        'CERTIFICATION OF RESIDENCY' => '../pages/print-residency.php',
-        'RESIDENCY' => '../pages/print-residency.php',
-        'PROOF OF RESIDENCY' => '../pages/print-residency.php',
-        'TRICYCLE PERMIT' => '../pages/print-tricycle-permit.php',
-        'CEDULA' => '../pages/print-tricycle-permit.php', // Legacy support
-        'CERTIFICATE OF RESIDENCY' => '../pages/print-residency.php',
-        'RESIDENCY CERTIFICATE' => '../pages/print-residency.php',
-        'BARANGAY CERTIFICATE' => '../pages/print-barangay-clearance.php',
-        'CERTIFICATE' => '../pages/print-generic-certificate.php',
-        'CLEARANCE CERTIFICATE' => '../pages/print-barangay-clearance.php'
-    ];
-    
-    return isset($print_urls[$certificate_type]) ? $print_urls[$certificate_type] . '?id=' . $id : null;
+require_once __DIR__ . '/../includes/certificate_print_helpers.php';
+
+function canPrintCertificate(?string $certificate_type): bool
+{
+    if ($certificate_type === null || trim($certificate_type) === '') {
+        return false;
+    }
+    return cr_renderer_for_type($certificate_type) !== null;
 }
 
 // Function to get certificate type icon and color
@@ -531,6 +500,120 @@ function getRequestDetails($request) {
             background: linear-gradient(135deg, #f57c00, #ff9800);
             color: white;
         }
+
+        .cert-print-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 20000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .cert-print-modal-overlay.open {
+            display: flex !important;
+        }
+
+        .cert-print-modal {
+            background: #fff;
+            border-radius: 12px;
+            width: min(95vw, 920px);
+            height: min(92vh, 900px);
+            min-height: 480px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+
+        .cert-print-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.85rem 1.25rem;
+            border-bottom: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+
+        .cert-print-modal-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: #333;
+        }
+
+        .cert-print-modal-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .cert-print-modal-actions button {
+            border: none;
+            border-radius: 6px;
+            padding: 0.45rem 0.9rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .cert-print-modal-actions .btn-print {
+            background: #2e7d32;
+            color: #fff;
+        }
+
+        .cert-print-modal-actions .btn-close {
+            background: #6c757d;
+            color: #fff;
+        }
+
+        .cert-print-modal-body {
+            flex: 1;
+            min-height: 360px;
+            background: #e8e8e8;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .cert-print-modal-body iframe {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 360px;
+            border: 0;
+            background: #fff;
+        }
+
+        .cert-print-loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e8e8e8;
+            color: #555;
+            font-size: 0.95rem;
+            z-index: 1;
+        }
+
+        .cert-print-modal-body.loaded .cert-print-loading {
+            display: none;
+        }
+
+        .cert-print-error {
+            display: none;
+            padding: 1.25rem;
+            color: #842029;
+            background: #f8d7da;
+            border: 1px solid #f5c2c7;
+            border-radius: 8px;
+            margin: 1rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .cert-print-error.visible {
+            display: block;
+        }
         
         .status-badge {
             padding: 0.3rem 0.8rem;
@@ -543,7 +626,8 @@ function getRequestDetails($request) {
         .status-pending { background: #fff3cd; color: #856404; }
         .status-processing { background: #cce5ff; color: #0066cc; }
         .status-ready { background: #d4edda; color: #155724; }
-        .status-released { background: #e2e3e5; color: #383d41; }
+        .status-released { background: #e1bee7; color: #6a1b9a; }
+        .status-received { background: #c8e6c9; color: #1b5e20; }
         
         /* Enhanced Certificate Type Badges */
         .cert-type {
@@ -996,7 +1080,7 @@ function getRequestDetails($request) {
                     <span class="tab-badge"><?php echo $active_count; ?></span>
                 </button>
                 <button class="tab-button <?php echo $active_tab === 'released' ? 'active' : ''; ?>" onclick="switchTab('released')">
-                    ✅ Released Certificates
+                    ✅ Released / Received
                     <span class="tab-badge"><?php echo $released_count; ?></span>
                 </button>
             </div>
@@ -1063,9 +1147,7 @@ function getRequestDetails($request) {
                         <th>Status</th>
                         <th>Submitted</th>
                         <th>View Form</th>
-                        <?php if ($active_tab !== 'released'): ?>
                         <th>Actions</th>
-                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -1106,10 +1188,10 @@ function getRequestDetails($request) {
                             </div>
                         </td>
                         <td>
-                            <span class="status-badge status-<?php echo $req['status']; ?> <?php echo $req['status'] === 'processing' ? 'print-available' : ''; ?>">
-                                <?php echo ucfirst($req['status']); ?>
-                                <?php if ($req['status'] === 'released'): ?>
-                                    🔒
+                            <span class="status-badge status-<?php echo htmlspecialchars($req['status']); ?> <?php echo $req['status'] === 'processing' ? 'print-available' : ''; ?>">
+                                <?php echo htmlspecialchars(certificate_request_status_label($req['status'])); ?>
+                                <?php if ($req['status'] === 'received'): ?>
+                                    ✓
                                 <?php elseif ($req['status'] === 'processing'): ?>
                                     🖨️
                                 <?php endif; ?>
@@ -1124,68 +1206,44 @@ function getRequestDetails($request) {
                                 <a href="get-certificate-summary.php?standalone=1&id=<?php echo $req['id']; ?>" target="_blank" class="view-form-btn" onclick="logCertView(<?php echo $req['id']; ?>)">
                                     👁️ View Summary
                                 </a>
-                                <?php 
-                                // Show print button when status is "processing" for all certificate types
-                                if ($req['status'] === 'processing') {
-                                    $print_url = getPrintUrl($req['certificate_type'], $req['id']);
-                                    if ($print_url): 
+                                <?php
+                                if ($req['status'] === 'processing' && canPrintCertificate($req['certificate_type'])):
+                                    $print_label = $req['certificate_type'] === 'TRICYCLE PERMIT' ? 'Permit' : 'Certificate';
                                 ?>
-                                <a href="<?php echo $print_url; ?>" target="_blank" class="print-cert-btn">
-                                    🖨️ Print <?php echo $req['certificate_type'] === 'TRICYCLE PERMIT' ? 'Permit' : 'Certificate'; ?>
-                                </a>
-                                <?php else: ?>
-                                <a href="../pages/print-generic-certificate.php?id=<?php echo $req['id']; ?>" target="_blank" class="print-cert-btn">
-                                    🖨️ Print Certificate
-                                </a>
-                                <?php 
-                                    endif;
-                                } 
-                                ?>
+                                <button type="button"
+                                    class="print-cert-btn js-print-cert-btn"
+                                    data-request-id="<?php echo (int) $req['id']; ?>"
+                                    data-cert-type="<?php echo htmlspecialchars((string) $req['certificate_type'], ENT_QUOTES, 'UTF-8'); ?>">
+                                    🖨️ Print <?php echo htmlspecialchars($print_label); ?>
+                                </button>
+                                <?php endif; ?>
                             </div>
                         </td>
-                        <?php if ($active_tab !== 'released'): ?>
                         <td>
-                            <?php if ($req['status'] !== 'released'): ?>
+                            <?php if ($req['status'] !== 'received'): ?>
                             <form method="POST" style="margin: 0;">
                                 <input type="hidden" name="action" value="update_status">
                                 <input type="hidden" name="id" value="<?php echo $req['id']; ?>">
                                 <select name="status" class="action-select" onchange="this.form.submit()">
                                     <?php
-                                    // Sequential status progression - only show next logical step
-                                    switch ($req['status']) {
-                                        case 'pending':
-                                            echo '<option value="pending" selected>Pending</option>';
-                                            echo '<option value="processing">→ Move to Processing</option>';
-                                            break;
-                                        case 'processing':
-                                            echo '<option value="processing" selected>Processing</option>';
-                                            echo '<option value="ready">→ Move to Ready</option>';
-                                            break;
-                                        case 'ready':
-                                            echo '<option value="ready" selected>Ready</option>';
-                                            echo '<option value="released">→ Move to Released</option>';
-                                            break;
-                                        default:
-                                            echo '<option value="' . htmlspecialchars($req['status']) . '" selected>' . ucfirst($req['status']) . '</option>';
+                                    $cur = $req['status'];
+                                    echo '<option value="' . htmlspecialchars($cur) . '" selected>'
+                                        . htmlspecialchars(certificate_request_status_label($cur)) . '</option>';
+                                    foreach ($cert_statuses as $st) {
+                                        if ($st !== $cur && certificate_request_can_transition($cur, $st)) {
+                                            echo '<option value="' . htmlspecialchars($st) . '">→ '
+                                                . htmlspecialchars(certificate_request_status_label($st)) . '</option>';
+                                        }
                                     }
-                    
-                    // Close the summary details and container divs
-                    $summaryHTML = "
-                            </div>
-                        </div>
-                    ";
-                    
-                    // Update modal content
-                    echo $summaryHTML;                ?>
+                                    ?>
                                 </select>
                             </form>
                             <?php else: ?>
                             <div class="action-select status-locked">
-                                Released (Locked)
+                                Received by Resident
                             </div>
                             <?php endif; ?>
                         </td>
-                        <?php endif; ?>
                         
                     </tr>
                     <?php endforeach; ?>
@@ -1227,8 +1285,173 @@ function getRequestDetails($request) {
         </div>
         <?php endif; ?>
     </div>
+
+    <div id="certPrintModal" class="cert-print-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="certPrintModalTitle">
+        <div class="cert-print-modal" onclick="event.stopPropagation()">
+            <div class="cert-print-modal-header">
+                <h3 id="certPrintModalTitle">Print certificate</h3>
+                <div class="cert-print-modal-actions">
+                    <button type="button" class="btn-print" onclick="printCertificateFromModal()">🖨️ Print</button>
+                    <button type="button" class="btn-close" onclick="closeCertificatePrintModal()">Close</button>
+                </div>
+            </div>
+            <div class="cert-print-modal-body" id="certPrintModalBody">
+                <div id="certPrintError" class="cert-print-error" role="alert"></div>
+                <div class="cert-print-loading" id="certPrintLoading">Loading certificate preview…</div>
+                <iframe id="certPrintFrame" title="Certificate print preview"></iframe>
+            </div>
+        </div>
+    </div>
     
     <script>
+        function logCertView(requestId) {
+            fetch('../includes/log-action.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'form_view',
+                    target_type: 'certificate_request',
+                    target_id: requestId,
+                    description: 'Viewed certificate request summary ID #' + requestId
+                })
+            }).catch(function () {});
+        }
+
+        function showCertPrintError(message) {
+            const err = document.getElementById('certPrintError');
+            const frame = document.getElementById('certPrintFrame');
+            if (err) {
+                err.textContent = message;
+                err.classList.add('visible');
+            }
+            if (frame) {
+                frame.style.display = 'none';
+            }
+        }
+
+        function clearCertPrintError() {
+            const err = document.getElementById('certPrintError');
+            const frame = document.getElementById('certPrintFrame');
+            if (err) {
+                err.textContent = '';
+                err.classList.remove('visible');
+            }
+            if (frame) {
+                frame.style.display = 'block';
+            }
+        }
+
+        function openCertificatePrint(requestId, certType) {
+            const modal = document.getElementById('certPrintModal');
+            const frame = document.getElementById('certPrintFrame');
+            const title = document.getElementById('certPrintModalTitle');
+            const body = document.getElementById('certPrintModalBody');
+            const loading = document.getElementById('certPrintLoading');
+            if (!modal || !frame) {
+                alert('Print preview is not available. Please refresh the page and try again.');
+                return;
+            }
+
+            if (title) {
+                title.textContent = 'Print: ' + (certType || 'Certificate') + ' (Request #' + requestId + ')';
+            }
+            clearCertPrintError();
+            if (body) {
+                body.classList.remove('loaded');
+            }
+            if (loading) {
+                loading.style.display = 'flex';
+            }
+
+            const printUrl = new URL('print-certificate.php', window.location.href);
+            printUrl.searchParams.set('id', String(requestId));
+            printUrl.searchParams.set('embed', '1');
+
+            frame.onload = function () {
+                if (body) {
+                    body.classList.add('loaded');
+                }
+                if (loading) {
+                    loading.style.display = 'none';
+                }
+            };
+
+            frame.onerror = function () {
+                showCertPrintError('Failed to load the certificate preview. Please try again.');
+            };
+
+            frame.src = printUrl.href;
+            modal.classList.add('open');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCertificatePrintModal() {
+            const modal = document.getElementById('certPrintModal');
+            const frame = document.getElementById('certPrintFrame');
+            const body = document.getElementById('certPrintModalBody');
+            const loading = document.getElementById('certPrintLoading');
+            if (modal) {
+                modal.classList.remove('open');
+                modal.style.display = 'none';
+            }
+            document.body.style.overflow = '';
+            clearCertPrintError();
+            if (body) {
+                body.classList.remove('loaded');
+            }
+            if (loading) {
+                loading.style.display = 'flex';
+            }
+            if (frame) {
+                frame.onload = null;
+                frame.onerror = null;
+                frame.src = 'about:blank';
+            }
+        }
+
+        function printCertificateFromModal() {
+            const frame = document.getElementById('certPrintFrame');
+            const err = document.getElementById('certPrintError');
+            if (err && err.classList.contains('visible')) {
+                return;
+            }
+            if (!frame || !frame.src || frame.src === 'about:blank') {
+                alert('Certificate preview is still loading. Please wait a moment and try again.');
+                return;
+            }
+            try {
+                const win = frame.contentWindow;
+                if (win) {
+                    win.focus();
+                    win.print();
+                }
+            } catch (err) {
+                alert('Could not open the print dialog. Please try again.');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('certPrintModal');
+            if (modal && modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('.js-print-cert-btn');
+                if (btn) {
+                    e.preventDefault();
+                    openCertificatePrint(btn.getAttribute('data-request-id'), btn.getAttribute('data-cert-type'));
+                }
+            });
+
+            modal?.addEventListener('click', function (e) {
+                if (e.target === modal) {
+                    closeCertificatePrintModal();
+                }
+            });
+        });
+
         function switchTab(tab) {
             try {
                 const url = new URL(window.location.href);
@@ -1308,9 +1531,14 @@ function getRequestDetails($request) {
             }
         });
 
-        // Close toast with Escape key
+        // Close toast or print modal with Escape key
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
+                const printModal = document.getElementById('certPrintModal');
+                if (printModal && printModal.classList.contains('open')) {
+                    closeCertificatePrintModal();
+                    return;
+                }
                 hideToast();
             }
         });

@@ -51,11 +51,12 @@ $additional_css = [
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title><?php echo htmlspecialchars($page_title); ?> - Barangay Gumaoc East</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/background.css">
+    <link rel="stylesheet" href="css/mobile.css">
     <style>
         :root {
             --primary-color: #28a745;
@@ -77,44 +78,43 @@ $additional_css = [
             display: flex;
             align-items: center;
             justify-content: center;
-            background: url('../assets/images/background.jpg') no-repeat center center;
-            background-size: cover;
+            background-color: #f7faf7;
             padding: 20px;
-            position: relative;
+            padding-top: 72px;
             box-sizing: border-box;
-        }
-
-        .login-wrapper::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1;
         }
 
         .login-container {
             width: 100%;
             max-width: 400px;
             position: relative;
-            z-index: 2;
         }
 
         .login-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: #ffffff;
             padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(27, 94, 32, 0.1);
+            border: 1px solid #e8f5e9;
             box-sizing: border-box;
         }
 
         .login-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
+        }
+
+        .login-logo {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            object-fit: cover;
+            object-position: center;
+            transform: scale(1.1);
+            transform-origin: center center;
+            display: block;
+            margin: 0 auto 16px;
+            box-shadow: 0 4px 14px rgba(27, 94, 32, 0.15);
         }
 
         .login-header h2 {
@@ -141,8 +141,8 @@ $additional_css = [
         }
 
         .info-box {
-            background: #e3f2fd;
-            border: 1px solid #2196f3;
+            background: #f7faf7;
+            border: 1px solid #e8f5e9;
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 20px;
@@ -150,7 +150,7 @@ $additional_css = [
         }
 
         .info-box h4 {
-            color: #1976d2;
+            color: #1b5e20;
             margin: 0 0 8px 0;
             font-size: 16px;
         }
@@ -257,28 +257,28 @@ $additional_css = [
 
         .back-btn {
             position: fixed;
-            top: 20px;
-            left: 20px;
-            padding: 10px 20px;
-            background: rgba(255, 255, 255, 0.9);
-            color: var(--text-color);
+            top: 16px;
+            left: 16px;
+            padding: 10px 16px;
+            min-height: 44px;
+            background: #ffffff;
+            color: #1b5e20;
             text-decoration: none;
-            border-radius: 8px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: flex;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: box-shadow 0.2s ease, background 0.2s ease;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid #e8f5e9;
+            box-shadow: 0 2px 8px rgba(27, 94, 32, 0.08);
             z-index: 1000;
         }
 
         .back-btn:hover {
-            background: rgba(255, 255, 255, 1);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            color: var(--text-color);
+            background: #f7faf7;
+            box-shadow: 0 4px 12px rgba(27, 94, 32, 0.12);
+            color: #145218;
         }
 
         .back-btn i {
@@ -287,7 +287,7 @@ $additional_css = [
     </style>
 </head>
 <body>
-    <a href="../index.php" class="back-btn">
+    <a href="<?php echo htmlspecialchars($base_path); ?>index.php" class="back-btn">
         <i class="fas fa-arrow-left"></i>
         Back to Home
     </a>
@@ -296,6 +296,7 @@ $additional_css = [
         <div class="login-container">
             <div class="login-card">
                 <div class="login-header">
+                    <img src="<?php echo htmlspecialchars($base_path); ?>assets/images/logo.png" alt="" class="login-logo" width="72" height="72">
                     <h2>Resident Login</h2>
                 </div>
                 

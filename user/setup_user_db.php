@@ -64,7 +64,7 @@ try {
 
     echo "<br><strong>Setup completed successfully!</strong><br>";
     echo "<a href='login.php' style='display:inline-block;margin:10px;padding:10px 20px;background:#28a745;color:white;text-decoration:none;border-radius:5px;'>Go to User Login</a>";
-    echo "<a href='../pages/resident-registration.php' style='display:inline-block;margin:10px;padding:10px 20px;background:#007bff;color:white;text-decoration:none;border-radius:5px;'>Complete Census Registration</a>";
+    echo "<a href='../pages/resident-registration.php' style='display:inline-block;margin:10px;padding:10px 20px;background:#2e7d32;color:white;text-decoration:none;border-radius:5px;'>Complete Census Registration</a>";
 
 } catch (PDOException $e) {
     echo "❌ Error: " . $e->getMessage();

@@ -1,7 +1,15 @@
 <?php
 session_start();
-header('Location: index.php');
-exit;
+$base_path = '../';
+$page_title = 'Queue Status - Barangay Gumaoc East';
+
+include '../includes/db_connect.php';
+include '../includes/QueueManager.php';
+
+// Initialize queue manager
+$queueManager = new QueueManager($pdo);
+
+// Handle lookup request
 $lookup_result = null;
 $lookup_error = null;
 
@@ -93,19 +101,13 @@ include '../includes/header.php';
 ?>
 
 <style>
-/* Background styling with bg2.jpg */
 body {
-    background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('<?php echo $base_path; ?>assets/images/bg2.jpg');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    background-repeat: no-repeat;
+    background: #f7faf7;
     min-height: 100vh;
 }
 
 .content-wrapper {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
+    background: transparent;
     min-height: calc(100vh - 80px);
 }
 
@@ -796,6 +798,7 @@ body {
         <div class="quick-actions">
             <h3>🚀 Quick Actions</h3>
             <div class="action-buttons">
+                <a href="queue-ticket.php" class="btn btn-primary">🎫 Get New Ticket</a>
                                 <a href="certificate-request.php" class="btn btn-outline">📄 Request Certificate</a>
                 <a href="resident-registration.php" class="btn btn-outline">👥 Register as Resident</a>
             </div>

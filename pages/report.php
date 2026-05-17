@@ -23,17 +23,11 @@ include __DIR__ . '/../includes/mini_nav.php';
   .page-container { padding-top: 90px; }
   /* Fix background gap artifacts from fixed attachments */
   body { 
-    background-attachment: scroll !important; 
-    background-image: url('../assets/images/bg2.jpg') !important;
-    background-size: cover !important;
-    background-position: center !important;
-    background-repeat: no-repeat !important;
+    background: #f7faf7 !important;
+    background-attachment: scroll !important;
   }
-  /* Remove global green tint overlay from header.php on this page */
-  body::before { display: none !important; }
   /* Use body as the single background source */
-  .page-container { background: none !important; background-attachment: scroll !important; }
-  .page-container::before { display: none !important; }
+  .page-container { background: #f7faf7 !important; background-attachment: scroll !important; }
   /* Remove extra spacing above footer on this page */
   .minimalist-footer { margin-top: 0 !important; }
   /* Trim bottom padding to tighten space above footer */
@@ -169,24 +163,8 @@ include __DIR__ . '/../includes/mini_nav.php';
 <style>
 .page-container {
     min-height: 100vh;
-    background-image: url('../assets/images/bg2.jpg');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    background-repeat: no-repeat;
+    background: #f7faf7;
     position: relative;
-}
-
-.page-container::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(232, 245, 233, 0.75);
-    backdrop-filter: blur(15px);
-    z-index: -1;
 }
 
 .content-section {

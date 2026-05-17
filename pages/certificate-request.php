@@ -17,6 +17,7 @@ if (empty($_SESSION['user_id']) && !empty($_COOKIE['GUMAOC_USER_ID'])) {
 
 // Initialize database connection
 include '../includes/db_connect.php';
+require_once '../includes/phone_helpers.php';
 
 // Include database connection for blotter checking
 if (!$admin_view) {
@@ -40,9 +41,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($_GET['readonly']) && empty($
         $middle_name = trim($_POST['middleName'] ?? '');
         $last_name = trim($_POST['lastName'] ?? '');
         $full_name = trim($first_name . ' ' . $middle_name . ' ' . $last_name);
-        $mobile_number = $_POST['full_mobile_number'] ?? ($_POST['mobileNumber'] ?? '');
-        if ($mobile_number && preg_match('/^9\d{9}$/', $mobile_number)) {
-            $mobile_number = '+63' . $mobile_number;
+        $mobile_raw = $_POST['full_mobile_number'] ?? ($_POST['mobileNumber'] ?? '');
+        try {
+            $mobile_number = require_valid_ph_mobile($mobile_raw, false);
+        } catch (InvalidArgumentException $e) {
+            throw new Exception($e->getMessage());
         }
         $queue_priority = ($_POST['queue_priority'] ?? 'normal') === 'priority' ? 'priority' : 'normal';
 
@@ -250,31 +253,16 @@ if ($request_data) {
 
 <!-- Minimal Top Navigation (Back on left, Profile on right) -->
 <style>
-  /* Page background to replace plain white gutters */
   body {
-    background: url('<?php echo $base_path; ?>assets/images/bg2.jpg') center/cover no-repeat fixed;
-    background-color: #2d5a27; /* fallback */
+    background-color: #f7faf7;
     min-height: 100vh;
     position: relative;
     padding-top: 64px; /* space for sticky nav */
   }
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: linear-gradient(135deg,
-      rgba(45, 90, 39, 0.7) 0%,
-      rgba(74, 124, 89, 0.6) 25%,
-      rgba(53, 122, 60, 0.65) 50%,
-      rgba(45, 90, 39, 0.7) 75%,
-      rgba(30, 58, 26, 0.8) 100%);
-    z-index: 0;
-    pointer-events: none;
-  }
-  /* Ensure top-level app content renders above the overlay */
-  .container, .section, .form-container, .certificate-selection-screen { position: relative; z-index: 1; }
-\n</style>
+  .container, .section, .form-container, .certificate-selection-screen { position: relative; }
+</style>
 <?php include '../includes/mini_nav.php'; ?>
+<script src="../assets/js/ph-mobile.js"></script>
 <script>
 // Server-provided flag for PWD
 const IS_PWD_USER = <?php echo ($current_user && ($current_user['disability_status'] ?? 'None') === 'PWD') ? 'true' : 'false'; ?>;
@@ -1127,22 +1115,12 @@ document.addEventListener('DOMContentLoaded', function() {
                      pattern="9[0-9]{9}" 
                      maxlength="10"
                      title="Please enter a valid Philippine mobile number (starting with 9, 10 digits total)"
-                     value="<?php 
-                     if ($request_data && $request_data['mobile_number']) {
-                         echo substr($request_data['mobile_number'], 3);
-                    } elseif ($current_user && $current_user['phone']) {
-                        // Normalize phone for display: 10 digits starting with 9
-                        $phone = preg_replace('/\D+/', '', (string)$current_user['phone']);
-                        if (substr($phone, 0, 2) === '63') {
-                            $phone = substr($phone, 2);
-                        } elseif (substr($phone, 0, 3) === '063') {
-                            $phone = substr($phone, 3);
-                        }
-                        if (substr($phone, 0, 1) === '0' && strlen($phone) === 11) {
-                            $phone = substr($phone, 1);
-                        }
-                        echo htmlspecialchars($phone);
-                    }
+                     value="<?php
+                     if ($request_data && !empty($request_data['mobile_number'])) {
+                         echo htmlspecialchars(format_ph_mobile_input($request_data['mobile_number']));
+                     } elseif ($current_user && !empty($current_user['phone'])) {
+                         echo htmlspecialchars(format_ph_mobile_input($current_user['phone']));
+                     }
                      ?>" 
                      <?php echo $readonly ? 'readonly' : ''; ?>>
             </div>
@@ -1309,7 +1287,14 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="service-name">Service: <?php echo htmlspecialchars($_SESSION['service_name'] ?? 'Certificate Request'); ?></div>
             <div class="estimated-time">Estimated processing time: <?php echo $_SESSION['estimated_time'] ?? 'Please check status'; ?></div>
         </div>
-        
+        <div class="queue-actions">
+            <a href="queue-status.php?lookup=1&ticket_number=<?php echo urlencode($_SESSION['queue_ticket_number']); ?>" class="btn btn-primary btn-large">
+                📊 CHECK QUEUE STATUS
+            </a>
+            <a href="queue-ticket.php" class="btn btn-secondary btn-large">
+                🎫 GET NEW TICKET
+            </a>
+        </div>
         <div class="queue-instructions">
             <h4>📋 IMPORTANT INSTRUCTIONS:</h4>
             <ul>
@@ -3224,14 +3209,11 @@ function prefillFromCurrentUser() {
   setIfEmpty('birthplace', user.birth_place);
   setIfEmpty('citizenship', user.citizenship || 'Filipino');
 
-  // Mobile number (convert +63 / 63 prefixes to 10-digit starting with 9)
-  if (user.phone) {
-    let phone = String(user.phone).replace(/\D/g, '');
-    if (phone.startsWith('63')) phone = phone.substring(2);
-    if (phone.length === 11 && phone.startsWith('09')) phone = phone.substring(1);
-    if (phone.length === 10 && phone.startsWith('9')) {
-      const mobileEl = document.getElementById('mobileNumber');
-      if (mobileEl && !(mobileEl.value || '').trim()) mobileEl.value = phone;
+  if (user.phone && window.PhMobile) {
+    const phone = PhMobile.formatPhMobileInput(user.phone);
+    const mobileEl = document.getElementById('mobileNumber');
+    if (mobileEl && phone && !(mobileEl.value || '').trim()) {
+      mobileEl.value = phone;
     }
   }
 
@@ -3650,22 +3632,8 @@ function lockPriorityIfNeeded() {
 // Setup mobile number validation
 function setupMobileNumberValidation() {
   const mobileInput = document.getElementById('mobileNumber');
-  if (mobileInput) {
-    mobileInput.addEventListener('input', function(e) {
-      let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
-      // Keep only 10 digits starting with 9; display without leading 0
-      if (value.startsWith('0')) {
-        value = value.substring(1);
-      }
-      if (value.length > 10) {
-        value = value.substring(0, 10);
-      }
-      // Ensure it starts with 9 while typing
-      if (value && value[0] !== '9') {
-        value = '9' + value.substring(1);
-      }
-      e.target.value = value;
-    });
+  if (mobileInput && window.PhMobile) {
+    PhMobile.bindPhMobileInput(mobileInput);
   }
 }
 
@@ -4530,19 +4498,19 @@ document.addEventListener('DOMContentLoaded', function() {
           // Mobile number validation
           const mobileInput = document.getElementById('mobileNumber');
           if (mobileInput && mobileInput.value) {
-            const mobilePattern = /^9[0-9]{9}$/;
-            if (!mobilePattern.test(mobileInput.value)) {
-              alert('Please enter a valid Philippine mobile number (10 digits starting with 9)');
+            if (!window.PhMobile || !PhMobile.isValidPhMobileLocal(mobileInput.value)) {
+              alert('Please enter a valid Philippine mobile number (10 digits starting with 9, without the leading 0).');
               mobileInput.focus();
               return;
             }
-            
-            // Convert 9XXXXXXXXX to +639XXXXXXXXX (prepend +63)
-            const fullNumber = '+63' + mobileInput.value;
+            const existing = formElement.querySelector('input[name="full_mobile_number"]');
+            if (existing) {
+              existing.remove();
+            }
             const hiddenInput = document.createElement('input');
             hiddenInput.type = 'hidden';
             hiddenInput.name = 'full_mobile_number';
-            hiddenInput.value = fullNumber;
+            hiddenInput.value = PhMobile.toFullPhMobile(mobileInput.value);
             formElement.appendChild(hiddenInput);
           }
           

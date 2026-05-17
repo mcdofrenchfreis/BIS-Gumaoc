@@ -6,6 +6,7 @@ $current_page = 'certificate-request';
 
 // Initialize database connection
 require_once '../includes/db_connect.php';
+require_once '../includes/phone_helpers.php';
 
 // Get current user data for auto-population
 $current_user = null;
@@ -25,7 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $certificate_type = $_POST['certificateType'] ?? '';
         $full_name = trim(($_POST['firstName'] ?? '') . ' ' . ($_POST['middleName'] ?? '') . ' ' . ($_POST['lastName'] ?? ''));
         $address = $_POST['address1'] ?? '';
-        $mobile_number = $_POST['full_mobile_number'] ?? $_POST['mobileNumber'] ?? '';
+        $mobile_raw = $_POST['full_mobile_number'] ?? $_POST['mobileNumber'] ?? '';
+        try {
+            $mobile_number = require_valid_ph_mobile($mobile_raw, false);
+        } catch (InvalidArgumentException $e) {
+            throw new Exception($e->getMessage());
+        }
         $civil_status = $_POST['civilStatus'] ?? '';
         $gender = $_POST['gender'] ?? '';
         $birth_date = $_POST['birthdate'] ?? '';
@@ -173,16 +179,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $photo_id = null;
             if ($photo_image) {
                 $photo_path = 'uploads/user_photos/' . $photo_image;
-                $photo_sql = "INSERT INTO user_photos (user_id, certificate_request_id, photo_filename, original_filename, photo_path, is_default, is_active, uploaded_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())";
-                $photo_stmt = $pdo->prepare($photo_sql);
-                $photo_stmt->execute([
-                    $_SESSION['user_id'],
-                    $request_id,
-                    $photo_image,
-                    $_FILES['photoImage']['name'],
-                    $photo_path
-                ]);
-                $photo_id = $pdo->lastInsertId();
+                try {
+                    $photo_sql = "INSERT INTO user_photos (user_id, certificate_request_id, photo_filename, original_filename, photo_path, is_default, is_active, uploaded_at) VALUES (?, ?, ?, ?, ?, 1, 1, NOW())";
+                    $photo_stmt = $pdo->prepare($photo_sql);
+                    $photo_stmt->execute([
+                        $_SESSION['user_id'],
+                        $request_id,
+                        $photo_image,
+                        $_FILES['photoImage']['name'],
+                        $photo_path
+                    ]);
+                    $photo_id = $pdo->lastInsertId();
+                } catch (PDOException $photoEx) {
+                    $fallbackStmt = $pdo->prepare('UPDATE certificate_requests SET photo_2x2 = ? WHERE id = ?');
+                    $fallbackStmt->execute([$photo_image, $request_id]);
+                }
             }
 
             // 3) If photo_id column exists and we uploaded a photo, update the certificate_request
@@ -214,9 +225,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title><?php echo $page_title; ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/background.css">
+    <link rel="stylesheet" href="css/mobile.css">
+    <script src="../assets/js/ph-mobile.js"></script>
+    <link rel="stylesheet" href="css/forms-portal.css">
     <style>
         * {
             margin: 0;
@@ -226,22 +241,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+            background-color: #f7faf7;
             min-height: 100vh;
-            padding: 20px;
+            padding: 0;
             opacity: 0;
             animation: fadeInPage 0.8s ease-out 0.3s forwards;
         }
         
         @keyframes fadeInPage {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .container {
@@ -255,18 +264,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .header {
-            background: linear-gradient(135deg, #28a745, #20c997);
+            background: linear-gradient(135deg, #1b5e20, #2e7d32);
             color: white;
             padding: 40px;
             text-align: center;
@@ -320,9 +323,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #f7faf7;
+            color: #1b5e20;
+            border: 1px solid #e8f5e9;
         }
 
         .certificate-selection {
@@ -355,7 +358,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .certificate-card.selected {
-            background: linear-gradient(135deg, #28a745, #20c997);
+            background: linear-gradient(135deg, #1b5e20, #2e7d32);
             color: white;
             border-color: #28a745;
         }
@@ -384,18 +387,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         .form-container.show {
             display: block;
-            animation: slideUp 0.5s ease;
+            animation: slideUpForm 0.5s ease;
         }
 
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        @keyframes slideUpForm {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .form-section {
@@ -435,7 +432,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding: 12px 15px;
             border: 2px solid #e9ecef;
             border-radius: 10px;
-            font-size: 14px;
+            font-size: 16px;
+            font-family: inherit;
             transition: all 0.3s ease;
         }
 
@@ -468,7 +466,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .submit-btn {
-            background: linear-gradient(135deg, #28a745, #20c997);
+            background: linear-gradient(135deg, #1b5e20, #2e7d32);
             color: white;
             border: none;
             padding: 15px 40px;
@@ -654,7 +652,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .file-remove-btn {
-            background: #dc3545;
+            background: #2e7d32;
             color: white;
             border: none;
             border-radius: 50%;
@@ -669,7 +667,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .file-remove-btn:hover {
-            background: #c82333;
+            background: #1b5e20;
             transform: scale(1.1);
         }
 
@@ -720,9 +718,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .validation-message.warning {
-            background: rgba(255, 193, 7, 0.1);
-            color: #856404;
-            border: 1px solid rgba(255, 193, 7, 0.3);
+            background: rgba(46, 125, 50, 0.08);
+            color: #1b5e20;
+            border: 1px solid rgba(46, 125, 50, 0.22);
         }
 
         .validation-message.valid {
@@ -732,14 +730,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .validation-message.error {
-            background: rgba(220, 53, 69, 0.1);
-            color: #721c24;
-            border: 1px solid rgba(220, 53, 69, 0.3);
+            background: rgba(46, 125, 50, 0.08);
+            color: #1b5e20;
+            border: 1px solid rgba(46, 125, 50, 0.22);
         }
 
         .form-group input.validating {
-            border-color: #ffc107;
-            background: rgba(255, 193, 7, 0.05);
+            border-color: #2e7d32;
+            background: rgba(46, 125, 50, 0.04);
         }
 
         .form-group input.valid {
@@ -748,11 +746,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         .form-group input.invalid {
-            border-color: #dc3545;
-            background: rgba(220, 53, 69, 0.05);
+            border-color: #2e7d32;
+            background: rgba(46, 125, 50, 0.04);
         }
 
-        /* Enhanced mobile responsiveness */
         @media (max-width: 768px) {
             .radio-group {
                 flex-direction: column;
@@ -771,36 +768,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 padding: 15px;
             }
 
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                border-radius: 15px;
-            }
-            
-            .header {
-                padding: 30px 20px;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .content {
-                padding: 20px;
-            }
-            
             .certificate-grid {
                 grid-template-columns: 1fr;
             }
-            
+
             .form-grid {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
-<body>
-
+<body class="user-form-page">
 
     <?php include 'navbar_component.php'; ?>
 
@@ -914,16 +892,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     </div>
                                     <input type="tel" id="mobileNumber" name="mobileNumber" 
                                            placeholder="9XX XXX XXXX" maxlength="10"
-                                           value="<?php 
-                                           if ($current_user && $current_user['phone']) {
-                                               $phone = $current_user['phone'];
-                                               if (substr($phone, 0, 3) === '+63') {
-                                                   echo substr($phone, 3);
-                                               } else {
-                                                   echo $phone;
-                                               }
-                                           }
-                                           ?>">
+                                           value="<?php echo htmlspecialchars(format_ph_mobile_input($current_user['phone'] ?? '')); ?>">
                                 </div>
                             </div>
                         </div>
@@ -1411,18 +1380,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (middleNameField) middleNameField.value = '<?php echo htmlspecialchars($current_user['middle_name'] ?? ''); ?>';
                     if (lastNameField) lastNameField.value = '<?php echo htmlspecialchars($current_user['last_name'] ?? ''); ?>';
                     if (addressField) addressField.value = '<?php echo htmlspecialchars($current_user['address'] ?? ''); ?>';
-                    if (mobileField) {
-                        let phone = '<?php 
-                        if ($current_user && $current_user['phone']) {
-                            $phone = $current_user['phone'];
-                            if (substr($phone, 0, 3) === '+63') {
-                                echo substr($phone, 3);
-                            } else {
-                                echo $phone;
-                            }
+                    if (mobileField && window.PhMobile) {
+                        const phone = PhMobile.formatPhMobileInput('<?php echo htmlspecialchars(format_ph_mobile_input($current_user['phone'] ?? ''), ENT_QUOTES); ?>');
+                        if (phone) {
+                            mobileField.value = phone;
                         }
-                        ?>';
-                        mobileField.value = phone;
                     }
                     if (civilStatusField) civilStatusField.value = '<?php echo ($current_user['civil_status'] ?? ''); ?>';
                     if (genderField) genderField.value = '<?php echo ($current_user['gender'] ?? ''); ?>';
@@ -1435,21 +1397,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         function setupMobileValidation() {
             const mobileInput = document.getElementById('mobileNumber');
-            
-            mobileInput.addEventListener('input', function() {
-                // Remove non-digits
-                this.value = this.value.replace(/[^0-9]/g, '');
-                
-                // Limit to 10 digits
-                if (this.value.length > 10) {
-                    this.value = this.value.substring(0, 10);
-                }
-                
-                // Must start with 9
-                if (this.value.length > 0 && this.value[0] !== '9') {
-                    this.value = '9' + this.value.substring(1);
-                }
-            });
+            if (mobileInput && window.PhMobile) {
+                PhMobile.bindPhMobileInput(mobileInput);
+            }
         }
 
         // Blotter Detection and Name Validation Setup
@@ -1594,11 +1544,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         function getToastColor(type) {
             switch (type) {
-                case 'success': return 'linear-gradient(135deg, #28a745, #20c997)';
-                case 'error': return 'linear-gradient(135deg, #dc3545, #c82333)';
-                case 'warning': return 'linear-gradient(135deg, #ffc107, #e0a800)';
+                case 'success': return 'linear-gradient(135deg, #1b5e20, #2e7d32)';
+                case 'error': return 'linear-gradient(135deg, #1b5e20, #2e7d32)';
+                case 'warning': return 'linear-gradient(135deg, #1b5e20, #2e7d32)';
                 case 'info': 
-                default: return 'linear-gradient(135deg, #17a2b8, #138496)';
+                default: return 'linear-gradient(135deg, #1b5e20, #2e7d32)';
             }
         }
 
@@ -1822,19 +1772,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         function proceedWithFormValidation(e, mobileInput) {
             // Mobile number validation
             if (mobileInput.value) {
-                const mobilePattern = /^9[0-9]{9}$/;
-                if (!mobilePattern.test(mobileInput.value)) {
-                    alert('Please enter a valid Philippine mobile number starting with 9 (10 digits total)');
+                if (!window.PhMobile || !PhMobile.isValidPhMobileLocal(mobileInput.value)) {
+                    alert('Please enter a valid Philippine mobile number (10 digits starting with 9, without the leading 0).');
                     mobileInput.focus();
                     return;
                 }
-                
-                // Add full mobile number as hidden field
-                const fullNumber = '+63' + mobileInput.value;
+
+                const existing = document.querySelector('input[name="full_mobile_number"]');
+                if (existing) {
+                    existing.remove();
+                }
                 const hiddenInput = document.createElement('input');
                 hiddenInput.type = 'hidden';
                 hiddenInput.name = 'full_mobile_number';
-                hiddenInput.value = fullNumber;
+                hiddenInput.value = PhMobile.toFullPhMobile(mobileInput.value);
                 document.getElementById('certificateForm').appendChild(hiddenInput);
             }
             

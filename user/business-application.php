@@ -4,6 +4,7 @@ $page_title = 'Business Permit Application - Barangay Gumaoc East';
 $current_page = 'business-application';
 
 require_once '../includes/db_connect.php';
+require_once '../includes/phone_helpers.php';
 
 // Check for admin view mode (readonly)
 $admin_view = isset($_GET['admin_view']) && isset($_GET['readonly']);
@@ -53,10 +54,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        // Extract mobile number
-        $mobile_number = $_POST['full_mobile_number'] ?? '';
-        if (empty($mobile_number) && !empty($_POST['mobileNumber'])) {
-            $mobile_number = '+63' . $_POST['mobileNumber'];
+        $mobile_raw = $_POST['full_mobile_number'] ?? $_POST['mobileNumber'] ?? '';
+        try {
+            $mobile_number = require_valid_ph_mobile($mobile_raw, false);
+        } catch (InvalidArgumentException $e) {
+            throw new Exception($e->getMessage());
         }
         
         // Combine names
@@ -82,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         if ($result) {
             $_SESSION['success'] = "Business permit application submitted successfully! Reference: " . $_POST['reference_no'];
-            header('Location: business-application.php');
+            header('Location: my-business-applications.php');
             exit;
         }
         
@@ -96,55 +98,80 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title><?php echo $page_title; ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/background.css">
+    <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="css/forms-portal.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
-            min-height: 100vh; padding: 20px;
+            background-color: #f7faf7;
+            min-height: 100vh;
+            padding: 0;
             opacity: 0; animation: fadeInPage 0.8s ease-out 0.3s forwards;
         }
-        @keyframes fadeInPage { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInPage { from { opacity: 0; } to { opacity: 1; } }
 
         .container {
-            max-width: 1000px; margin: 90px auto 0; background: white;
-            border-radius: 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
-            overflow: hidden; animation: slideUp 0.8s ease-out 0.5s both;
+            max-width: 1000px;
+            margin: 90px auto 0;
+            background: white;
+            border-radius: 20px;
+            border: 1px solid #e8f5e9;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            animation: slideUp 0.8s ease-out 0.5s both;
         }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { opacity: 0; } to { opacity: 1; } }
 
         .header {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white; padding: 40px; text-align: center; position: relative;
+            background: #ffffff;
+            color: #1b5e20;
+            padding: 28px 28px 18px;
+            text-align: center;
+            position: relative;
+            border-bottom: 1px solid #e8f5e9;
         }
-        .header h1 { font-size: 2.5rem; margin-bottom: 10px; font-weight: 700; }
-        .header p { font-size: 1.2rem; opacity: 0.9; }
+        .header h1 { font-size: 1.8rem; margin-bottom: 6px; font-weight: 800; }
+        .header p { font-size: 1rem; color: #3a3a3a; opacity: 1; }
         .back-link {
             position: absolute; top: 20px; left: 20px;
-            background: rgba(255, 255, 255, 0.2); color: white;
-            padding: 10px 20px; border-radius: 25px; text-decoration: none;
-            font-weight: 500; transition: all 0.3s ease;
+            background: #f7faf7;
+            color: #1b5e20;
+            padding: 10px 14px;
+            min-height: 44px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 700;
+            transition: all 0.2s ease;
+            border: 1px solid #e8f5e9;
         }
-        .back-link:hover { background: rgba(255, 255, 255, 0.3); transform: translateY(-2px); }
+        .back-link:hover { background: #ffffff; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(27, 94, 32, 0.10); }
 
-        .content { padding: 40px; }
+        .content { padding: 28px; }
         .alert { padding: 15px 20px; border-radius: 10px; margin-bottom: 20px; font-weight: 500; }
         .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
 
-        .form-section { background: #f8f9fa; border-radius: 15px; padding: 30px; margin-bottom: 30px; }
-        .form-section h3 { color: #4CAF50; margin-bottom: 20px; font-size: 1.3rem; }
+        .form-section {
+            background: #ffffff;
+            border: 1px solid #e8f5e9;
+            border-radius: 16px;
+            padding: 22px;
+            margin-bottom: 20px;
+        }
+        .form-section h3 { color: #1b5e20; margin-bottom: 16px; font-size: 1.15rem; }
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
         .form-group { margin-bottom: 20px; }
         .form-group.full-width { grid-column: 1 / -1; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #495057; }
-        .required { color: #e74c3c; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 700; color: #1b5e20; }
+        .required { color: #1b5e20; }
         .form-group input, .form-group select, .form-group textarea {
             width: 100%; padding: 12px 15px; border: 2px solid #e9ecef;
-            border-radius: 10px; font-size: 14px; transition: all 0.3s ease;
+            border-radius: 10px; font-size: 16px; font-family: inherit; transition: all 0.3s ease;
         }
         .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
             outline: none; border-color: #4CAF50; box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
@@ -196,21 +223,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .reset-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4); }
 
         @media (max-width: 768px) {
-            .container { margin: 20px auto; } .header { padding: 30px 20px; }
-            .header h1 { font-size: 2rem; } .content { padding: 30px 20px; }
+            .container { margin-top: calc(60px + 0.75rem); margin-left: auto; margin-right: auto; width: calc(100% - 1rem); }
+            .header { padding: 22px 16px 14px; }
+            .header h1 { font-size: 1.5rem; }
+            .content { padding: 18px 16px; }
             .name-row { grid-template-columns: 1fr; } .form-grid { grid-template-columns: 1fr; }
             .form-actions { flex-direction: column; align-items: center; }
             .submit-btn, .reset-btn { width: 100%; max-width: 300px; justify-content: center; }
         }
     </style>
+    <script src="../assets/js/ph-mobile.js"></script>
 </head>
-<body>
+<body class="user-form-page">
     <?php include 'navbar_component.php'; ?>
 
     <div class="container">
         <div class="header">
-            <a href="e-services.php" class="back-link">
-                <i class="fas fa-arrow-left"></i> Back to E-Services
+            <a href="dashboard.php" class="back-link">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
             </a>
             <h1>🏢 Business Permit Application</h1>
             <p>Apply for your business permit online</p>
@@ -274,12 +304,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="mobile-input-container">
                                 <div class="country-code"><span>🇵🇭</span><span>+63</span></div>
                                 <input type="tel" id="mobileNumber" name="mobileNumber" placeholder="9XX XXX XXXX" maxlength="10"
-                                       value="<?php 
-                                       if ($current_user && $current_user['phone']) {
-                                           $phone = $current_user['phone'];
-                                           echo substr($phone, 0, 3) === '+63' ? substr($phone, 3) : $phone;
-                                       }
-                                       ?>">
+                                       value="<?php echo htmlspecialchars(format_ph_mobile_input($current_user['phone'] ?? '')); ?>">
                             </div>
                         </div>
                     </div>
@@ -367,14 +392,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     function setupMobileValidation() {
         const mobileInput = document.getElementById('mobileNumber');
-        if (mobileInput) {
-            mobileInput.addEventListener('input', function() {
-                this.value = this.value.replace(/[^0-9]/g, '');
-                if (this.value.length > 10) this.value = this.value.substring(0, 10);
-                if (this.value.length > 0 && this.value[0] !== '9') {
-                    this.value = '9' + this.value.substring(1);
-                }
-            });
+        if (mobileInput && window.PhMobile) {
+            PhMobile.bindPhMobileInput(mobileInput);
         }
     }
 
@@ -384,17 +403,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             form.addEventListener('submit', function(e) {
                 const mobileInput = document.getElementById('mobileNumber');
                 if (mobileInput && mobileInput.value) {
-                    const mobilePattern = /^9[0-9]{9}$/;
-                    if (!mobilePattern.test(mobileInput.value)) {
+                    if (!window.PhMobile || !PhMobile.isValidPhMobileLocal(mobileInput.value)) {
                         e.preventDefault();
-                        alert('Please enter a valid Philippine mobile number starting with 9');
+                        alert('Please enter a valid Philippine mobile number (10 digits starting with 9, without the leading 0).');
                         return;
                     }
-                    const fullNumber = '+63' + mobileInput.value;
+                    const existing = this.querySelector('input[name="full_mobile_number"]');
+                    if (existing) {
+                        existing.remove();
+                    }
                     const hiddenInput = document.createElement('input');
                     hiddenInput.type = 'hidden';
                     hiddenInput.name = 'full_mobile_number';
-                    hiddenInput.value = fullNumber;
+                    hiddenInput.value = PhMobile.toFullPhMobile(mobileInput.value);
                     this.appendChild(hiddenInput);
                 }
             });

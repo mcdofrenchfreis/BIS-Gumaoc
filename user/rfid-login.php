@@ -35,7 +35,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rfid_code'])) {
         
         header('Location: dashboard.php');
         exit();
-{{ ... }}
     } else {
         $error = 'Invalid RFID or user not found.';
     }
@@ -45,13 +44,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rfid_code'])) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title><?php echo htmlspecialchars($page_title); ?> - Barangay Gumaoc East</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="css/background.css">
+    <link rel="stylesheet" href="css/mobile.css">
     <style>
         :root {
-            --primary-color: #17a2b8;
-            --primary-hover: #138496;
+            --primary-color: #2e7d32;
+            --primary-hover: #1b5e20;
             --text-color: #1a2c38;
             --error-bg: #f8d7da;
             --error-border: #f5c6cb;
@@ -62,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['rfid_code'])) {
             margin: 0;
             padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f7faf7;
             min-height: 100vh;
         }
 

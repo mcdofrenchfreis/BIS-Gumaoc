@@ -168,8 +168,7 @@ if ($_POST && isset($_POST['otp']) && isset($_POST['new_password'])) {
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: url('assets/images/background.jpg') center/cover no-repeat;
-            background-attachment: fixed;
+            background-color: #f7faf7;
             margin: 0;
             padding: 0;
             min-height: 100vh;
@@ -179,32 +178,14 @@ if ($_POST && isset($_POST['otp']) && isset($_POST['new_password'])) {
             position: relative;
         }
         
-        /* Green tint overlay */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, 
-                rgba(45, 90, 39, 0.7) 0%, 
-                rgba(74, 124, 89, 0.6) 25%, 
-                rgba(53, 122, 60, 0.65) 50%, 
-                rgba(45, 90, 39, 0.7) 75%, 
-                rgba(30, 58, 26, 0.8) 100%);
-            z-index: 1;
-        }
-        
         .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(15px);
+            background: #ffffff;
             padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(27, 94, 32, 0.12);
             width: 100%;
             max-width: 450px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid #e8f5e9;
             position: relative;
             z-index: 2;
         }
@@ -229,19 +210,16 @@ if ($_POST && isset($_POST['otp']) && isset($_POST['new_password'])) {
         }
         
         .brgy-logo {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
-            background: linear-gradient(135deg, #2d5a27, #4a7c59);
+            width: 72px;
+            height: 72px;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 24px;
-            box-shadow: 0 8px 16px rgba(45, 90, 39, 0.4);
-            border: 3px solid rgba(255, 255, 255, 0.2);
+            object-fit: cover;
+            object-position: center;
+            transform: scale(1.1);
+            transform-origin: center center;
+            margin: 0 auto 16px;
+            display: block;
+            box-shadow: 0 4px 14px rgba(27, 94, 32, 0.15);
         }
         
         .error {
@@ -442,13 +420,8 @@ if ($_POST && isset($_POST['otp']) && isset($_POST['new_password'])) {
             }
             
             .brgy-logo {
-                width: 60px;
-                height: 60px;
-                font-size: 20px;
-            }
-            
-            body {
-                background-attachment: scroll;
+                width: 64px;
+                height: 64px;
             }
         }
         
@@ -613,7 +586,7 @@ if ($_POST && isset($_POST['otp']) && isset($_POST['new_password'])) {
 <body>
     <div class="login-container">
         <div class="login-header">
-            <div class="brgy-logo">BRGY</div>
+            <img src="assets/images/logo.png" alt="" class="brgy-logo" width="72" height="72">
             <h2>GUMAOC EAST</h2>
             <p>Barangay Management System</p>
         </div>

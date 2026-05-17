@@ -1,0 +1,222 @@
+/**
+ * Certificate / business form pages — mobile layout (load after page inline styles)
+ */
+@media (max-width: 768px) {
+    body.user-form-page {
+        padding: 0 !important;
+    }
+
+    body.user-form-page .container {
+        margin-top: calc(var(--user-nav-total, 68px) + 0.5rem) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        margin-bottom: 1rem !important;
+        width: calc(100% - 1rem) !important;
+        max-width: 100% !important;
+        border-radius: 14px !important;
+    }
+
+    body.user-form-page .content {
+        padding: 1rem !important;
+    }
+
+    body.user-form-page .alert {
+        padding: 0.75rem !important;
+        font-size: 0.8125rem !important;
+        line-height: 1.45 !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    body.user-form-page .certificate-selection {
+        margin-bottom: 1.25rem !important;
+        text-align: left !important;
+    }
+
+    body.user-form-page .certificate-selection h2 {
+        font-size: 1.125rem !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    body.user-form-page .certificate-selection > p {
+        font-size: 0.875rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    body.user-form-page .certificate-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0.625rem !important;
+    }
+
+    body.user-form-page .certificate-card {
+        padding: 0.875rem 1rem !important;
+        display: flex !important;
+        align-items: center !important;
+        text-align: left !important;
+        gap: 0.75rem !important;
+        border-width: 2px !important;
+        border-radius: 12px !important;
+    }
+
+    body.user-form-page .certificate-card:hover {
+        transform: none !important;
+    }
+
+    body.user-form-page .certificate-icon {
+        font-size: 1.5rem !important;
+        margin: 0 !important;
+        flex-shrink: 0 !important;
+        width: 2.5rem !important;
+        text-align: center !important;
+    }
+
+    body.user-form-page .certificate-title {
+        font-size: 0.9375rem !important;
+        margin-bottom: 0.15rem !important;
+    }
+
+    body.user-form-page .certificate-description {
+        font-size: 0.75rem !important;
+    }
+
+    body.user-form-page .form-container {
+        margin-top: 1rem !important;
+    }
+
+    body.user-form-page .form-section {
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
+        border-radius: 12px !important;
+    }
+
+    body.user-form-page .form-section h3 {
+        font-size: 1rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    body.user-form-page .form-group {
+        margin-bottom: 0.875rem !important;
+    }
+
+    body.user-form-page .form-group label {
+        font-size: 0.8125rem !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    body.user-form-page .form-group input,
+    body.user-form-page .form-group select,
+    body.user-form-page .form-group textarea,
+    body.user-form-page .mobile-input-container input {
+        font-family: inherit !important;
+        font-size: 16px !important;
+        padding: 0.625rem 0.75rem !important;
+        min-height: 44px !important;
+        border-radius: 10px !important;
+    }
+
+    body.user-form-page .form-group textarea {
+        min-height: 5rem !important;
+    }
+
+    body.user-form-page input[type="date"],
+    body.user-form-page input[type="datetime-local"] {
+        font-family: inherit !important;
+        font-size: 16px !important;
+        min-height: 44px !important;
+    }
+
+    body.user-form-page .name-row {
+        grid-template-columns: 1fr !important;
+        gap: 0.625rem !important;
+    }
+
+    body.user-form-page .form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 0 !important;
+    }
+
+    body.user-form-page .back-btn,
+    body.user-form-page .back-link {
+        width: 100% !important;
+        max-width: 100% !important;
+        justify-content: center !important;
+        margin-bottom: 0.75rem !important;
+        padding: 0.625rem 1rem !important;
+        font-size: 0.875rem !important;
+        border-radius: 10px !important;
+        min-height: 44px !important;
+    }
+
+    body.user-form-page .header {
+        padding: 1rem !important;
+        text-align: left !important;
+    }
+
+    body.user-form-page .header h1 {
+        font-size: 1.25rem !important;
+        padding-top: 0 !important;
+    }
+
+    body.user-form-page .header p {
+        font-size: 0.875rem !important;
+    }
+
+    body.user-form-page .file-upload-container {
+        padding: 1rem !important;
+    }
+
+    body.user-form-page .submit-container {
+        margin-top: 1.25rem !important;
+    }
+
+    body.user-form-page .submit-btn,
+    body.user-form-page .reset-btn {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 0.9375rem !important;
+        border-radius: 12px !important;
+    }
+
+    body.user-form-page .form-actions {
+        flex-direction: column !important;
+        padding-top: 1rem !important;
+        margin-top: 1rem !important;
+    }
+
+    body.user-form-page .mobile-input-container {
+        min-height: 44px !important;
+    }
+
+    body.user-form-page .country-code {
+        padding: 0.625rem 0.5rem !important;
+        font-size: 0.8125rem !important;
+    }
+
+    body.user-form-page .request-card,
+    body.user-form-page .request-item {
+        padding: 0.875rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    body.user-form-page .request-details {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem !important;
+    }
+
+    body.user-form-page .empty-state {
+        padding: 1.5rem 1rem !important;
+    }
+
+    body.user-form-page .empty-state i {
+        font-size: 2.5rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    body.user-form-page .container {
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        border-radius: 12px 12px 0 0 !important;
+    }
+}

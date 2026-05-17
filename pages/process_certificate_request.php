@@ -1,6 +1,8 @@
 <?php
 session_start();
 include '../includes/db_connect.php';
+include '../includes/phone_helpers.php';
+include '../includes/QueueManager.php'; // Add this line
 
 // Check if form was submitted
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -21,7 +23,7 @@ try {
     $address1 = trim($_POST['address1'] ?? '');
     $address2 = trim($_POST['address2'] ?? '');
     $address = $address1 . (empty($address2) ? '' : ', ' . $address2); // Combine both address lines
-    $mobile_number = trim($_POST['mobileNumber'] ?? '');
+    $mobile_raw = trim($_POST['full_mobile_number'] ?? $_POST['mobileNumber'] ?? '');
     $civil_status = $_POST['civilStatus'] ?? '';
     $gender = $_POST['gender'] ?? '';
     $birth_date = $_POST['birthdate'] ?? '';
@@ -50,18 +52,13 @@ try {
     }
     $full_name .= ' ' . $last_name;
     
-    // Format mobile number
-    if (!empty($mobile_number)) {
-        // Remove any existing +63 prefix and ensure it starts with +63
-        $mobile_number = preg_replace('/^\+?63/', '', $mobile_number);
-        $mobile_number = '+63' . $mobile_number;
-        
-        // Validate mobile number format
-        if (!preg_match('/^\+639[0-9]{9}$/', $mobile_number)) {
-            throw new Exception('Please enter a valid Philippine mobile number.');
+    $mobile_number = null;
+    if ($mobile_raw !== '') {
+        try {
+            $mobile_number = require_valid_ph_mobile($mobile_raw, true);
+        } catch (InvalidArgumentException $e) {
+            throw new Exception($e->getMessage());
         }
-    } else {
-        $mobile_number = null;
     }
     
     // Initialize tricycle permit fields
@@ -292,7 +289,6 @@ try {
                 
                 $_SESSION['success'] = "Your Business Permit Application has been successfully submitted!<br>
                                        <strong>Reference No:</strong> {$business_reference_no}<br>
-                                       <strong>Application ID:</strong> #{$request_id}<br>
                                        <strong>Queue Ticket:</strong> {$queue_result['ticket_number']}<br>
                                        <strong>Estimated Time:</strong> {$queue_result['estimated_time']}<br>
                                        Please save your reference number and queue ticket for tracking.";
@@ -304,7 +300,7 @@ try {
                 
             } else {
                 $pdo->commit();
-                $_SESSION['success'] = "Your Business Permit Application has been successfully submitted! Reference: {$business_reference_no}, Application ID: #{$request_id}. However, there was an issue generating your queue ticket.";
+                $_SESSION['success'] = "Your Business Permit Application has been successfully submitted! Reference: {$business_reference_no}. However, there was an issue generating your queue ticket.";
             }
             
             error_log("Business application submitted - ID: {$request_id}, Reference: {$business_reference_no}, Business: {$business_name}, Owner: {$full_name}");
@@ -443,7 +439,6 @@ try {
             }
             
             $_SESSION['success'] = "Your {$certificate_display} request has been successfully submitted!<br>
-                                   <strong>Request ID:</strong> #{$request_id}<br>
                                    <strong>Queue Ticket:</strong> {$queue_result['ticket_number']}<br>
                                    <strong>Estimated Time:</strong> {$queue_result['estimated_time']}<br>
                                    Please save your queue ticket number for tracking your request.";
@@ -457,7 +452,7 @@ try {
             // Commit certificate request even if queue fails
             $pdo->commit();
             
-            $_SESSION['success'] = "Your {$certificate_display} request has been successfully submitted! Request ID: #{$request_id}. However, there was an issue generating your queue ticket. Please visit the office or call for assistance.";
+            $_SESSION['success'] = "Your {$certificate_display} request has been successfully submitted! However, there was an issue generating your queue ticket. Please visit the office or call for assistance.";
         }
         
         // Log successful submission

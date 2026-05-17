@@ -1,0 +1,335 @@
+/**
+ * User portal — mobile-first layout (load after page styles + background.css)
+ */
+:root {
+    --user-nav-h: 60px;
+    --user-nav-total: calc(var(--user-nav-h) + env(safe-area-inset-top, 0px));
+    --user-gap: 0.75rem;
+    --user-pad: 1rem;
+    --user-touch: 44px;
+    --user-input-font: 16px;
+}
+
+/* Layout shells */
+@media (max-width: 768px) {
+    body {
+        font-size: 0.9375rem;
+        overflow-x: hidden;
+        padding: 0 !important;
+    }
+
+    .dashboard-content,
+    .main-content,
+    .page-content,
+    .reports-page {
+        padding-top: calc(var(--user-nav-h) + 0.5rem) !important;
+        padding-left: var(--user-gap) !important;
+        padding-right: var(--user-gap) !important;
+        padding-bottom: var(--user-gap) !important;
+        margin-top: 0 !important;
+    }
+
+    body > .container,
+    .dashboard-container,
+    .main-content > .container {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .container {
+        margin-top: calc(var(--user-nav-total) + 0.5rem) !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        width: calc(100% - var(--user-gap) * 2) !important;
+        max-width: 100% !important;
+        border-radius: 14px !important;
+        box-shadow: 0 8px 24px rgba(27, 94, 32, 0.08) !important;
+    }
+
+    /* Typography */
+    .page-title,
+    .page-header h1,
+    .header h1,
+    .welcome-section h1 {
+        font-size: clamp(1.2rem, 5vw, 1.5rem) !important;
+        line-height: 1.25 !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    .page-subtitle,
+    .page-header p,
+    .header p,
+    .welcome-section > p {
+        font-size: 0.875rem !important;
+        margin-bottom: 0.75rem !important;
+    }
+
+    .card-title,
+    .section-title {
+        font-size: 1.0625rem !important;
+    }
+
+    /* Cards & sections */
+    .welcome-section,
+    .services-section,
+    .settings-card,
+    .content,
+    .form-container,
+    .login-card,
+    .rfid-card,
+    .register-card,
+    .report-form-card,
+    .reports-list-section {
+        padding: var(--user-pad) !important;
+        border-radius: 14px !important;
+    }
+
+    .page-header {
+        margin-bottom: 1rem !important;
+    }
+
+    /* Forms */
+    .form-group {
+        margin-bottom: 1rem !important;
+    }
+
+    .form-label {
+        font-size: 0.875rem !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    .form-input,
+    .form-control,
+    .form-select,
+    select,
+    textarea,
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="tel"],
+    input[type="number"],
+    input[type="date"],
+    input[type="file"] {
+        font-size: var(--user-input-font) !important;
+        min-height: var(--user-touch);
+        padding: 0.625rem 0.75rem !important;
+        border-radius: 10px !important;
+        max-width: 100%;
+    }
+
+    .form-row,
+    .form-grid,
+    .grid-2,
+    .grid-3,
+    .certificate-grid,
+    .request-details,
+    .tax-grid {
+        grid-template-columns: 1fr !important;
+        gap: var(--user-gap) !important;
+    }
+
+    /* Buttons */
+    .btn,
+    .submit-btn,
+    .btn-primary,
+    .btn-secondary,
+    button[type="submit"]:not(.mobile-menu-toggle):not(.user-button) {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: var(--user-touch) !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 0.9375rem !important;
+        box-sizing: border-box !important;
+    }
+
+    .service-btn {
+        width: 100% !important;
+        max-width: 100% !important;
+        justify-content: center !important;
+        margin: 0.35rem 0 0 !important;
+        min-height: var(--user-touch) !important;
+    }
+
+    /* Headers with back links */
+    .header {
+        padding: var(--user-pad) !important;
+        padding-top: 0.5rem !important;
+        text-align: left !important;
+    }
+
+    .back-link,
+    .page-nav-link,
+    .new-request-btn {
+        position: static !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        min-height: var(--user-touch) !important;
+        margin: 0 0.5rem 0.5rem 0 !important;
+        padding: 0.5rem 0.875rem !important;
+        font-size: 0.875rem !important;
+    }
+
+    .header h1 {
+        text-align: left;
+        padding-top: 0.25rem;
+    }
+
+    .header p {
+        text-align: left;
+    }
+
+    /* Certificate / selection UI */
+    .certificate-card {
+        padding: 1rem !important;
+    }
+
+    .certificate-icon {
+        font-size: 2rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    .certificate-title {
+        font-size: 1rem !important;
+    }
+
+    .file-upload-container {
+        padding: 1rem !important;
+    }
+
+    .file-upload-icon {
+        font-size: 1.75rem !important;
+    }
+
+    .radio-group {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
+    }
+
+    /* Lists & tables */
+    .request-card,
+    .report-item,
+    .request-item {
+        padding: 1rem !important;
+    }
+
+    .request-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.5rem !important;
+    }
+
+    .table-wrap,
+    .requests-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        font-size: 0.8125rem;
+    }
+
+    /* Login / auth */
+    .login-wrapper,
+    .rfid-wrapper {
+        padding: calc(var(--user-nav-h) + 0.5rem) var(--user-gap) var(--user-gap) !important;
+        align-items: flex-start !important;
+    }
+
+    .login-container,
+    .rfid-container {
+        max-width: 100% !important;
+    }
+
+    .login-card,
+    .rfid-card {
+        padding: 1.25rem !important;
+    }
+
+    .login-logo {
+        width: 56px !important;
+        height: 56px !important;
+    }
+
+    .login-header h2,
+    .register-header h2,
+    .reset-header h2 {
+        font-size: 1.25rem !important;
+    }
+
+    .register-wrapper,
+    .reset-wrapper {
+        padding: var(--user-gap) !important;
+        align-items: flex-start !important;
+        min-height: auto !important;
+    }
+
+    .register-container,
+    .reset-container {
+        max-width: 100% !important;
+    }
+
+    .reset-card {
+        padding: var(--user-pad) !important;
+    }
+
+    /* Alerts & info */
+    .alert,
+    .info-box,
+    .current-info {
+        padding: 0.75rem !important;
+        font-size: 0.875rem !important;
+    }
+
+    /* Stats on dashboard */
+    .quick-stats {
+        gap: 0.5rem !important;
+    }
+
+    .stat-card {
+        padding: 0.75rem 0.5rem !important;
+    }
+
+    .user-info-card {
+        width: 100% !important;
+        padding: 0.875rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --user-gap: 0.625rem;
+        --user-pad: 0.875rem;
+    }
+
+    .container {
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        border-radius: 12px !important;
+    }
+
+    .certificate-grid {
+        gap: 0.5rem !important;
+    }
+
+    .empty-state i {
+        font-size: 2.5rem !important;
+    }
+}
+
+@media (hover: none) {
+    .service-card:hover,
+    .portal-service-card:hover,
+    .certificate-card:hover,
+    .stat-card:hover,
+    .btn:hover,
+    .request-card:hover {
+        transform: none !important;
+    }
+}

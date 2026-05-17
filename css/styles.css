@@ -9,18 +9,7 @@ body {
 }
 
 .bg-image {
-  background-image: url('../background.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  opacity: 0.15;
-  filter: blur(5px);
+  display: none;
 }
 
 /* Header */
@@ -229,13 +218,9 @@ header p {
   }
 }
 
-/* Hero Section with background image */
+/* Hero Section — minimalist green / white */
 .hero-section {
-    background-image: url('../assets/images/background.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+    background: linear-gradient(180deg, #f7faf7 0%, #e8f5e9 100%);
     min-height: 80vh;
     display: flex;
     align-items: center;
@@ -244,27 +229,9 @@ header p {
     overflow: hidden;
 }
 
-.hero-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(46, 125, 50, 0.4);
-    backdrop-filter: blur(1px);
-    z-index: 1;
-}
-
+.hero-section::before,
 .hero-section::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.05);
-    z-index: 2;
+    display: none;
 }
 
 .hero-content {
@@ -276,19 +243,19 @@ header p {
     gap: 4rem;
     align-items: center;
     position: relative;
-    z-index: 3;
+    z-index: 1;
 }
 
 .hero-title {
   font-size: 3.5rem;
   font-weight: 800;
-  color: white;
+  color: #1b5e20;
   line-height: 1.2;
   margin-bottom: 1.5rem;
 }
 
 .highlight {
-  background: linear-gradient(45deg, #4CAF50, #2196F3);
+  background: linear-gradient(45deg, #2e7d32, #66bb6a);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -296,7 +263,7 @@ header p {
 
 .hero-description {
   font-size: 1.2rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #333;
   line-height: 1.6;
   margin-bottom: 2.5rem;
 }
@@ -443,7 +410,7 @@ header p {
   transform: translateX(-50%);
   width: 80px;
   height: 4px;
-  background: linear-gradient(45deg, #4CAF50, #2196F3);
+  background: linear-gradient(45deg, #1b5e20, #2e7d32);
   border-radius: 2px;
 }
 
@@ -756,13 +723,13 @@ header p {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #4CAF50 0%, #2196F3 100%);
+  background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
   color: white;
   box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, #388E3C 0%, #1976D2 100%);
+  background: linear-gradient(135deg, #145218 0%, #1b5e20 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
   color: white;

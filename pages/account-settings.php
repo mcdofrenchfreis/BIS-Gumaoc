@@ -266,9 +266,6 @@ include '../includes/header.php';
                                 Register your RFID card to enable quick login access.
                             <?php endif; ?>
                         </p>
-                        <?php if ($user['rfid_code']): ?>
-                        <p class="rfid-code">Card ID: <?php echo htmlspecialchars($user['rfid_code']); ?></p>
-                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -314,10 +311,6 @@ include '../includes/header.php';
             
             <div class="account-info">
                 <div class="info-grid">
-                    <div class="info-item">
-                        <label>Resident ID</label>
-                        <span class="resident-id">#<?php echo str_pad($user['id'], 6, '0', STR_PAD_LEFT); ?></span>
-                    </div>
                     <div class="info-item">
                         <label>Account Created</label>
                         <span><?php echo date('F j, Y', strtotime($user['created_at'])); ?></span>
@@ -634,16 +627,6 @@ body {
     font-size: 1rem;
     color: #2c3e50;
     font-weight: 500;
-}
-
-.resident-id {
-    font-family: 'Courier New', monospace;
-    background: linear-gradient(135deg, #4CAF50, #45a049);
-    color: white;
-    padding: 0.3rem 0.6rem;
-    border-radius: 6px;
-    display: inline-block;
-    font-weight: 600;
 }
 
 .status-active {

@@ -112,10 +112,12 @@ $display_name = $user['first_name'] . ' ' . ($user['middle_name'] ? $user['middl
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title><?php echo htmlspecialchars($page_title); ?> - Barangay Gumaoc East</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/background.css">
+    <link rel="stylesheet" href="css/mobile.css">
     <style>
         * {
             margin: 0;
@@ -129,7 +131,7 @@ $display_name = $user['first_name'] . ' ' . ($user['middle_name'] ? $user['middl
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+            background-color: #f7faf7;
             min-height: 100vh;
             line-height: 1.6;
             opacity: 0;
@@ -137,171 +139,10 @@ $display_name = $user['first_name'] . ' ' . ($user['middle_name'] ? $user['middl
         }
         
         @keyframes fadeInPage {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
-        
-
-        
-        /* User Navbar */
-        .user-navbar {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(25px);
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.12);
-        }
-        
-        .navbar-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            height: 70px;
-        }
-        
-        .navbar-brand {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: #333;
-            font-weight: 700;
-            font-size: 18px;
-        }
-        
-        .brand-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #2e7d32, #4caf50);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 12px;
-            color: white;
-            font-size: 18px;
-        }
-        
-        .navbar-nav {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .nav-item {
-            position: relative;
-        }
-        
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #666;
-            font-weight: 500;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .nav-link:hover {
-            background: #f8f9fa;
-            color: #333;
-        }
-        
-        .nav-link.active {
-            background: #e7f3ff;
-            color: #0066cc;
-        }
-        
-        .user-menu {
-            position: relative;
-        }
-        
-        .user-button {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            border: none;
-            background: #f8f9fa;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .user-button:hover {
-            background: #e9ecef;
-        }
-        
-        .user-avatar-small {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #2e7d32, #4caf50);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        
-        .user-dropdown {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            padding: 12px 0;
-            min-width: 200px;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(10px);
-            transition: all 0.3s ease;
-            border: 1px solid #e9ecef;
-        }
-        
-        .user-menu:hover .user-dropdown {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-        
-        .dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 16px;
-            text-decoration: none;
-            color: #333;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .dropdown-item:hover {
-            background: #f8f9fa;
-        }
-        
-        .dropdown-divider {
-            height: 1px;
-            background: #e9ecef;
-            margin: 8px 0;
-        }
+        /* Navbar: navbar_component.php */
         
         /* Page Content */
         .page-content {
@@ -499,7 +340,7 @@ $display_name = $user['first_name'] . ' ' . ($user['middle_name'] ? $user['middl
 }
 
 .file-preview-remove {
-    background: #dc3545;
+    background: #2e7d32;
     color: white;
     border: none;
     border-radius: 6px;
@@ -510,7 +351,7 @@ $display_name = $user['first_name'] . ' ' . ($user['middle_name'] ? $user['middl
 }
 
 .file-preview-remove:hover {
-    background: #c82333;
+    background: #1b5e20;
 }
 
 .btn-submit {

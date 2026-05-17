@@ -21,11 +21,12 @@ $display_name = $user['first_name'] . ' ' . ($user['middle_name'] ? $user['middl
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title><?php echo htmlspecialchars($page_title); ?> - Barangay Gumaoc East</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/background.css">
+    <link rel="stylesheet" href="css/mobile.css">
     <style>
         * {
             margin: 0;
@@ -35,23 +36,11 @@ $display_name = $user['first_name'] . ' ' . ($user['middle_name'] ? $user['middl
         
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+            background-color: #f7faf7;
             min-height: 100vh;
             line-height: 1.6;
             position: relative;
             overflow-x: hidden;
-        }
-        
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><radialGradient id="a" cx=".5" cy=".5" r=".5"><stop offset="0%" stop-color="%23ffffff" stop-opacity=".1"/><stop offset="100%" stop-color="%23ffffff" stop-opacity="0"/></radialGradient></defs><circle cx="200" cy="200" r="100" fill="url(%23a)"/><circle cx="800" cy="300" r="150" fill="url(%23a)"/><circle cx="400" cy="700" r="120" fill="url(%23a)"/></svg>');
-            opacity: 0.3;
-            z-index: 0;
         }
         
         .main-content {
@@ -72,27 +61,25 @@ $display_name = $user['first_name'] . ' ' . ($user['middle_name'] ? $user['middl
         }
         
         .page-title {
-            color: white;
+            color: #1b5e20;
             font-size: 2.5rem;
             font-weight: 700;
             margin-bottom: 8px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
         
         .page-subtitle {
-            color: rgba(255, 255, 255, 0.9);
+            color: #444;
             font-size: 1.2rem;
             font-weight: 400;
         }
         
         .settings-card {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(25px);
-            border-radius: 20px;
+            background: #ffffff;
+            border-radius: 16px;
             padding: 40px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 32px rgba(27, 94, 32, 0.08);
             margin-bottom: 30px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid #e8f5e9;
         }
         
         .card-title {
@@ -141,7 +128,7 @@ $display_name = $user['first_name'] . ' ' . ($user['middle_name'] ? $user['middl
         }
         
         .form-input:invalid {
-            border-color: #dc3545;
+            border-color: #2e7d32;
         }
         
         .btn {
@@ -227,21 +214,21 @@ $display_name = $user['first_name'] . ' ' . ($user['middle_name'] ? $user['middl
         }
         
         .info-box {
-            background: #e3f2fd;
-            border: 1px solid #bbdefb;
+            background: #f7faf7;
+            border: 1px solid #e8f5e9;
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 25px;
         }
         
         .info-box h4 {
-            color: #1565c0;
+            color: #1b5e20;
             margin-bottom: 8px;
             font-size: 1.1rem;
         }
         
         .info-box p {
-            color: #1976d2;
+            color: #2e7d32;
             margin: 0;
             font-size: 0.9rem;
         }

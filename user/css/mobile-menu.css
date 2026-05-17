@@ -1,0 +1,62 @@
+/**
+ * Mobile menu portal — panel/backdrop are moved to document.body via JS
+ * so they sit above transformed page content (e.g. certificate .container).
+ */
+
+.mobile-nav-backdrop {
+    z-index: 10040 !important;
+}
+
+.mobile-nav {
+    z-index: 10050 !important;
+    top: var(--user-nav-total, 60px);
+    isolation: isolate;
+}
+
+body.mobile-menu-open {
+    overflow: hidden !important;
+    touch-action: none;
+}
+
+body.mobile-menu-open .container,
+body.mobile-menu-open .main-content,
+body.mobile-menu-open .dashboard-content,
+body.mobile-menu-open .page-content,
+body.mobile-menu-open .reports-page {
+    pointer-events: none;
+}
+
+/* Keep hamburger a normal touch target — not full-width like form buttons */
+.user-navbar .mobile-menu-toggle {
+    position: relative;
+    z-index: 10060;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    max-width: 44px;
+    max-height: 44px;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.user-navbar .mobile-menu-toggle .hamburger-line {
+    width: 20px;
+    margin: 2.5px auto;
+}
+
+.user-navbar .mobile-menu-toggle.active .hamburger-line:nth-child(1) {
+    transform: rotate(45deg) translate(4px, 4px);
+}
+
+.user-navbar .mobile-menu-toggle.active .hamburger-line:nth-child(3) {
+    transform: rotate(-45deg) translate(4px, -4px);
+}
+
+@media (max-width: 968px) {
+    .mobile-nav.active {
+        display: flex;
+        flex-direction: column;
+    }
+}

@@ -1,0 +1,463 @@
+/**
+ * Shared styles: A4 portrait barangay certificate prints.
+ * Image paths are relative to this file.
+ */
+
+:root {
+  --clp-gold: #c2944d;
+  --clp-blue: #1a4d80;
+  --clp-red-seal: #c62828;
+  --clp-page-w: 210mm;
+  --clp-page-h: 297mm;
+  --clp-font-body: Arial, Helvetica, sans-serif;
+  --clp-font-formal: "Times New Roman", Times, serif;
+  /* Clear baked-in letterhead (seals + barangay lines) on A4 portrait */
+  --clp-inner-pt: 2.48in;
+  --clp-inner-px: 0.48in;
+  --clp-inner-pb: 0.34in;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .cert-page {
+    margin: 0 !important;
+    box-shadow: none !important;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+    background-image: url("../images/forms/barangay-letterhead-bg.png") !important;
+    background-position: center top !important;
+    background-size: 100% 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+body {
+  font-family: var(--clp-font-body);
+  line-height: 1.45;
+  color: #000;
+  background: #e8e8e8;
+}
+
+.cert-page {
+  width: var(--clp-page-w);
+  min-height: var(--clp-page-h);
+  margin: 16px auto;
+  background-color: #fff;
+  background-image: url("../images/forms/barangay-letterhead-bg.png");
+  background-repeat: no-repeat;
+  background-position: center top;
+  background-size: 100% 100%;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.cert-inner {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  padding: var(--clp-inner-pt) var(--clp-inner-px) var(--clp-inner-pb);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* --- Document title (below letterhead band on background) --- */
+.cert-doc-title {
+  text-align: center;
+  font-family: Georgia, var(--clp-font-formal);
+  font-size: 20pt;
+  font-weight: bold;
+  color: var(--clp-gold);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin: 0 0 0.2in;
+  line-height: 1.15;
+}
+
+.cert-doc-title.cert-doc-title--twoline {
+  font-size: 17pt;
+  letter-spacing: 1px;
+  margin: 0 0 0.18in;
+  line-height: 1.12;
+}
+
+.cert-doc-title.cert-doc-title--twoline span {
+  display: block;
+}
+
+/* --- Body --- */
+.cert-body {
+  flex: 1;
+  font-size: 11pt;
+  padding-top: 0.04in;
+}
+
+.cert-body strong {
+  font-weight: bold;
+}
+
+.cert-salutation {
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 0.1in;
+}
+
+.cert-p {
+  text-align: justify;
+  margin-bottom: 0.1in;
+}
+
+.cert-p--after-details {
+  margin-top: 0.08in;
+}
+
+.cert-tricycle-signoff {
+  text-align: center;
+  margin-top: 0.12in;
+}
+
+.cert-tricycle-signoff-label {
+  font-weight: bold;
+  font-size: 11pt;
+  margin-bottom: 4px;
+}
+
+/* Photo box (1x1) */
+.cert-photo-box {
+  width: 1in;
+  height: 1in;
+  border: 2px solid #000;
+  background: #fff;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.cert-photo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Flex row: text + photo */
+.cert-row-photo {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.2in;
+  margin-bottom: 0.1in;
+}
+
+.cert-row-photo .cert-col-text {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Detail lines (label : value) */
+.cert-detail-line {
+  display: flex;
+  align-items: baseline;
+  margin-bottom: 0.055in;
+  font-size: 10.5pt;
+}
+
+.cert-detail-line .label {
+  font-weight: bold;
+  min-width: 1.85in;
+  flex-shrink: 0;
+}
+
+.cert-detail-line .colon {
+  margin: 0 0.06in 0 0;
+}
+
+.cert-detail-line .value {
+  flex: 1;
+}
+
+.cert-detail-line .underline {
+  display: inline-block;
+  min-width: 2.2in;
+  border-bottom: 1px solid #000;
+  min-height: 1.1em;
+  padding: 0 2px;
+}
+
+/* Centered business-style fields */
+.cert-stack-center {
+  text-align: center;
+  margin: 0.14in 0;
+}
+
+.cert-stack-center .big {
+  font-weight: bold;
+  font-size: 14pt;
+}
+
+.cert-stack-center .sub {
+  font-size: 10pt;
+  color: #555;
+  font-style: italic;
+  margin-bottom: 0.12in;
+}
+
+/* Footer columns (verified / applicant / punong) */
+.cert-footer-grid {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.18in;
+  margin-top: 0.1in;
+}
+
+.cert-footer-left {
+  width: 48%;
+  max-width: 3.4in;
+}
+
+.cert-footer-right {
+  width: 48%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1in;
+}
+
+.cert-verified .lbl {
+  font-weight: bold;
+  font-size: 11pt;
+}
+
+.cert-verified .name {
+  font-weight: bold;
+  text-decoration: underline;
+  font-size: 11pt;
+  margin-top: 2px;
+}
+
+.cert-verified .role {
+  font-size: 10pt;
+}
+
+.cert-dates {
+  font-size: 10pt;
+  font-weight: bold;
+  margin: 0.1in 0;
+}
+
+.cert-dates div {
+  margin-bottom: 3px;
+}
+
+/* CTC + OR block — grid so labels, colons, and values share one alignment column */
+.cert-admin-lines {
+  font-size: 10pt;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cert-admin-row {
+  display: grid;
+  grid-template-columns: 1.35in 0.28em 1fr;
+  column-gap: 0.12em;
+  align-items: baseline;
+  margin: 0;
+}
+
+.cert-admin-row .k {
+  font-weight: bold;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.cert-admin-row .colon {
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.cert-admin-row .v {
+  border-bottom: 1px solid transparent;
+  min-height: 1.05em;
+  min-width: 0;
+}
+
+.cert-admin-row .v.line {
+  border-bottom-color: #000;
+}
+
+.cert-admin-row--issued .v {
+  white-space: nowrap;
+}
+
+@media print {
+  .cert-admin-row {
+    grid-template-columns: 1.35in 0.28em 1fr !important;
+  }
+
+  .cert-admin-row--issued .v {
+    white-space: nowrap !important;
+  }
+}
+
+/* Applicant signature */
+.cert-sig-applicant {
+  text-align: center;
+  width: 100%;
+}
+
+.cert-sig-line {
+  border-bottom: 2px solid #000;
+  width: 2in;
+  height: 1px;
+  margin: 0 auto 6px;
+}
+
+.cert-sig-label {
+  font-weight: bold;
+  font-size: 10pt;
+}
+
+/* Thumb marks */
+.cert-thumbs {
+  display: flex;
+  flex-direction: row;
+  gap: 0.22in;
+  justify-content: center;
+  width: 100%;
+}
+
+.cert-thumb-cell {
+  text-align: center;
+}
+
+.cert-thumb-box {
+  width: 0.95in;
+  height: 0.95in;
+  border: 2px solid #000;
+  margin: 0 auto 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8pt;
+  font-weight: bold;
+  line-height: 1.15;
+  background: #fff;
+}
+
+/* Punong Barangay block */
+.cert-sig-official {
+  text-align: center;
+  margin-top: 0.06in;
+}
+
+.cert-sig-official .name {
+  font-weight: bold;
+  font-size: 12pt;
+  font-family: var(--clp-font-formal);
+}
+
+.cert-sig-official .line {
+  width: 2.6in;
+  border-bottom: 2px solid #000;
+  margin: 4px auto;
+  height: 1px;
+}
+
+.cert-sig-official .title {
+  font-size: 10pt;
+}
+
+.cert-note-red {
+  text-align: center;
+  font-size: 9pt;
+  font-weight: bold;
+  color: var(--clp-red-seal);
+  margin-top: 0.08in;
+}
+
+.cert-note-red-box {
+  display: inline-block;
+  border: 1px solid #f8bbd0;
+  background: #fff5f8;
+  padding: 4px 10px;
+  margin-top: 0.1in;
+}
+
+/* Print controls */
+.print-controls {
+  text-align: center;
+  margin: 20px 0;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  max-width: 210mm;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.print-btn {
+  background: var(--clp-blue);
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  margin: 0 10px;
+}
+
+.print-btn:hover {
+  background: #0d2b4a;
+}
+
+.back-btn {
+  background: #6c757d;
+  color: #fff;
+  text-decoration: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 16px;
+  margin: 0 10px;
+  display: inline-block;
+}
+
+.back-btn:hover {
+  background: #545b62;
+}

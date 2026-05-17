@@ -1,9 +1,33 @@
 <?php
 require_once 'auth_check.php';
 require_once '../includes/db_connect.php';
+require_once '../includes/certificate_request_status.php';
+
+certificate_request_ensure_status_schema($pdo);
 
 $page_title = 'My Certificate Requests - Barangay Gumaoc East';
 $current_page = 'my-requests';
+
+$success_message = $_SESSION['success'] ?? '';
+unset($_SESSION['success']);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'confirm_received') {
+    $reqId = (int)($_POST['id'] ?? 0);
+    if ($reqId > 0 && !empty($_SESSION['user_id'])) {
+        $chk = $pdo->prepare("SELECT status FROM certificate_requests WHERE id = ? AND user_id = ?");
+        $chk->execute([$reqId, $_SESSION['user_id']]);
+        $cur = $chk->fetchColumn();
+        if ($cur === 'released') {
+            $pdo->prepare("UPDATE certificate_requests SET status = 'received' WHERE id = ?")->execute([$reqId]);
+            $_SESSION['success'] = 'Thank you! Your certificate receipt has been recorded.';
+        }
+    }
+    header('Location: my-requests.php');
+    exit;
+}
+
+$status_config = certificate_request_user_status_config();
+$tracker_steps = certificate_request_tracker_steps();
 
 // Get user's certificate requests
 $requests = [];
@@ -21,23 +45,18 @@ if (isset($_SESSION['user_id'])) {
         $error_message = "Error loading requests: " . $e->getMessage();
     }
 }
-
-// Status labels and colors
-$status_config = [
-    'pending' => ['label' => 'Pending Review', 'color' => '#ffc107', 'icon' => 'clock'],
-    'processing' => ['label' => 'Being Processed', 'color' => '#17a2b8', 'icon' => 'cog'],
-    'ready' => ['label' => 'Ready for Pickup', 'color' => '#28a745', 'icon' => 'check-circle'],
-    'released' => ['label' => 'Released/Completed', 'color' => '#6c757d', 'icon' => 'check-double']
-];
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title><?php echo $page_title; ?></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/background.css">
+    <link rel="stylesheet" href="css/mobile.css">
+    <link rel="stylesheet" href="css/forms-portal.css">
     <style>
         * {
             margin: 0;
@@ -47,22 +66,16 @@ $status_config = [
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+            background-color: #f7faf7;
             min-height: 100vh;
-            padding: 20px;
+            padding: 0;
             opacity: 0;
             animation: fadeInPage 0.8s ease-out 0.3s forwards;
         }
         
         @keyframes fadeInPage {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .container {
@@ -76,18 +89,12 @@ $status_config = [
         }
         
         @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .header {
-            background: linear-gradient(135deg, #28a745, #20c997);
+            background: linear-gradient(135deg, #1b5e20, #2e7d32);
             color: white;
             padding: 40px;
             text-align: center;
@@ -186,7 +193,7 @@ $status_config = [
             gap: 15px;
         }
 
-        .request-id {
+        .request-title {
             font-size: 1.1rem;
             font-weight: 700;
             color: #495057;
@@ -210,7 +217,7 @@ $status_config = [
         .certificate-type {
             font-size: 1.3rem;
             font-weight: 600;
-            color: #28a745;
+            color: #2e7d32;
             margin-bottom: 8px;
         }
 
@@ -284,7 +291,7 @@ $status_config = [
         }
 
         .btn {
-            background: linear-gradient(135deg, #28a745, #20c997);
+            background: linear-gradient(135deg, #1b5e20, #2e7d32);
             color: white;
             padding: 12px 25px;
             border-radius: 25px;
@@ -301,48 +308,89 @@ $status_config = [
             box-shadow: 0 8px 20px rgba(40, 167, 69, 0.3);
         }
 
+        .alert-success {
+            background: #e8f5e9;
+            color: #1b5e20;
+            padding: 14px 18px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #c8e6c9;
+        }
+
+        .tracker {
+            display: flex;
+            justify-content: space-between;
+            margin: 16px 0 20px;
+            position: relative;
+            padding: 0 4px;
+        }
+        .tracker::before {
+            content: '';
+            position: absolute;
+            top: 14px;
+            left: 5%;
+            right: 5%;
+            height: 3px;
+            background: #e0e0e0;
+            z-index: 0;
+        }
+        .tracker-step { flex: 1; text-align: center; position: relative; z-index: 1; min-width: 0; }
+        .tracker-dot {
+            width: 30px; height: 30px; border-radius: 50%; background: #e0e0e0; color: #888;
+            display: flex; align-items: center; justify-content: center; margin: 0 auto 6px;
+            font-size: 0.75rem; font-weight: 700; border: 2px solid #fff;
+        }
+        .tracker-step.done .tracker-dot { background: #2e7d32; color: #fff; }
+        .tracker-step.active .tracker-dot { background: #1565c0; color: #fff; }
+        .tracker-label { font-size: 0.68rem; color: #666; font-weight: 600; line-height: 1.2; }
+        .tracker-step.done .tracker-label, .tracker-step.active .tracker-label { color: #333; }
+
+        .confirm-received {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e9ecef;
+        }
+        .btn-confirm {
+            background: #6a1b9a;
+            color: #fff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .btn-confirm:hover { background: #4a148c; }
+
         @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                border-radius: 15px;
-            }
-            
-            .header {
-                padding: 30px 20px;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
             .page-nav-link, .new-request-btn {
                 position: static;
                 display: inline-block;
-                margin: 10px 5px;
+                margin: 0 0.5rem 0.5rem 0;
             }
-            
-            .content {
-                padding: 20px;
-            }
-            
+
             .request-header {
                 flex-direction: column;
                 align-items: stretch;
             }
-            
+
             .request-details {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
-<body>
-
+<body class="user-form-page">
 
     <?php include 'navbar_component.php'; ?>
 
     <div class="container">
         <div class="content">
+            <?php if ($success_message): ?>
+                <div class="alert-success">
+                    <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($success_message); ?>
+                </div>
+            <?php endif; ?>
             <?php if (isset($error_message)): ?>
                 <div class="alert alert-error">
                     <i class="fas fa-exclamation-circle"></i> <?php echo $error_message; ?>
@@ -364,20 +412,36 @@ $status_config = [
                         <?php 
                         $status = $request['status'];
                         $config = $status_config[$status] ?? ['label' => ucfirst($status), 'color' => '#6c757d', 'icon' => 'info'];
+                        $currentStep = certificate_request_tracker_step($status);
                         ?>
                         <div class="request-card">
                             <div class="request-header">
-                                <div class="request-id">
-                                    Request #<?php echo str_pad($request['id'], 5, '0', STR_PAD_LEFT); ?>
+                                <div class="request-title">
+                                    <?php echo htmlspecialchars($request['certificate_type']); ?>
                                 </div>
                                 <div class="status-badge" style="background-color: <?php echo $config['color']; ?>">
                                     <i class="fas fa-<?php echo $config['icon']; ?>"></i>
                                     <?php echo $config['label']; ?>
                                 </div>
+
                             </div>
-                            
+
+                            <div class="tracker" aria-label="Certificate progress">
+                                <?php foreach ($tracker_steps as $step):
+                                    $classes = ['tracker-step'];
+                                    if ($step['num'] < $currentStep) { $classes[] = 'done'; }
+                                    elseif ($step['num'] === $currentStep) { $classes[] = 'active'; }
+                                ?>
+                                <div class="<?php echo implode(' ', $classes); ?>">
+                                    <div class="tracker-dot">
+                                        <?php echo $step['num'] < $currentStep ? '<i class="fas fa-check"></i>' : $step['num']; ?>
+                                    </div>
+                                    <div class="tracker-label"><?php echo htmlspecialchars($step['label']); ?></div>
+                                </div>
+                                <?php endforeach; ?>
+                            </div>
+
                             <div class="certificate-info">
-                                <div class="certificate-type"><?php echo htmlspecialchars($request['certificate_type']); ?></div>
                                 <div class="certificate-name"><?php echo htmlspecialchars($request['full_name']); ?></div>
                             </div>
                             
@@ -422,6 +486,21 @@ $status_config = [
                                 <div class="notes-text"><?php echo htmlspecialchars($request['notes']); ?></div>
                             </div>
                             <?php endif; ?>
+                            <?php if ($status === 'released'): ?>
+                            <div class="confirm-received">
+                                <p style="color:#555;font-size:0.9rem;margin-bottom:10px;">
+                                    Pick up your certificate at the barangay hall, then confirm receipt below.
+                                </p>
+                                <form method="post">
+                                    <input type="hidden" name="action" value="confirm_received">
+                                    <input type="hidden" name="id" value="<?php echo (int)$request['id']; ?>">
+                                    <button type="submit" class="btn-confirm">
+                                        <i class="fas fa-check-double"></i> I have received my certificate
+                                    </button>
+                                </form>
+                            </div>
+                            <?php endif; ?>
+
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -438,7 +517,7 @@ $status_config = [
             }, 300000); // 5 minutes
             
             // Add notification if there are ready certificates
-            const readyRequests = document.querySelectorAll('.status-badge[style*="#28a745"]').length;
+            const readyRequests = document.querySelectorAll('.status-badge[style*="#2e7d32"]').length;
             
             if (readyRequests > 0) {
                 // Show browser notification if permitted

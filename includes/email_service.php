@@ -573,25 +573,24 @@ class EmailService {
      * This email is sent when admin approves a resident registration.
      * Workflow:
      * 1. User registers -> gets confirmation email (no credentials)
-     * 2. Admin approves -> account activated + approval email with RFID & password
+     * 2. Admin approves -> account activated + approval email (email + password) + follow-up email (login email + password)
      * 3. User can now login with credentials
      * 
      * @param string $email Recipient email
      * @param string $name Recipient name  
-     * @param string $rfidCode Generated RFID code
      * @param string $tempPassword Temporary password
      * @return bool Success status
      */
-    public function sendApprovalEmail($email, $name, $rfidCode, $tempPassword) {
+    public function sendApprovalEmail($email, $name, $tempPassword) {
         try {
             // Check if email is configured
             if (SMTP_USERNAME === 'your-gmail@gmail.com' || SMTP_PASSWORD === 'your-app-password') {
-                error_log("Email not configured - Approval: RFID: $rfidCode, Password: $tempPassword for $email ($name)");
+                error_log("Email not configured - Approval: Password: $tempPassword for $email ($name)");
                 return false;
             }
             
             // Log attempt
-            error_log("EmailService: Attempting to send approval email to $email ($name) with RFID: $rfidCode");
+            error_log("EmailService: Attempting to send approval email to $email ($name)");
             
             // Recipients
             $this->mailer->addAddress($email, $name);
@@ -600,9 +599,9 @@ class EmailService {
             $this->mailer->isHTML(true);
             $this->mailer->Subject = 'Registration Approved - GUMAOC Account Activated';
             
-            $htmlBody = $this->getApprovalEmailTemplate($name, $rfidCode, $tempPassword);
+            $htmlBody = $this->getApprovalEmailTemplate($name, $email, $tempPassword);
             $this->mailer->Body = $htmlBody;
-            $this->mailer->AltBody = "Dear $name,\n\nCongratulations! Your GUMAOC resident registration has been approved and your account has been activated.\n\nRFID Code: $rfidCode\nTemporary Password: $tempPassword\n\nPlease change your password after logging in.\n\nBest regards,\nGUMAOC Team";
+            $this->mailer->AltBody = "Dear $name,\n\nCongratulations! Your GUMAOC resident registration has been approved and your account has been activated.\n\nLogin email (username): $email\nTemporary Password: $tempPassword\n\nPlease change your password after logging in.\n\nBest regards,\nGUMAOC Team";
             
             $result = $this->mailer->send();
             error_log("EmailService: Approval email sent successfully to $email ($name)");
@@ -610,11 +609,95 @@ class EmailService {
             
         } catch (Exception $e) {
             error_log("EmailService: Approval email failed for $email: " . $e->getMessage());
-            error_log("EmailService: Approval credentials for $email ($name): RFID=$rfidCode, Password=$tempPassword");
+            error_log("EmailService: Approval credentials for $email ($name): Password=$tempPassword");
             return false;
         } finally {
             $this->mailer->clearAddresses();
         }
+    }
+
+    /**
+     * Second follow-up email after approval: explicit login email + temporary password only.
+     * Sent in addition to sendApprovalEmail so residents have a clear copy for manual login.
+     */
+    public function sendLoginCredentialsEmail($email, $name, $loginEmail, $tempPassword) {
+        try {
+            if (SMTP_USERNAME === 'your-gmail@gmail.com' || SMTP_PASSWORD === 'your-app-password') {
+                error_log("Email not configured - Login credentials email for $loginEmail ($name)");
+                return false;
+            }
+
+            error_log("EmailService: Sending login email + password follow-up to $loginEmail ($name)");
+
+            $this->mailer->addAddress($email, $name);
+            $this->mailer->isHTML(true);
+            $this->mailer->Subject = 'GUMAOC – Your login email and password';
+
+            $safeLogin = htmlspecialchars($loginEmail, ENT_QUOTES, 'UTF-8');
+            $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+            $safePass = htmlspecialchars($tempPassword, ENT_QUOTES, 'UTF-8');
+
+            $this->mailer->Body = $this->getLoginCredentialsEmailTemplate($safeName, $safeLogin, $safePass);
+            $this->mailer->AltBody = "Dear $name,\n\nYour GUMAOC account is approved. Use these for manual login:\n\nLogin email: $loginEmail\nTemporary password: $tempPassword\n\nChange your password after first login.\n\nBest regards,\nGUMAOC Team";
+
+            $result = $this->mailer->send();
+            error_log("EmailService: Login credentials email sent successfully to $loginEmail");
+            return $result;
+        } catch (Exception $e) {
+            error_log("EmailService: Login credentials email failed for $loginEmail: " . $e->getMessage());
+            return false;
+        } finally {
+            $this->mailer->clearAddresses();
+        }
+    }
+
+    private function getLoginCredentialsEmailTemplate($safeName, $safeLoginEmail, $safeTempPassword) {
+        return "
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #1b5e20 0%, #4caf50 100%); color: white; padding: 20px; text-align: center; }
+                .content { padding: 30px 20px; background: #f9f9f9; }
+                .credentials-box { background: white; border: 2px solid #4caf50; border-radius: 8px; padding: 20px; margin: 20px 0; }
+                .credential-item { margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; }
+                .credential-label { font-weight: bold; color: #2e7d32; font-size: 14px; }
+                .credential-value { font-size: 18px; font-weight: bold; color: #1565c0; font-family: monospace; word-break: break-all; }
+                .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class='container'>
+                <div class='header'>
+                    <h1>GUMAOC System</h1>
+                    <p>Login details</p>
+                </div>
+                <div class='content'>
+                    <h2>Hello $safeName,</h2>
+                    <p>Your registration was approved. Use the following for <strong>manual login</strong> (email and password):</p>
+                    <div class='credentials-box'>
+                        <h3>Your login email and password</h3>
+                        <div class='credential-item'>
+                            <div class='credential-label'>Login email (username)</div>
+                            <div class='credential-value'>$safeLoginEmail</div>
+                        </div>
+                        <div class='credential-item'>
+                            <div class='credential-label'>Temporary password</div>
+                            <div class='credential-value'>$safeTempPassword</div>
+                        </div>
+                    </div>
+                    <p>Please change your password after your first login.</p>
+                </div>
+                <div class='footer'>
+                    <p>This is an automated message from GUMAOC System.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
     }
     
     public function sendRejectionEmail($email, $name) {
@@ -672,7 +755,10 @@ class EmailService {
         }
     }
     
-    private function getApprovalEmailTemplate($name, $rfidCode, $tempPassword) {
+    private function getApprovalEmailTemplate($name, $loginEmail, $tempPassword) {
+        $safeLogin = htmlspecialchars($loginEmail, ENT_QUOTES, 'UTF-8');
+        $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+        $safePass = htmlspecialchars($tempPassword, ENT_QUOTES, 'UTF-8');
         return "
         <!DOCTYPE html>
         <html>
@@ -700,27 +786,26 @@ class EmailService {
                     <p>Registration Successfully Approved!</p>
                 </div>
                 <div class='content'>
-                    <h2>Congratulations $name!</h2>
+                    <h2>Congratulations $safeName!</h2>
                     <p>We are pleased to inform you that your resident registration application has been <strong>approved</strong>. Your account has been activated and you now have full access to all barangay services.</p>
                     
                     <div class='credentials-box'>
                         <h3>🔐 Your Login Credentials</h3>
                         <div class='credential-item'>
-                            <div class='credential-label'>🏷️ RFID Code:</div>
-                            <div class='credential-value'>$rfidCode</div>
+                            <div class='credential-label'>📧 Login email (username):</div>
+                            <div class='credential-value' style='letter-spacing:0;'>$safeLogin</div>
                         </div>
                         <div class='credential-item'>
                             <div class='credential-label'>🔒 Temporary Password:</div>
-                            <div class='credential-value'>$tempPassword</div>
+                            <div class='credential-value'>$safePass</div>
                         </div>
                     </div>
                     
                     <div class='important'>
                         <h4>📋 Next Steps:</h4>
                         <ul>
-                            <li><strong>Login Options:</strong> Use your RFID code for quick access or login with your email and temporary password</li>
+                            <li><strong>Login:</strong> Sign in with your login email and temporary password</li>
                             <li><strong>Security:</strong> Please change your password after your first login for security</li>
-                            <li><strong>RFID Card:</strong> Visit the barangay office to get your physical RFID card</li>
                             <li><strong>Services:</strong> You can now request certificates, apply for business permits, and access other barangay services</li>
                         </ul>
                     </div>
@@ -824,4 +909,3 @@ class EmailService {
     }
 }
 ?>
-    }

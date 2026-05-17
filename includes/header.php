@@ -20,6 +20,10 @@ if (!isset($base_path)) {
     }
 }
 
+if (!function_exists('user_portal_url')) {
+    require_once __DIR__ . '/../user/includes/portal_urls.php';
+}
+
 $is_logged_in = !empty($_SESSION['user_id']);
 $user_name = $_SESSION['user_name'] ?? 'User';
 $user_id = $_SESSION['user_id'] ?? null;
@@ -44,28 +48,10 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: url('<?php echo $base_path; ?>assets/images/background.jpg') center/cover no-repeat;
-            background-attachment: fixed;
-            background-color: #2d5a27;
+            background-color: #f7faf7;
+            color: #1a1a1a;
             min-height: 100vh;
             position: relative;
-        }
-        
-        /* Green tint overlay */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, 
-                rgba(45, 90, 39, 0.7) 0%, 
-                rgba(74, 124, 89, 0.6) 25%, 
-                rgba(53, 122, 60, 0.65) 50%, 
-                rgba(45, 90, 39, 0.7) 75%, 
-                rgba(30, 58, 26, 0.8) 100%);
-            z-index: 1;
         }
         
         .navbar {
@@ -100,19 +86,17 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
         }
         
         .brand-logo {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+            flex-shrink: 0;
+            width: 46px;
+            height: 46px;
+            margin-right: 12px;
+            display: block;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            font-size: 16px;
-            margin-right: 15px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            object-fit: cover;
+            object-position: center;
+            transform: scale(1.12);
+            transform-origin: center center;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
         }
         
         .brand-text h1 {
@@ -632,10 +616,9 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
             }
             
             .brand-logo {
-                width: 35px;
-                height: 35px;
-                font-size: 12px;
-                margin-right: 10px;
+                width: 36px;
+                height: 36px;
+                margin-right: 8px;
             }
             
             .navbar-container {
@@ -696,8 +679,15 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
 <body>
     <nav class="navbar">
         <div class="navbar-container">
-            <a href="<?php echo isset($base_path) ? $base_path : '../'; ?>index.php" class="navbar-brand">
-                <div class="brand-logo">BRGY</div>
+            <a href="<?php
+                $bp = isset($base_path) ? $base_path : '../';
+                if (!empty($_SESSION['user_id']) && empty($_SESSION['is_admin'])) {
+                    echo htmlspecialchars($bp . 'user/dashboard.php');
+                } else {
+                    echo htmlspecialchars($bp . 'index.php');
+                }
+            ?>" class="navbar-brand">
+                <img src="<?php echo htmlspecialchars($base_path ?? '../'); ?>assets/images/logo.png" alt="" class="brand-logo" width="46" height="46">
                 <div class="brand-text">
                     <h1>GUMAOC EAST</h1>
                     <p>Barangay Management System</p>
@@ -730,9 +720,8 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                             </a></li>
                         </ul>
                     </li>
-                    <?php if ($is_admin_context): ?>
-                        <li><a href="<?php echo $base_path; ?>admin/assist-requests.php" class="nav-link">🆘 Assistance</a></li>
-                    <?php endif; ?>
+                    <li><a href="<?php echo $base_path; ?>pages/report.php" class="nav-link">🚨 Report</a></li>
+                    <li><a href="<?php echo $base_path; ?>pages/queue-status.php" class="nav-link">🎫 Queue</a></li>
                     <li><a href="<?php echo $base_path; ?>pages/contact.php" class="nav-link">📞 Contact</a></li>
                     <li><a href="<?php echo $base_path; ?>user/login.php" class="nav-link">🔐 User Login</a></li>
                     <li><a href="<?php echo $base_path; ?>pages/resident-registration.php" class="nav-link">📝 Register</a></li>
@@ -757,9 +746,6 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                     </li>
                     <li><a href="<?php echo $base_path; ?>pages/report.php" class="nav-link">🚨 Report</a></li>
                     <li><a href="<?php echo $base_path; ?>pages/queue-status.php" class="nav-link">🎫 Queue</a></li>
-                    <?php if ($is_admin_context): ?>
-                        <li><a href="<?php echo $base_path; ?>admin/assist-requests.php" class="nav-link">🆘 Assistance</a></li>
-                    <?php endif; ?>
                     <li><a href="<?php echo $base_path; ?>pages/notifications.php" class="nav-link" style="position: relative;">
                         🔔 Notifications
                         <span class="notification-badge">3</span>
@@ -775,10 +761,10 @@ $page_description = $page_description ?? 'IoT-Enabled Incident Reporting & E-Ser
                                 <div class="name"><?php echo htmlspecialchars($user_name); ?></div>
                                 <div class="role">Resident</div>
                             </div>
-                            <a href="<?php echo $base_path; ?>pages/profile.php" class="dropdown-item">
+                            <a href="<?php echo htmlspecialchars(user_portal_url('profile.php')); ?>" class="dropdown-item">
                                 👤 My Profile
                             </a>
-                            <a href="<?php echo $base_path; ?>pages/account-settings.php" class="dropdown-item">
+                            <a href="<?php echo htmlspecialchars(user_portal_url('settings.php')); ?>" class="dropdown-item">
                                 ⚙️ Account Settings
                             </a>
                             <a href="<?php echo $base_path; ?>pages/about.php" class="dropdown-item">

@@ -7,6 +7,7 @@ $base_path = '../';
 include '../includes/header.php';
   ?>
   <link rel="stylesheet" href="css/background.css">
+  <link rel="stylesheet" href="css/mobile.css">
   
   <style>
 .register-wrapper {
@@ -14,7 +15,7 @@ include '../includes/header.php';
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: #f7faf7;
     padding: 20px;
 }
 
@@ -41,8 +42,8 @@ include '../includes/header.php';
 }
 
 .info-box {
-    background: #e3f2fd;
-    border: 1px solid #2196f3;
+    background: #f7faf7;
+    border: 1px solid #e8f5e9;
     border-radius: 12px;
     padding: 20px;
     margin-bottom: 30px;
@@ -50,7 +51,7 @@ include '../includes/header.php';
 }
 
 .info-box h4 {
-    color: #1976d2;
+    color: #1b5e20;
     margin: 0 0 15px 0;
     font-size: 18px;
 }
@@ -64,7 +65,7 @@ include '../includes/header.php';
 .btn-register {
     display: inline-block;
     padding: 15px 30px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
     color: white;
     text-decoration: none;
     border-radius: 25px;
@@ -76,7 +77,7 @@ include '../includes/header.php';
 
 .btn-register:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 10px 20px rgba(27, 94, 32, 0.22);
     color: white;
 }
 

@@ -101,12 +101,37 @@ area: <?php echo htmlspecialchars($area); ?>
     justify-content: space-between;
     gap: 12px;
   }
+  .mini-brand-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .mini-brand-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center;
+    transform: scale(1.12);
+    transform-origin: center center;
+    flex-shrink: 0;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+  }
   .mini-brand {
     color: #ffffff;
     font-size: 1.05rem;
     font-weight: 800;
     letter-spacing: 0.3px;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  @media (max-width: 380px) {
+    .mini-brand {
+      display: none;
+    }
   }
   .mini-login-btn {
     display: inline-flex;
@@ -117,7 +142,8 @@ area: <?php echo htmlspecialchars($area); ?>
     color: #fff;
     border: 1px solid rgba(255, 255, 255, 0.32);
     border-radius: 12px;
-    padding: 9px 14px;
+    padding: 10px 14px;
+    min-height: 44px;
     font-weight: 700;
     transition: all 0.2s ease;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
@@ -131,7 +157,10 @@ area: <?php echo htmlspecialchars($area); ?>
 </style>
 <nav class="mini-nav">
   <div class="mini-nav-inner">
-    <div class="mini-brand">Barangay Gumaoc</div>
+    <div class="mini-brand-wrap">
+      <img src="<?php echo htmlspecialchars($base_path); ?>assets/images/logo.png" alt="" class="mini-brand-logo" width="36" height="36">
+      <span class="mini-brand">Barangay Gumaoc</span>
+    </div>
     <a href="<?php echo $base_path; ?>login.php" class="mini-login-btn">Login Page</a>
   </div>
 </nav>

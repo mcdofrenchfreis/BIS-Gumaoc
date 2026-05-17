@@ -1,41 +1,77 @@
 <?php
 session_start();
 include '../includes/db_connect.php';
+require_once '../includes/business_application_status.php';
+
+business_application_ensure_status_schema($pdo);
+
+$ba_statuses = business_application_statuses();
+$ba_status_labels = business_application_status_labels();
+
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    header('Location: login.php');
+    exit;
+}
 
 // Handle status updates (only if admin is logged in)
 if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['status'])) {
-    // Check if admin is logged in for status updates
+    $redirect_tab = $_POST['tab'] ?? 'active';
     if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true) {
-        $id = (int)$_POST['id'];
-        $status = $_POST['status'];
-        $allowed_statuses = ['pending', 'reviewing', 'approved', 'rejected'];
-        
-        if (in_array($status, $allowed_statuses)) {
-            $stmt = $pdo->prepare("UPDATE business_applications SET status = ? WHERE id = ?");
+        $id = (int) $_POST['id'];
+        $status = strtolower(trim((string) $_POST['status']));
+
+        $curStmt = $pdo->prepare('SELECT status FROM business_applications WHERE id = ?');
+        $curStmt->execute([$id]);
+        $current_status = strtolower(trim((string) $curStmt->fetchColumn()));
+
+        if ($current_status === 'received') {
+            $_SESSION['success'] = 'Completed applications (received by resident) cannot be changed.';
+        } elseif (in_array($status, $ba_statuses, true) && business_application_can_transition($current_status, $status)) {
+            $stmt = $pdo->prepare('UPDATE business_applications SET status = ? WHERE id = ?');
             $stmt->execute([$status, $id]);
-            $_SESSION['success'] = "Status updated successfully!";
+            $_SESSION['success'] = 'Status updated successfully!';
+        } else {
+            $_SESSION['success'] = 'Invalid status change.';
         }
     }
-    header('Location: view-business-applications.php');
+    header('Location: view-business-applications.php?tab=' . urlencode($redirect_tab));
     exit;
 }
 
 // Get filter and search parameters
 $status_filter = $_GET['status'] ?? '';
 $search = $_GET['search'] ?? '';
+$active_tab = $_GET['tab'] ?? 'active';
 $page = max(1, (int)($_GET['page'] ?? 1));
 $per_page = 10;
 $offset = ($page - 1) * $per_page;
+
+$active_status_filters = ['pending', 'reviewing', 'approved', 'rejected'];
+$received_status_filters = ['ready', 'received'];
 
 // Build query
 $where_conditions = [];
 $where_conditions_ba = [];
 $params = [];
 
-if ($status_filter && in_array($status_filter, ['pending', 'reviewing', 'approved', 'rejected'])) {
-    $where_conditions[] = "status = ?"; // for count query (no alias)
-    $where_conditions_ba[] = "ba.status = ?"; // for main query (with alias)
-    $params[] = $status_filter;
+if ($active_tab === 'received') {
+    $where_conditions[] = "status IN ('ready', 'received')";
+    $where_conditions_ba[] = "ba.status IN ('ready', 'received')";
+
+    if ($status_filter && in_array($status_filter, $received_status_filters, true)) {
+        $where_conditions[] = 'status = ?';
+        $where_conditions_ba[] = 'ba.status = ?';
+        $params[] = $status_filter;
+    }
+} else {
+    $where_conditions[] = "status NOT IN ('ready', 'received')";
+    $where_conditions_ba[] = "ba.status NOT IN ('ready', 'received')";
+
+    if ($status_filter && in_array($status_filter, $active_status_filters, true)) {
+        $where_conditions[] = 'status = ?';
+        $where_conditions_ba[] = 'ba.status = ?';
+        $params[] = $status_filter;
+    }
 }
 
 if ($search) {
@@ -68,24 +104,18 @@ $sql = "SELECT
             r.civil_status AS resident_civil_status,
             r.gender AS resident_gender,
             r.birthdate AS resident_birthdate,
-            r.birth_place AS resident_birth_place,
-            cr.years_of_residence AS cr_years_of_residence,
-            cr.purpose AS cr_purpose
+            r.birth_place AS resident_birth_place
         FROM business_applications ba
         LEFT JOIN residents r ON ba.user_id = r.id
-        LEFT JOIN certificate_requests cr
-          ON cr.user_id = ba.user_id
-         AND cr.submitted_at = (
-              SELECT MAX(cr2.submitted_at)
-                FROM certificate_requests cr2
-               WHERE cr2.user_id = ba.user_id
-            )
         $where_clause_ba
         ORDER BY ba.submitted_at DESC
         LIMIT $per_page OFFSET $offset";
 $stmt = $pdo->prepare($sql);
 $stmt->execute($params);
 $applications = $stmt->fetchAll();
+
+$active_count = (int) $pdo->query("SELECT COUNT(*) FROM business_applications WHERE status NOT IN ('ready', 'received')")->fetchColumn();
+$received_count = (int) $pdo->query("SELECT COUNT(*) FROM business_applications WHERE status IN ('ready', 'received')")->fetchColumn();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -219,6 +249,120 @@ $applications = $stmt->fetchAll();
             justify-content: center;
             margin: 0.15rem auto;
         }
+
+        .cert-print-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 20000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .cert-print-modal-overlay.open {
+            display: flex !important;
+        }
+
+        .cert-print-modal {
+            background: #fff;
+            border-radius: 12px;
+            width: min(95vw, 920px);
+            height: min(92vh, 900px);
+            min-height: 480px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+
+        .cert-print-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.85rem 1.25rem;
+            border-bottom: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+
+        .cert-print-modal-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            color: #333;
+        }
+
+        .cert-print-modal-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .cert-print-modal-actions button {
+            border: none;
+            border-radius: 6px;
+            padding: 0.45rem 0.9rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .cert-print-modal-actions .btn-print {
+            background: #2e7d32;
+            color: #fff;
+        }
+
+        .cert-print-modal-actions .btn-close {
+            background: #6c757d;
+            color: #fff;
+        }
+
+        .cert-print-modal-body {
+            flex: 1;
+            min-height: 360px;
+            background: #e8e8e8;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .cert-print-modal-body iframe {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-height: 360px;
+            border: 0;
+            background: #fff;
+        }
+
+        .cert-print-loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e8e8e8;
+            color: #555;
+            font-size: 0.95rem;
+            z-index: 1;
+        }
+
+        .cert-print-modal-body.loaded .cert-print-loading {
+            display: none;
+        }
+
+        .cert-print-error {
+            display: none;
+            padding: 1.25rem;
+            color: #842029;
+            background: #f8d7da;
+            border: 1px solid #f5c2c7;
+            border-radius: 8px;
+            margin: 1rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .cert-print-error.visible {
+            display: block;
+        }
         
         .status-badge {
             padding: 0.4rem 0.8rem;
@@ -231,6 +375,8 @@ $applications = $stmt->fetchAll();
         }
         
         .status-pending { background: #fff3cd; color: #856404; }
+        .status-ready { background: #e1bee7; color: #6a1b9a; }
+        .status-received { background: #c8e6c9; color: #1b5e20; }
         .status-reviewing { background: #cce5ff; color: #004085; }
         .status-approved { background: #d4edda; color: #155724; }
         .status-rejected { background: #f8d7da; color: #721c24; }
@@ -436,6 +582,79 @@ $applications = $stmt->fetchAll();
                 font-size: 0.85rem;
             }
         }
+
+        .tab-container {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .tab-navigation {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .tab-button:hover:not(.active) {
+            background: #e9ecef;
+            color: #495057;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 1rem 1.25rem 1.25rem;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-badge {
+            background: rgba(255, 255, 255, 0.2);
+            color: currentColor;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .tab-button:not(.active) .tab-badge {
+            background: #dee2e6;
+            color: #6c757d;
+        }
+
+        .status-locked {
+            padding: 0.5rem 0.75rem;
+            background: #e8f5e9;
+            color: #1b5e20;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+        }
     </style>
  </head>
  <body>
@@ -452,20 +671,53 @@ $applications = $stmt->fetchAll();
             </div>
         <?php endif; ?>
         
-        <div class="admin-controls">
-            <form method="GET" class="search-form">
-                <select name="status" onchange="this.form.submit()">
-                    <option value="">All Status</option>
-                    <option value="pending" <?php echo $status_filter === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                    <option value="reviewing" <?php echo $status_filter === 'reviewing' ? 'selected' : ''; ?>>Reviewing</option>
-                    <option value="approved" <?php echo $status_filter === 'approved' ? 'selected' : ''; ?>>Approved</option>
-                    <option value="rejected" <?php echo $status_filter === 'rejected' ? 'selected' : ''; ?>>Rejected</option>
-                </select>
-                
-                <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by owner name, business name, or type...">
-                <button type="submit" class="admin-btn">🔍 Search</button>
-                <a href="view-business-applications.php" class="admin-btn">🔄 Clear</a>
-            </form>
+        <div class="tab-container">
+            <div class="tab-navigation">
+                <button type="button" class="tab-button <?php echo $active_tab === 'active' ? 'active' : ''; ?>" onclick="switchBusinessTab('active')">
+                    📝 Active Applications
+                    <span class="tab-badge"><?php echo $active_count; ?></span>
+                </button>
+                <button type="button" class="tab-button <?php echo $active_tab === 'received' ? 'active' : ''; ?>" onclick="switchBusinessTab('received')">
+                    ✅ Ready / Received
+                    <span class="tab-badge"><?php echo $received_count; ?></span>
+                </button>
+            </div>
+
+            <div class="tab-content <?php echo $active_tab === 'active' ? 'active' : ''; ?>" id="active-tab">
+                <form method="GET" class="search-form">
+                    <input type="hidden" name="tab" value="active">
+                    <select name="status" onchange="this.form.submit()">
+                        <option value="">All Status</option>
+                        <?php foreach ($ba_status_labels as $value => $label): ?>
+                            <?php if (!in_array($value, $active_status_filters, true)) { continue; } ?>
+                            <option value="<?php echo htmlspecialchars($value); ?>" <?php echo $status_filter === $value ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($label); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search active applications...">
+                    <button type="submit" class="admin-btn">🔍 Search</button>
+                    <a href="view-business-applications.php?tab=active" class="admin-btn">🔄 Clear</a>
+                </form>
+            </div>
+
+            <div class="tab-content <?php echo $active_tab === 'received' ? 'active' : ''; ?>" id="received-tab">
+                <form method="GET" class="search-form">
+                    <input type="hidden" name="tab" value="received">
+                    <select name="status" onchange="this.form.submit()">
+                        <option value="">All Status</option>
+                        <?php foreach ($ba_status_labels as $value => $label): ?>
+                            <?php if (!in_array($value, $received_status_filters, true)) { continue; } ?>
+                            <option value="<?php echo htmlspecialchars($value); ?>" <?php echo $status_filter === $value ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($label); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search ready or received applications...">
+                    <button type="submit" class="admin-btn">🔍 Search</button>
+                    <a href="view-business-applications.php?tab=received" class="admin-btn">🔄 Clear</a>
+                </form>
+            </div>
         </div>
         
         <div class="admin-table">
@@ -646,17 +898,12 @@ $applications = $stmt->fetchAll();
                                 <?php if (!empty($app['resident_birth_place'])): ?>
                                     <div class="business-info">🗺️ <?php echo htmlspecialchars($app['resident_birth_place']); ?></div>
                                 <?php endif; ?>
-                                <?php if (!empty($app['cr_years_of_residence'])): ?>
-                                    <div class="business-info">📅 Years of Residence: <?php echo htmlspecialchars($app['cr_years_of_residence']); ?></div>
-                                <?php endif; ?>
-                                <?php if (!empty($app['cr_purpose'])): ?>
-                                    <div class="business-info">📝 Purpose: <?php echo htmlspecialchars($app['cr_purpose']); ?></div>
-                                <?php endif; ?>
                             </div>
                         </td>
                         <td>
-                            <span class="status-badge status-<?php echo $app['status']; ?>">
-                                <?php echo ucfirst($app['status']); ?>
+                            <span class="status-badge status-<?php echo htmlspecialchars($app['status']); ?>">
+                                <?php echo htmlspecialchars(business_application_status_label($app['status'])); ?>
+                                <?php if ($app['status'] === 'received'): ?> ✓<?php endif; ?>
                             </span>
                         </td>
                         <td>
@@ -677,52 +924,255 @@ $applications = $stmt->fetchAll();
                                 👁️ View Summary
                             </a>
                             <?php if ($app['status'] === 'approved'): ?>
-                                <a href="generate-business-clearance.php?id=<?php echo $app['id']; ?>" class="print-clearance-btn" target="_blank">
+                                <button type="button"
+                                    class="print-clearance-btn js-print-biz-clearance-btn"
+                                    data-application-id="<?php echo (int) $app['id']; ?>"
+                                    data-business-name="<?php echo htmlspecialchars((string) ($app['business_name'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
                                     🖨️ Print Clearance
-                                </a>
+                                </button>
                             <?php endif; ?>
                         </td>
                         <?php if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
                         <td class="action-column">
+                            <?php if ($app['status'] !== 'received'): ?>
                             <form method="POST" style="margin-bottom: 0.5rem;">
                                 <input type="hidden" name="action" value="update_status">
                                 <input type="hidden" name="id" value="<?php echo $app['id']; ?>">
+                                <input type="hidden" name="tab" value="<?php echo htmlspecialchars($active_tab); ?>">
                                 <select name="status" class="action-select" onchange="this.form.submit()">
-                                    <option value="pending" <?php echo $app['status'] === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                    <option value="reviewing" <?php echo $app['status'] === 'reviewing' ? 'selected' : ''; ?>>Reviewing</option>
-                                    <option value="approved" <?php echo $app['status'] === 'approved' ? 'selected' : ''; ?>>Approved</option>
-                                    <option value="rejected" <?php echo $app['status'] === 'rejected' ? 'selected' : ''; ?>>Rejected</option>
+                                    <?php
+                                    $cur = $app['status'];
+                                    echo '<option value="' . htmlspecialchars($cur) . '" selected>'
+                                        . htmlspecialchars(business_application_status_label($cur)) . '</option>';
+                                    foreach ($ba_statuses as $st) {
+                                        if ($st !== $cur && business_application_can_transition($cur, $st)) {
+                                            echo '<option value="' . htmlspecialchars($st) . '">→ '
+                                                . htmlspecialchars(business_application_status_label($st)) . '</option>';
+                                        }
+                                    }
+                                    ?>
                                 </select>
                             </form>
+                            <?php else: ?>
+                            <div class="status-locked">Received by Resident</div>
+                            <?php endif; ?>
                         </td>
                         <?php endif; ?>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
+
+            <?php if (empty($applications)): ?>
+            <div style="text-align: center; padding: 3rem;">
+                <?php if ($active_tab === 'received'): ?>
+                    <h3 style="color: #666; margin-bottom: 1rem;">✅ No Ready or Received Applications</h3>
+                    <p style="color: #999; margin-bottom: 1.5rem;">No applications ready for pickup or marked received match your filters.</p>
+                    <a href="view-business-applications.php?tab=received" class="admin-btn">Clear Filters</a>
+                <?php else: ?>
+                    <h3 style="color: #666; margin-bottom: 1rem;">📭 No Active Applications Found</h3>
+                    <p style="color: #999; margin-bottom: 1.5rem;">No active business applications match your current filters.</p>
+                    <a href="view-business-applications.php?tab=active" class="admin-btn">Clear Filters</a>
+                <?php endif; ?>
+            </div>
+            <?php endif; ?>
         </div>
         
         <?php if ($total_pages > 1): ?>
         <div class="pagination">
             <?php if ($page > 1): ?>
-                <a href="?page=<?php echo $page-1; ?>&status=<?php echo $status_filter; ?>&search=<?php echo urlencode($search); ?>">« Previous</a>
+                <a href="?page=<?php echo $page-1; ?>&tab=<?php echo urlencode($active_tab); ?>&status=<?php echo urlencode($status_filter); ?>&search=<?php echo urlencode($search); ?>">« Previous</a>
             <?php endif; ?>
             
             <?php for ($i = max(1, $page-2); $i <= min($total_pages, $page+2); $i++): ?>
                 <?php if ($i == $page): ?>
                     <span class="current"><?php echo $i; ?></span>
                 <?php else: ?>
-                    <a href="?page=<?php echo $i; ?>&status=<?php echo $status_filter; ?>&search=<?php echo urlencode($search); ?>"><?php echo $i; ?></a>
+                    <a href="?page=<?php echo $i; ?>&tab=<?php echo urlencode($active_tab); ?>&status=<?php echo urlencode($status_filter); ?>&search=<?php echo urlencode($search); ?>"><?php echo $i; ?></a>
                 <?php endif; ?>
             <?php endfor; ?>
             
             <?php if ($page < $total_pages): ?>
-                <a href="?page=<?php echo $page+1; ?>&status=<?php echo $status_filter; ?>&search=<?php echo urlencode($search); ?>">Next »</a>
+                <a href="?page=<?php echo $page+1; ?>&tab=<?php echo urlencode($active_tab); ?>&status=<?php echo urlencode($status_filter); ?>&search=<?php echo urlencode($search); ?>">Next »</a>
             <?php endif; ?>
         </div>
         <?php endif; ?>
     </div>
 
-    
+    <div id="bizPrintModal" class="cert-print-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="bizPrintModalTitle">
+        <div class="cert-print-modal" onclick="event.stopPropagation()">
+            <div class="cert-print-modal-header">
+                <h3 id="bizPrintModalTitle">Print business clearance</h3>
+                <div class="cert-print-modal-actions">
+                    <button type="button" class="btn-print" onclick="printBusinessClearanceFromModal()">🖨️ Print</button>
+                    <button type="button" class="btn-close" onclick="closeBusinessClearancePrintModal()">Close</button>
+                </div>
+            </div>
+            <div class="cert-print-modal-body" id="bizPrintModalBody">
+                <div id="bizPrintError" class="cert-print-error" role="alert"></div>
+                <div class="cert-print-loading" id="bizPrintLoading">Loading clearance preview…</div>
+                <iframe id="bizPrintFrame" title="Business clearance print preview"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showBizPrintError(message) {
+            const err = document.getElementById('bizPrintError');
+            const frame = document.getElementById('bizPrintFrame');
+            if (err) {
+                err.textContent = message;
+                err.classList.add('visible');
+            }
+            if (frame) {
+                frame.style.display = 'none';
+            }
+        }
+
+        function clearBizPrintError() {
+            const err = document.getElementById('bizPrintError');
+            const frame = document.getElementById('bizPrintFrame');
+            if (err) {
+                err.textContent = '';
+                err.classList.remove('visible');
+            }
+            if (frame) {
+                frame.style.display = 'block';
+            }
+        }
+
+        function openBusinessClearancePrint(applicationId, businessName) {
+            const modal = document.getElementById('bizPrintModal');
+            const frame = document.getElementById('bizPrintFrame');
+            const title = document.getElementById('bizPrintModalTitle');
+            const body = document.getElementById('bizPrintModalBody');
+            const loading = document.getElementById('bizPrintLoading');
+            if (!modal || !frame) {
+                alert('Print preview is not available. Please refresh the page and try again.');
+                return;
+            }
+
+            if (title) {
+                title.textContent = 'Print: ' + (businessName || 'Business Clearance') + ' (Application #' + applicationId + ')';
+            }
+            clearBizPrintError();
+            if (body) {
+                body.classList.remove('loaded');
+            }
+            if (loading) {
+                loading.style.display = 'flex';
+            }
+
+            const printUrl = new URL('print-business-clearance.php', window.location.href);
+            printUrl.searchParams.set('id', String(applicationId));
+            printUrl.searchParams.set('embed', '1');
+
+            frame.onload = function () {
+                if (body) {
+                    body.classList.add('loaded');
+                }
+                if (loading) {
+                    loading.style.display = 'none';
+                }
+            };
+
+            frame.onerror = function () {
+                showBizPrintError('Failed to load the business clearance preview. Please try again.');
+            };
+
+            frame.src = printUrl.href;
+            modal.classList.add('open');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBusinessClearancePrintModal() {
+            const modal = document.getElementById('bizPrintModal');
+            const frame = document.getElementById('bizPrintFrame');
+            const body = document.getElementById('bizPrintModalBody');
+            const loading = document.getElementById('bizPrintLoading');
+            if (modal) {
+                modal.classList.remove('open');
+                modal.style.display = 'none';
+            }
+            document.body.style.overflow = '';
+            clearBizPrintError();
+            if (body) {
+                body.classList.remove('loaded');
+            }
+            if (loading) {
+                loading.style.display = 'flex';
+            }
+            if (frame) {
+                frame.onload = null;
+                frame.onerror = null;
+                frame.src = 'about:blank';
+            }
+        }
+
+        function printBusinessClearanceFromModal() {
+            const frame = document.getElementById('bizPrintFrame');
+            const err = document.getElementById('bizPrintError');
+            if (err && err.classList.contains('visible')) {
+                return;
+            }
+            if (!frame || !frame.src || frame.src === 'about:blank') {
+                alert('Clearance preview is still loading. Please wait a moment and try again.');
+                return;
+            }
+            try {
+                const win = frame.contentWindow;
+                if (win) {
+                    win.focus();
+                    win.print();
+                }
+            } catch (e) {
+                alert('Could not open the print dialog. Please try again.');
+            }
+        }
+
+        function switchBusinessTab(tab) {
+            try {
+                const url = new URL(window.location.href);
+                url.searchParams.set('tab', tab);
+                url.searchParams.delete('page');
+                url.searchParams.delete('status');
+                url.searchParams.delete('search');
+                window.location.href = url.toString();
+            } catch (e) {
+                window.location.href = 'view-business-applications.php?tab=' + encodeURIComponent(tab);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const modal = document.getElementById('bizPrintModal');
+            if (modal && modal.parentElement !== document.body) {
+                document.body.appendChild(modal);
+            }
+
+            document.addEventListener('click', function (e) {
+                const btn = e.target.closest('.js-print-biz-clearance-btn');
+                if (btn) {
+                    e.preventDefault();
+                    openBusinessClearancePrint(
+                        btn.getAttribute('data-application-id'),
+                        btn.getAttribute('data-business-name')
+                    );
+                }
+            });
+
+            modal?.addEventListener('click', function (e) {
+                if (e.target === modal) {
+                    closeBusinessClearancePrintModal();
+                }
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && modal && modal.classList.contains('open')) {
+                    closeBusinessClearancePrintModal();
+                }
+            });
+        });
+    </script>
 </body>
 </html>

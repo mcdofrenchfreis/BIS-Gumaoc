@@ -327,7 +327,8 @@ CREATE TABLE `admin_users` (
 
 INSERT INTO `admin_users` (`id`, `username`, `password`, `full_name`, `email`, `role`, `created_at`, `updated_at`) VALUES
 (1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin@gumaoc.local', 'super_admin', '2025-08-01 07:44:29', '2025-08-01 07:44:29'),
-(2, 'blotter_admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Blotter Administrator', 'blotter@gumaoc.local', 'admin', '2025-08-25 05:45:36', '2025-08-25 05:45:36');
+(2, 'blotter_admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Blotter Administrator', 'blotter@gumaoc.local', 'admin', '2025-08-25 05:45:36', '2025-08-25 05:45:36'),
+(3, 'admin_test', '$2y$10$vLzVo3PDi2Sqo2.2OgSqaOHIe0OwJ3qlfsYZ33.zrw7h/7FbOdBKa', 'Test Administrator', 'admin_test@gumaoc.local', 'admin', '2025-08-25 05:45:36', '2025-08-25 05:45:36');
 
 -- --------------------------------------------------------
 
@@ -1156,6 +1157,24 @@ INSERT INTO `updates` (`id`, `title`, `description`, `badge_text`, `badge_type`,
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `user_photos`
+--
+
+CREATE TABLE `user_photos` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `certificate_request_id` int(11) DEFAULT NULL,
+  `photo_filename` varchar(255) NOT NULL,
+  `original_filename` varchar(255) DEFAULT NULL,
+  `photo_path` varchar(500) NOT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `uploaded_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `user_reports`
 --
 
@@ -1393,6 +1412,14 @@ ALTER TABLE `updates`
   ADD PRIMARY KEY (`id`);
 
 --
+-- Indexes for table `user_photos`
+--
+ALTER TABLE `user_photos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_user_photos_user` (`user_id`),
+  ADD KEY `idx_user_photos_request` (`certificate_request_id`);
+
+--
 -- Indexes for table `user_reports`
 --
 ALTER TABLE `user_reports`
@@ -1552,6 +1579,12 @@ ALTER TABLE `services`
 --
 ALTER TABLE `updates`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+
+--
+-- AUTO_INCREMENT for table `user_photos`
+--
+ALTER TABLE `user_photos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `user_reports`

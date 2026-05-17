@@ -33,6 +33,10 @@ DROP TABLE IF EXISTS `family_disabilities`;
 DROP TABLE IF EXISTS `family_members`;
 DROP TABLE IF EXISTS `family_organizations`;
 DROP TABLE IF EXISTS `notifications`;
+DROP TABLE IF EXISTS `queue_tickets`;
+DROP TABLE IF EXISTS `queue_windows`;
+DROP TABLE IF EXISTS `queue_counters`;
+DROP TABLE IF EXISTS `queue_services`;
 DROP TABLE IF EXISTS `resident_status`;
 DROP TABLE IF EXISTS `resident_registrations`;
 DROP TABLE IF EXISTS `residents`;
@@ -70,7 +74,8 @@ CREATE TABLE `admin_users` (
 -- Insert default admin users
 INSERT INTO `admin_users` (`id`, `username`, `password`, `full_name`, `email`, `role`) VALUES
 (1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin@gumaoc.local', 'super_admin'),
-(2, 'blotter_admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Blotter Administrator', 'blotter@gumaoc.local', 'admin');
+(2, 'blotter_admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Blotter Administrator', 'blotter@gumaoc.local', 'admin'),
+(3, 'admin_test', '$2y$10$vLzVo3PDi2Sqo2.2OgSqaOHIe0OwJ3qlfsYZ33.zrw7h/7FbOdBKa', 'Test Administrator', 'admin_test@gumaoc.local', 'admin');
 
 -- Admin logs table
 CREATE TABLE `admin_logs` (
@@ -441,6 +446,108 @@ CREATE TABLE `captain_clearances` (
 -- =====================================================
 -- QUEUE MANAGEMENT SYSTEM
 -- =====================================================
+
+-- Queue services table
+CREATE TABLE `queue_services` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `service_name` varchar(100) NOT NULL,
+  `service_code` varchar(10) NOT NULL,
+  `description` text DEFAULT NULL,
+  `estimated_time` int(11) DEFAULT 15 COMMENT 'Estimated time in minutes',
+  `max_daily_capacity` int(11) DEFAULT 50,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `service_code` (`service_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Insert default queue services
+INSERT INTO `queue_services` (`id`, `service_name`, `service_code`, `description`, `estimated_time`, `max_daily_capacity`, `is_active`) VALUES
+(1, 'Barangay Clearance', 'BC', 'Processing of Barangay Clearance certificates', 15, 50, 1),
+(2, 'Barangay Indigency', 'BI', 'Processing of Barangay Indigency certificates', 15, 30, 1),
+(3, 'Tricycle Permit', 'TP', 'Processing of Tricycle Operator Permits', 25, 20, 1),
+(4, 'Proof of Residency', 'PR', 'Processing of Proof of Residency certificates', 10, 40, 1),
+(5, 'General Services', 'GS', 'Other barangay services and inquiries', 20, 30, 1),
+(6, 'Business Permit', 'BP', 'Business permit applications and renewals', 30, 15, 1);
+
+-- Queue counters table
+CREATE TABLE `queue_counters` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `counter_number` varchar(10) NOT NULL,
+  `counter_name` varchar(50) NOT NULL,
+  `service_id` int(11) DEFAULT NULL,
+  `operator_name` varchar(100) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `current_ticket_id` int(11) DEFAULT NULL,
+  `last_called_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `counter_number` (`counter_number`),
+  KEY `service_id` (`service_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Insert default queue counters
+INSERT INTO `queue_counters` (`id`, `counter_number`, `counter_name`, `service_id`, `is_active`) VALUES
+(1, 'C1', 'Counter 1 - All Certificates', 1, 1),
+(2, 'C2', 'Counter 2 - Business Applications', 6, 1),
+(3, 'C3', 'Counter 3 - General', 5, 1);
+
+-- Queue tickets table
+CREATE TABLE `queue_tickets` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ticket_number` varchar(20) NOT NULL,
+  `service_id` int(11) NOT NULL,
+  `customer_name` varchar(100) NOT NULL,
+  `mobile_number` varchar(20) DEFAULT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `purpose` text DEFAULT NULL,
+  `priority_level` enum('normal','priority','urgent') DEFAULT 'normal',
+  `status` enum('waiting','serving','completed','cancelled','no_show') DEFAULT 'waiting',
+  `queue_position` int(11) DEFAULT NULL,
+  `estimated_time` datetime DEFAULT NULL,
+  `called_at` timestamp NULL DEFAULT NULL,
+  `served_at` timestamp NULL DEFAULT NULL,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `served_by` varchar(100) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `ticket_number` (`ticket_number`),
+  KEY `service_id` (`service_id`),
+  KEY `status` (`status`),
+  KEY `created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Sample queue tickets
+INSERT INTO `queue_tickets` (`id`, `ticket_number`, `service_id`, `customer_name`, `mobile_number`, `purpose`, `priority_level`, `status`, `queue_position`) VALUES
+(1, 'BC-20250511-001', 1, 'Juan Santos Dela Cruz', '09123456789', 'Barangay Clearance for Employment', 'normal', 'waiting', 1),
+(2, 'BI-20250511-001', 2, 'Maria Reyes Santos', '09234567890', 'Indigency Certificate for Scholarship', 'priority', 'waiting', 1);
+
+-- Queue windows table
+CREATE TABLE `queue_windows` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `window_number` varchar(10) NOT NULL,
+  `window_name` varchar(50) NOT NULL,
+  `service_id` int(11) DEFAULT NULL,
+  `operator_name` varchar(100) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `current_ticket_id` int(11) DEFAULT NULL,
+  `last_called_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `window_number` (`window_number`),
+  KEY `service_id` (`service_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Insert default queue windows
+INSERT INTO `queue_windows` (`id`, `window_number`, `window_name`, `service_id`, `is_active`) VALUES
+(1, 'W1', 'Window 1 - Certificates', 1, 1),
+(2, 'W2', 'Window 2 - Permits', 3, 1),
+(3, 'W3', 'Window 3 - General Services', 5, 1);
 
 -- =====================================================
 -- RFID SYSTEM

@@ -75,26 +75,10 @@ $base_path = "../";
 <style>
 .page-container {
     min-height: 100vh;
-    background-image: url('../assets/images/bg2.jpg');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    background-repeat: no-repeat;
+    background: #f7faf7;
     position: relative;
     /* Offset for fixed mini nav height */
     padding-top: 70px;
-}
-
-.page-container::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(232, 245, 233, 0.75);
-    backdrop-filter: blur(15px);
-    z-index: -1;
 }
 
 .content-section {

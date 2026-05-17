@@ -46,18 +46,6 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
                 // Process emails based on status change
                 if ($new_status === 'approved' && $current_status !== 'approved' && $registration_data['email']) {
                     try {
-                        // Get an available RFID code from scanned_rfid_codes table
-                        $rfid_stmt = $pdo->prepare("SELECT id, rfid_code FROM scanned_rfid_codes WHERE status = 'available' ORDER BY scanned_at ASC LIMIT 1");
-                        $rfid_stmt->execute();
-                        $rfid_data = $rfid_stmt->fetch(PDO::FETCH_ASSOC);
-                        
-                        if (!$rfid_data) {
-                            throw new Exception("No available RFID codes found. Please scan new RFID codes in the RFID Scanner page.");
-                        }
-                        
-                        $generated_rfid = $rfid_data['rfid_code'];
-                        $rfid_id = $rfid_data['id'];
-                        
                         // Generate temporary password
                         $temp_password = EmailService::generateTempPassword();
                         $hashed_password = password_hash($temp_password, PASSWORD_DEFAULT);
@@ -68,55 +56,52 @@ if ($_POST['action'] ?? '' === 'update_status' && isset($_POST['id'], $_POST['st
                         $existing_resident = $check_stmt->fetch(PDO::FETCH_ASSOC);
                         
                         if ($existing_resident) {
-                            // Account exists - activate it with new RFID and password
                             $resident_id = $existing_resident['id'];
                             
-                            // Update existing resident: activate account, set new RFID and password
+                            // Activate account: email/password login only (no RFID)
                             $update_sql = "UPDATE residents SET 
-                                rfid_code = ?, rfid = ?, password = ?, 
+                                rfid_code = NULL, rfid = NULL, password = ?, 
                                 status = 'active', profile_complete = 1, updated_at = NOW() 
                                 WHERE id = ?";
                             $update_stmt = $pdo->prepare($update_sql);
                             $update_result = $update_stmt->execute([
-                                $generated_rfid, $generated_rfid, $hashed_password, $resident_id
+                                $hashed_password, $resident_id
                             ]);
                             
                             if ($update_result) {
-                                // Update RFID code status to 'assigned' in scanned_rfid_codes table
-                                $update_rfid_stmt = $pdo->prepare("
-                                    UPDATE scanned_rfid_codes 
-                                    SET status = 'assigned', 
-                                        assigned_at = NOW(), 
-                                        assigned_to_resident_id = ?, 
-                                        assigned_to_email = ? 
-                                    WHERE id = ?
-                                ");
-                                $update_rfid_stmt->execute([$resident_id, $registration_data['email'], $rfid_id]);
-                                
-                                // Assign the RFID code
-                                EmailService::assignRFIDCode($pdo, $generated_rfid, $resident_id, $registration_data['email']);
-                                
                                 // Send approval email with credentials
                                 $emailService = new EmailService();
                                 $resident_name = trim($registration_data['first_name'] . ' ' . $registration_data['last_name']);
                                 
-                                // Log email attempt
-                                error_log("Admin Approval: Sending credentials to: {$registration_data['email']} for {$resident_name} with RFID: {$generated_rfid}");
+                                error_log("Admin Approval: Sending credentials to: {$registration_data['email']} for {$resident_name}");
                                 
-                                $email_sent = $emailService->sendApprovalEmail(
+                                $approval_email_sent = $emailService->sendApprovalEmail(
                                     $registration_data['email'],
                                     $resident_name,
-                                    $generated_rfid,
                                     $temp_password
                                 );
-                                
-                                // Log email result
-                                error_log("Admin Approval Email Result: " . ($email_sent ? 'SUCCESS' : 'FAILED') . " for {$registration_data['email']}");
-                                
-                                if ($email_sent) {
-                                    $email_message = " Account activated successfully! Login credentials with RFID ({$generated_rfid}) sent to {$registration_data['email']}";
+                                $login_credentials_email_sent = $emailService->sendLoginCredentialsEmail(
+                                    $registration_data['email'],
+                                    $resident_name,
+                                    $registration_data['email'],
+                                    $temp_password
+                                );
+                                $email_sent = $approval_email_sent && $login_credentials_email_sent;
+
+                                error_log(
+                                    "Admin Approval Email Result: approval=" . ($approval_email_sent ? 'OK' : 'FAIL')
+                                    . ", login_credentials=" . ($login_credentials_email_sent ? 'OK' : 'FAIL')
+                                    . " for {$registration_data['email']}"
+                                );
+
+                                if ($approval_email_sent && $login_credentials_email_sent) {
+                                    $email_message = " Account activated successfully! Approval email and a separate login email (email + password) sent to {$registration_data['email']}.";
+                                } elseif ($approval_email_sent) {
+                                    $email_message = " Account activated. Approval email sent; login email/password follow-up failed. Please share password manually if needed.";
+                                } elseif ($login_credentials_email_sent) {
+                                    $email_message = " Account activated. Login email/password sent; full approval email failed.";
                                 } else {
-                                    $email_message = " Account activated with RFID ({$generated_rfid}), but email delivery failed. Please contact resident manually.";
+                                    $email_message = " Account activated, but email delivery failed. Please contact resident manually.";
                                 }
                             } else {
                                 $email_message = " Registration approved, but failed to activate resident account.";
